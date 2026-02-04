@@ -8,6 +8,7 @@
   body { font-family: Arial, sans-serif; text-align: center; background: #f7f7f7; padding: 40px; }
   input, button { font-size: 18px; padding: 12px; margin: 8px; }
   #waiting { display: none; }
+  #decline-buttons { display: none; margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -21,12 +22,16 @@
 
 <div id="waiting">
   <h1 id="message">Please wait…</h1>
+  <div id="decline-buttons">
+    <button onclick="toggleHoldMessage()">Hold</button>
+    <button onclick="resetKiosk()">Next Guest</button>
+  </div>
 </div>
 
 <script>
 let guestId = null;
 let pollTimer = null;
-let declineToggle = false;
+let declineActive = false;
 
 function el(id) { return document.getElementById(id); }
 
@@ -40,7 +45,6 @@ async function submitCheckin() {
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ firstName:first, lastName:last })
   });
-
   const data = await res.json();
   guestId = data.guestId;
 
@@ -48,6 +52,7 @@ async function submitCheckin() {
   el("waiting").style.display = "block";
   el("message").innerText = "Thank you for entering your information. Please wait a minute while we analyze your information.";
 
+  // Start polling guest status
   pollTimer = setInterval(pollStatus, 2000);
 }
 
@@ -59,13 +64,13 @@ async function pollStatus() {
   switch(g.status) {
     case "accepted":
       el("message").innerText = `${g.first_name}, your name tag is on the way. Please hold.`;
-      declineToggle = false;
+      el("decline-buttons").style.display = "none";
+      declineActive = false;
       break;
     case "declined":
-      if (!declineToggle) {
-        el("message").innerText = "Please wait an additional minute.";
-        declineToggle = true;
-      }
+      el("message").innerText = "Please wait one additional minute.";
+      el("decline-buttons").style.display = "block";
+      declineActive = true;
       break;
     case "completed":
     case "dismissed":
@@ -74,16 +79,28 @@ async function pollStatus() {
   }
 }
 
+// Toggle hold message manually
+function toggleHoldMessage() {
+  if (!declineActive) return;
+  if (el("message").innerText === "Please wait one additional minute.") {
+    el("message").innerText = "";
+  } else {
+    el("message").innerText = "Please wait one additional minute.";
+  }
+}
+
+// Reset kiosk to initial form
 function resetKiosk() {
   clearInterval(pollTimer);
   pollTimer = null;
   guestId = null;
-  declineToggle = false;
+  declineActive = false;
 
   el("first").value = "";
   el("last").value = "";
   el("waiting").style.display = "none";
   el("form").style.display = "block";
+  el("decline-buttons").style.display = "none";
 }
 </script>
 
