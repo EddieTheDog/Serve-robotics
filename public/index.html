@@ -1,112 +1,191 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Event Check-In</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Event Check-In Kiosk</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f7f7f7;
+      padding: 40px;
+    }
+
+    input, button {
+      font-size: 18px;
+      padding: 12px;
+      margin: 8px;
+    }
+
+    #waiting {
+      display: none;
+    }
+
+    #qr {
+      margin: 20px auto;
+      width: 220px;
+    }
+
+    #dots {
+      display: none;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    #dots button {
+      width: 50px;
+      height: 50px;
+      font-size: 22px;
+    }
+  </style>
 </head>
 <body>
 
-<div id="screen-form">
-  <h1>Check In</h1>
-  <input id="first" placeholder="First Name">
-  <input id="last" placeholder="Last Name">
-  <button onclick="submitCheckin()">Submit</button>
-</div>
-
-<div id="screen-wait" hidden>
-  <h1 id="message">Please wait…</h1>
-  <div id="qr"></div>
-
-  <button onclick="sendHelp()">Help is on the way</button>
-
-  <div id="dots" hidden>
-    <button onclick="dot(0)">◼</button>
-    <button onclick="dot(1)">◼</button>
-    <button onclick="dot(2)">◼</button>
+  <!-- CHECK-IN FORM -->
+  <div id="form">
+    <h1>Event Check-In</h1>
+    <input id="first" placeholder="First Name" />
+    <br />
+    <input id="last" placeholder="Last Name" />
+    <br />
+    <button onclick="submitCheckin()">Submit</button>
   </div>
-</div>
 
-<script src="qr.js"></script>
-<script>
-let guestId = null;
-let dotStep = 0;
+  <!-- WAITING SCREEN -->
+  <div id="waiting">
+    <h1 id="message">Please wait…</h1>
 
-async function submitCheckin() {
-  const res = await fetch('/api/checkin', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      firstName: first.value,
-      lastName: last.value
-    })
-  });
+    <div id="qr"></div>
 
-  const data = await res.json();
-  guestId = data.guestId;
+    <button onclick="sendStatus('help')">Help is on the way</button>
+    <button onclick="sendStatus('waiting')">Hold</button>
 
-  QRCode(document.getElementById("qr"), guestId);
+    <!-- THREE DOT CONFIRMATION -->
+    <div id="dots">
+      <button onclick="dotClick(0)">■</button>
+      <button onclick="dotClick(1)">■</button>
+      <button onclick="dotClick(2)">■</button>
+    </div>
+  </div>
 
-  screenForm.hidden = true;
-  screenWait.hidden = false;
+  <!-- QR LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-  poll();
-}
+  <!-- KIOSK LOGIC -->
+  <script>
+    let guestId = null;
+    let pollTimer = null;
+    let dotStep = 0;
 
-async function poll() {
-  if (!guestId) return;
+    function el(id) {
+      return document.getElementById(id);
+    }
 
-  const res = await fetch(`/api/guest/${guestId}`);
-  const g = await res.json();
+    async function submitCheckin() {
+      const first = el("first").value.trim();
+      const last = el("last").value.trim();
+      if (!first || !last) return;
 
-  if (g.status === 'accepted') {
-    message.innerText = `Please wait one minute, ${g.first_name}`;
-    dots.hidden = true;
-  }
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName: first, lastName: last })
+      });
 
-  if (g.status === 'declined') {
-    message.innerText = `Please wait, an admin will come speak with you`;
-    dots.hidden = false;
-  }
+      const data = await res.json();
+      guestId = data.guestId;
 
-  if (g.status === 'dismissed' || g.status === 'completed') {
-    resetKiosk();
-    return;
-  }
+      el("form").style.display = "none";
+      el("waiting").style.display = "block";
+      el("message").innerText = "Please wait…";
 
-  setTimeout(poll, 2500);
-}
+      renderQR(location.origin + "/admin?guest=" + guestId);
 
-function resetKiosk() {
-  guestId = null;
-  dotStep = 0;
-  dots.hidden = true;
-  screenWait.hidden = true;
-  screenForm.hidden = false;
-  first.value = '';
-  last.value = '';
-  message.innerText = 'Please wait…';
-  qr.innerHTML = '';
-}
+      pollTimer = setInterval(pollStatus, 2000);
+    }
 
-async function sendHelp() {
-  await fetch('/api/update', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ guestId, status:'help' })
-  });
-}
+    async function pollStatus() {
+      if (!guestId) return;
 
-function dot(i) {
-  if (i !== dotStep) return;
-  dotStep++;
-  if (dotStep === 3) {
-    fetch('/api/update', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ guestId, status:'dismissed' })
-    });
-  }
-}
-</script>
+      const res = await fetch("/api/guest/" + guestId);
+      const g = await res.json();
+
+      if (g.status === "accepted") {
+        el("message").innerText =
+          "Please wait one minute, " + g.first_name;
+        hideDots();
+      }
+
+      if (g.status === "help") {
+        el("message").innerText = "Help is on the way";
+        hideDots();
+      }
+
+      if (g.status === "declined") {
+        el("message").innerText =
+          "Please wait, an admin will come speak with you";
+        showDots();
+      }
+
+      if (g.status === "dismissed" || g.status === "completed") {
+        resetKiosk();
+      }
+    }
+
+    async function sendStatus(status) {
+      if (!guestId) return;
+
+      await fetch("/api/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestId, status })
+      });
+    }
+
+    function renderQR(text) {
+      el("qr").innerHTML = "";
+      new QRCode(el("qr"), {
+        text: text,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function showDots() {
+      dotStep = 0;
+      el("dots").style.display = "flex";
+    }
+
+    function hideDots() {
+      el("dots").style.display = "none";
+    }
+
+    function dotClick(index) {
+      if (index !== dotStep) return;
+      dotStep++;
+      if (dotStep === 3) {
+        sendStatus("dismissed");
+      }
+    }
+
+    function resetKiosk() {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      guestId = null;
+
+      el("qr").innerHTML = "";
+      el("waiting").style.display = "none";
+      el("form").style.display = "block";
+      el("first").value = "";
+      el("last").value = "";
+      hideDots();
+    }
+  </script>
+
 </body>
 </html>
