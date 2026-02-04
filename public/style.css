@@ -2,8 +2,8 @@ body {
   font-family: sans-serif;
   text-align: center;
 }
-button {
+input, button {
+  font-size: 20px;
   padding: 12px;
   margin: 6px;
-  font-size: 16px;
 }
