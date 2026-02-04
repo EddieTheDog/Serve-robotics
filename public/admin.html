@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <div id="queue"></div>
+
+  <script>
+    async function load() {
+      const res = await fetch('/api/queue');
+      const guests = await res.json();
+      queue.innerHTML = '';
+
+      guests.forEach(g => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <b>${g.first_name} ${g.last_name}</b><br>
+          <button onclick="set('${g.id}','accepted')">Accept</button>
+          <button onclick="decline('${g.id}', this)">Decline</button>
+          <button onclick="set('${g.id}','help')">Help</button>
+        `;
+        queue.appendChild(div);
+      });
+    }
+
+    async function set(id, status) {
+      await fetch('/api/update', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({guestId:id,status})
+      });
+      load();
+    }
+
+    function decline(id, el) {
+      let step = 0;
+      el.parentNode.innerHTML = `
+        <button>◼</button><button>◼</button><button>◼</button>
+      `;
+      [...el.parentNode.children].forEach((b,i)=>{
+        b.onclick=()=>{
+          if(i===step) step++;
+          if(step===3) set(id,'dismissed');
+        };
+      });
+    }
+
+    load();
+    setInterval(load, 3000);
+  </script>
+</body>
+</html>
