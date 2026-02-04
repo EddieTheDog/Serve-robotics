@@ -1,191 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Event Check-In Kiosk</title>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f7f7f7;
-      padding: 40px;
-    }
-
-    input, button {
-      font-size: 18px;
-      padding: 12px;
-      margin: 8px;
-    }
-
-    #waiting {
-      display: none;
-    }
-
-    #qr {
-      margin: 20px auto;
-      width: 220px;
-    }
-
-    #dots {
-      display: none;
-      justify-content: center;
-      gap: 16px;
-      margin-top: 20px;
-    }
-
-    #dots button {
-      width: 50px;
-      height: 50px;
-      font-size: 22px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Event Check-In Kiosk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #f7f7f7; padding: 40px; }
+  input, button { font-size: 18px; padding: 12px; margin: 8px; }
+  #waiting { display: none; }
+  #buttons { margin-top: 20px; display: none; }
+</style>
 </head>
 <body>
 
-  <!-- CHECK-IN FORM -->
-  <div id="form">
-    <h1>Event Check-In</h1>
-    <input id="first" placeholder="First Name" />
-    <br />
-    <input id="last" placeholder="Last Name" />
-    <br />
-    <button onclick="submitCheckin()">Submit</button>
-  </div>
+<div id="form">
+  <h1>Event Check-In</h1>
+  <input id="first" placeholder="First Name" /><br>
+  <input id="last" placeholder="Last Name" /><br>
+  <button onclick="submitCheckin()">Submit</button>
+</div>
 
-  <!-- WAITING SCREEN -->
-  <div id="waiting">
-    <h1 id="message">Please wait…</h1>
-
-    <div id="qr"></div>
-
+<div id="waiting">
+  <h1 id="message">Please wait…</h1>
+  <div id="buttons">
     <button onclick="sendStatus('help')">Help is on the way</button>
     <button onclick="sendStatus('waiting')">Hold</button>
-
-    <!-- THREE DOT CONFIRMATION -->
-    <div id="dots">
-      <button onclick="dotClick(0)">■</button>
-      <button onclick="dotClick(1)">■</button>
-      <button onclick="dotClick(2)">■</button>
-    </div>
   </div>
+</div>
 
-  <!-- QR LIBRARY -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+let guestId = null;
+let pollTimer = null;
 
-  <!-- KIOSK LOGIC -->
-  <script>
-    let guestId = null;
-    let pollTimer = null;
-    let dotStep = 0;
+function el(id) { return document.getElementById(id); }
 
-    function el(id) {
-      return document.getElementById(id);
-    }
+async function submitCheckin() {
+  const first = el("first").value.trim();
+  const last = el("last").value.trim();
+  if (!first || !last) return;
 
-    async function submitCheckin() {
-      const first = el("first").value.trim();
-      const last = el("last").value.trim();
-      if (!first || !last) return;
+  const res = await fetch("/api/checkin", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ firstName:first, lastName:last })
+  });
+  const data = await res.json();
+  guestId = data.guestId;
 
-      const res = await fetch("/api/checkin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName: first, lastName: last })
-      });
+  el("form").style.display = "none";
+  el("waiting").style.display = "block";
+  el("message").innerText = "Thank you for entering your information. Please wait a minute while we analyze your information.";
 
-      const data = await res.json();
-      guestId = data.guestId;
+  // Buttons appear after 2 seconds
+  setTimeout(() => { el("buttons").style.display = "block"; }, 2000);
 
-      el("form").style.display = "none";
-      el("waiting").style.display = "block";
-      el("message").innerText = "Please wait…";
+  pollTimer = setInterval(pollStatus, 2000);
+}
 
-      renderQR(location.origin + "/admin?guest=" + guestId);
+async function pollStatus() {
+  if (!guestId) return;
+  const res = await fetch(`/api/guest/${guestId}`);
+  const g = await res.json();
 
-      pollTimer = setInterval(pollStatus, 2000);
-    }
+  switch(g.status) {
+    case "accepted":
+      el("message").innerText = `${g.first_name}, your name tag is on the way. Please hold.`;
+      el("buttons").style.display = "none";
+      break;
+    case "declined":
+      el("message").innerText = "Please wait one minute.";
+      el("buttons").style.display = "none";
+      break;
+    case "completed":
+    case "dismissed":
+      resetKiosk();
+      break;
+  }
+}
 
-    async function pollStatus() {
-      if (!guestId) return;
+async function sendStatus(status) {
+  if (!guestId) return;
+  await fetch("/api/update", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ guestId, status })
+  });
+}
 
-      const res = await fetch("/api/guest/" + guestId);
-      const g = await res.json();
+function resetKiosk() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+  guestId = null;
 
-      if (g.status === "accepted") {
-        el("message").innerText =
-          "Please wait one minute, " + g.first_name;
-        hideDots();
-      }
-
-      if (g.status === "help") {
-        el("message").innerText = "Help is on the way";
-        hideDots();
-      }
-
-      if (g.status === "declined") {
-        el("message").innerText =
-          "Please wait, an admin will come speak with you";
-        showDots();
-      }
-
-      if (g.status === "dismissed" || g.status === "completed") {
-        resetKiosk();
-      }
-    }
-
-    async function sendStatus(status) {
-      if (!guestId) return;
-
-      await fetch("/api/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guestId, status })
-      });
-    }
-
-    function renderQR(text) {
-      el("qr").innerHTML = "";
-      new QRCode(el("qr"), {
-        text: text,
-        width: 220,
-        height: 220,
-        correctLevel: QRCode.CorrectLevel.H
-      });
-    }
-
-    function showDots() {
-      dotStep = 0;
-      el("dots").style.display = "flex";
-    }
-
-    function hideDots() {
-      el("dots").style.display = "none";
-    }
-
-    function dotClick(index) {
-      if (index !== dotStep) return;
-      dotStep++;
-      if (dotStep === 3) {
-        sendStatus("dismissed");
-      }
-    }
-
-    function resetKiosk() {
-      clearInterval(pollTimer);
-      pollTimer = null;
-      guestId = null;
-
-      el("qr").innerHTML = "";
-      el("waiting").style.display = "none";
-      el("form").style.display = "block";
-      el("first").value = "";
-      el("last").value = "";
-      hideDots();
-    }
-  </script>
+  el("first").value = "";
+  el("last").value = "";
+  el("waiting").style.display = "none";
+  el("form").style.display = "block";
+  el("buttons").style.display = "none";
+}
+</script>
 
 </body>
 </html>
