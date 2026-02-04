@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Please Wait</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1 id="msg">Please wait…</h1>
+  <div id="qr"></div>
+
+  <button onclick="update('help')">Help is on the way</button>
+  <button onclick="update('waiting')">Hold</button>
+
+  <script src="qr.js"></script>
+  <script>
+    const id = new URLSearchParams(location.search).get('id');
+
+    QRCode(document.getElementById("qr"), location.href);
+
+    async function poll() {
+      const res = await fetch(`/api/guest/${id}`);
+      const g = await res.json();
+
+      if (g.status === 'accepted') {
+        msg.innerText = `Please wait one minute, ${g.first_name}`;
+      }
+      if (g.status === 'declined') {
+        msg.innerText = 'Please wait, an admin will come speak with you';
+      }
+    }
+
+    async function update(status) {
+      await fetch('/api/update', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ guestId: id, status })
+      });
+    }
+
+    setInterval(poll, 2500);
+  </script>
+</body>
+</html>
