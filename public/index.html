@@ -8,7 +8,6 @@
   body { font-family: Arial, sans-serif; text-align: center; background: #f7f7f7; padding: 40px; }
   input, button { font-size: 18px; padding: 12px; margin: 8px; }
   #waiting { display: none; }
-  #buttons { margin-top: 20px; display: none; }
 </style>
 </head>
 <body>
@@ -22,15 +21,12 @@
 
 <div id="waiting">
   <h1 id="message">Please wait…</h1>
-  <div id="buttons">
-    <button onclick="sendStatus('help')">Help is on the way</button>
-    <button onclick="sendStatus('waiting')">Hold</button>
-  </div>
 </div>
 
 <script>
 let guestId = null;
 let pollTimer = null;
+let declineToggle = false;
 
 function el(id) { return document.getElementById(id); }
 
@@ -41,18 +37,16 @@ async function submitCheckin() {
 
   const res = await fetch("/api/checkin", {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
+    headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ firstName:first, lastName:last })
   });
+
   const data = await res.json();
   guestId = data.guestId;
 
   el("form").style.display = "none";
   el("waiting").style.display = "block";
   el("message").innerText = "Thank you for entering your information. Please wait a minute while we analyze your information.";
-
-  // Buttons appear after 2 seconds
-  setTimeout(() => { el("buttons").style.display = "block"; }, 2000);
 
   pollTimer = setInterval(pollStatus, 2000);
 }
@@ -65,11 +59,13 @@ async function pollStatus() {
   switch(g.status) {
     case "accepted":
       el("message").innerText = `${g.first_name}, your name tag is on the way. Please hold.`;
-      el("buttons").style.display = "none";
+      declineToggle = false;
       break;
     case "declined":
-      el("message").innerText = "Please wait one minute.";
-      el("buttons").style.display = "none";
+      if (!declineToggle) {
+        el("message").innerText = "Please wait an additional minute.";
+        declineToggle = true;
+      }
       break;
     case "completed":
     case "dismissed":
@@ -78,25 +74,16 @@ async function pollStatus() {
   }
 }
 
-async function sendStatus(status) {
-  if (!guestId) return;
-  await fetch("/api/update", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ guestId, status })
-  });
-}
-
 function resetKiosk() {
   clearInterval(pollTimer);
   pollTimer = null;
   guestId = null;
+  declineToggle = false;
 
   el("first").value = "";
   el("last").value = "";
   el("waiting").style.display = "none";
   el("form").style.display = "block";
-  el("buttons").style.display = "none";
 }
 </script>
 
