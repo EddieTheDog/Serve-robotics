@@ -5,26 +5,108 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Event Check-In</h1>
 
+<div id="screen-form">
+  <h1>Check In</h1>
   <input id="first" placeholder="First Name">
   <input id="last" placeholder="Last Name">
-  <button onclick="submitForm()">Submit</button>
+  <button onclick="submitCheckin()">Submit</button>
+</div>
 
-  <script>
-    async function submitForm() {
-      const res = await fetch('/api/checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: first.value,
-          lastName: last.value
-        })
-      });
+<div id="screen-wait" hidden>
+  <h1 id="message">Please wait…</h1>
+  <div id="qr"></div>
 
-      const data = await res.json();
-      location.href = data.hardLink;
-    }
-  </script>
+  <button onclick="sendHelp()">Help is on the way</button>
+
+  <div id="dots" hidden>
+    <button onclick="dot(0)">◼</button>
+    <button onclick="dot(1)">◼</button>
+    <button onclick="dot(2)">◼</button>
+  </div>
+</div>
+
+<script src="qr.js"></script>
+<script>
+let guestId = null;
+let dotStep = 0;
+
+async function submitCheckin() {
+  const res = await fetch('/api/checkin', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      firstName: first.value,
+      lastName: last.value
+    })
+  });
+
+  const data = await res.json();
+  guestId = data.guestId;
+
+  QRCode(document.getElementById("qr"), guestId);
+
+  screenForm.hidden = true;
+  screenWait.hidden = false;
+
+  poll();
+}
+
+async function poll() {
+  if (!guestId) return;
+
+  const res = await fetch(`/api/guest/${guestId}`);
+  const g = await res.json();
+
+  if (g.status === 'accepted') {
+    message.innerText = `Please wait one minute, ${g.first_name}`;
+    dots.hidden = true;
+  }
+
+  if (g.status === 'declined') {
+    message.innerText = `Please wait, an admin will come speak with you`;
+    dots.hidden = false;
+  }
+
+  if (g.status === 'dismissed' || g.status === 'completed') {
+    resetKiosk();
+    return;
+  }
+
+  setTimeout(poll, 2500);
+}
+
+function resetKiosk() {
+  guestId = null;
+  dotStep = 0;
+  dots.hidden = true;
+  screenWait.hidden = true;
+  screenForm.hidden = false;
+  first.value = '';
+  last.value = '';
+  message.innerText = 'Please wait…';
+  qr.innerHTML = '';
+}
+
+async function sendHelp() {
+  await fetch('/api/update', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ guestId, status:'help' })
+  });
+}
+
+function dot(i) {
+  if (i !== dotStep) return;
+  dotStep++;
+  if (dotStep === 3) {
+    fetch('/api/update', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ guestId, status:'dismissed' })
+    });
+  }
+}
+</script>
 </body>
 </html>
