@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Event Check-In</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Event Check-In</h1>
+
+  <input id="first" placeholder="First Name">
+  <input id="last" placeholder="Last Name">
+  <button onclick="submitForm()">Submit</button>
+
+  <script>
+    async function submitForm() {
+      const res = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: first.value,
+          lastName: last.value
+        })
+      });
+
+      const data = await res.json();
+      location.href = data.hardLink;
+    }
+  </script>
+</body>
+</html>
