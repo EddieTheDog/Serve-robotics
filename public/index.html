@@ -8,11 +8,13 @@
   body { font-family: Arial, sans-serif; text-align: center; background: #f7f7f7; padding: 40px; }
   input, button { font-size: 18px; padding: 12px; margin: 8px; }
   #waiting { display: none; }
-  #decline-buttons { display: none; margin-top: 20px; }
+  #dots { display: none; justify-content: center; gap: 16px; margin-top: 20px; }
+  #dots button { width: 50px; height: 50px; font-size: 22px; }
 </style>
 </head>
 <body>
 
+<!-- CHECK-IN FORM -->
 <div id="form">
   <h1>Event Check-In</h1>
   <input id="first" placeholder="First Name" /><br>
@@ -20,17 +22,22 @@
   <button onclick="submitCheckin()">Submit</button>
 </div>
 
+<!-- WAITING SCREEN -->
 <div id="waiting">
   <h1 id="message">Please wait…</h1>
-  <div id="decline-buttons">
-    <button onclick="toggleHoldMessage()">Hold</button>
-    <button onclick="resetKiosk()">Next Guest</button>
+
+  <!-- THREE DOTS FOR DECLINED GUEST -->
+  <div id="dots">
+    <button onclick="dotClick(0)">●</button>
+    <button onclick="dotClick(1)">●</button>
+    <button onclick="dotClick(2)">●</button>
   </div>
 </div>
 
 <script>
 let guestId = null;
 let pollTimer = null;
+let dotStep = 0;
 let declineActive = false;
 
 function el(id) { return document.getElementById(id); }
@@ -41,10 +48,11 @@ async function submitCheckin() {
   if (!first || !last) return;
 
   const res = await fetch("/api/checkin", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({ firstName:first, lastName:last })
   });
+
   const data = await res.json();
   guestId = data.guestId;
 
@@ -52,7 +60,10 @@ async function submitCheckin() {
   el("waiting").style.display = "block";
   el("message").innerText = "Thank you for entering your information. Please wait a minute while we analyze your information.";
 
-  // Start polling guest status
+  dotStep = 0;
+  el("dots").style.display = "none";
+  declineActive = false;
+
   pollTimer = setInterval(pollStatus, 2000);
 }
 
@@ -64,13 +75,14 @@ async function pollStatus() {
   switch(g.status) {
     case "accepted":
       el("message").innerText = `${g.first_name}, your name tag is on the way. Please hold.`;
-      el("decline-buttons").style.display = "none";
+      el("dots").style.display = "none";
       declineActive = false;
       break;
     case "declined":
       el("message").innerText = "Please wait one additional minute.";
-      el("decline-buttons").style.display = "block";
+      el("dots").style.display = "flex"; // show three dots
       declineActive = true;
+      dotStep = 0;
       break;
     case "completed":
     case "dismissed":
@@ -79,28 +91,46 @@ async function pollStatus() {
   }
 }
 
-// Toggle hold message manually
-function toggleHoldMessage() {
+// THREE DOT LOGIC
+function dotClick(index) {
   if (!declineActive) return;
-  if (el("message").innerText === "Please wait one additional minute.") {
-    el("message").innerText = "";
+
+  // Correct order: middle (1) -> left (0) -> right (2)
+  const sequence = [1,0,2];
+
+  if (index === sequence[dotStep]) {
+    dotStep++;
+    if (dotStep === 3) {
+      // All three clicked in order, reset guest
+      awaitDismiss();
+    }
   } else {
-    el("message").innerText = "Please wait one additional minute.";
+    // Wrong order resets progress
+    dotStep = 0;
   }
 }
 
-// Reset kiosk to initial form
+function awaitDismiss() {
+  fetch("/api/update", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ guestId, status: "dismissed" })
+  }).then(() => resetKiosk());
+}
+
+// Reset kiosk to initial state
 function resetKiosk() {
   clearInterval(pollTimer);
   pollTimer = null;
   guestId = null;
   declineActive = false;
+  dotStep = 0;
 
   el("first").value = "";
   el("last").value = "";
   el("waiting").style.display = "none";
   el("form").style.display = "block";
-  el("decline-buttons").style.display = "none";
+  el("dots").style.display = "none";
 }
 </script>
 
