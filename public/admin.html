@@ -24,6 +24,7 @@ async function loadQueue() {
   q.innerHTML = "";
 
   guests.forEach(g => {
+    // Prevent re-render glitch by creating a stable div
     const div = document.createElement("div");
     div.className = "guest";
 
@@ -34,7 +35,6 @@ async function loadQueue() {
       <button onclick="setStatus('${g.id}','help')">Help</button>
       <button onclick="nextGuest('${g.id}')">Next Guest</button>
     `;
-
     q.appendChild(div);
   });
 }
@@ -57,9 +57,9 @@ async function nextGuest(id) {
   loadQueue();
 }
 
-// Initial load and auto-refresh every 3 seconds
+// Initial load and refresh
 loadQueue();
-setInterval(loadQueue,3000);
+setInterval(loadQueue, 3000);
 </script>
 
 </body>
