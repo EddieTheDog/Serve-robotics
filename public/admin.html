@@ -1,45 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      padding: 30px;
+    }
+
+    .guest {
+      border: 1px solid #ccc;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      margin: 6px;
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Admin Dashboard</h1>
-<div id="queue"></div>
+  <h1>Admin Dashboard</h1>
 
-<script src="qr.js"></script>
-<script>
-async function load() {
-  const res = await fetch('/api/queue');
-  const guests = await res.json();
-  queue.innerHTML = '';
+  <div id="queue"></div>
 
-  guests.forEach(g => {
-    const d = document.createElement('div');
-    d.innerHTML = `
-      <h3>${g.first_name} ${g.last_name}</h3>
-      <div id="qr-${g.id}"></div>
-      <button onclick="set('${g.id}','accepted')">Accept</button>
-      <button onclick="set('${g.id}','declined')">Decline</button>
-    `;
-    queue.appendChild(d);
-    QRCode(document.getElementById(`qr-${g.id}`), g.id);
-  });
-}
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-async function set(id, status) {
-  await fetch('/api/update', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ guestId:id, status })
-  });
-  load();
-}
+  <script>
+    async function loadQueue() {
+      const res = await fetch("/api/queue");
+      const guests = await res.json();
+      const q = document.getElementById("queue");
+      q.innerHTML = "";
 
-load();
-setInterval(load, 3000);
-</script>
+      guests.forEach(g => {
+        const div = document.createElement("div");
+        div.className = "guest";
+
+        div.innerHTML = `
+          <h3>${g.first_name} ${g.last_name}</h3>
+          <div id="qr-${g.id}"></div>
+          <button onclick="setStatus('${g.id}','accepted')">Accept</button>
+          <button onclick="setStatus('${g.id}','declined')">Decline</button>
+          <button onclick="setStatus('${g.id}','help')">Help</button>
+          <button onclick="nextGuest('${g.id}')">Next Guest</button>
+        `;
+
+        q.appendChild(div);
+
+        new QRCode(document.getElementById("qr-" + g.id), {
+          text: location.origin + "/?guest=" + g.id,
+          width: 120,
+          height: 120
+        });
+      });
+    }
+
+    async function setStatus(id, status) {
+      await fetch("/api/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestId: id, status })
+      });
+      loadQueue();
+    }
+
+    async function nextGuest(id) {
+      await fetch("/api/next", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestId: id })
+      });
+      loadQueue();
+    }
+
+    loadQueue();
+    setInterval(loadQueue, 3000);
+  </script>
+
 </body>
 </html>
