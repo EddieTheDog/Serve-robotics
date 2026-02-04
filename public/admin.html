@@ -1,90 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff;
-      padding: 30px;
-    }
-
-    .guest {
-      border: 1px solid #ccc;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    button {
-      margin: 6px;
-      padding: 10px;
-      font-size: 16px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
+  .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; }
+  button { margin: 6px; padding: 10px; font-size: 16px; }
+  .guest h3 { margin: 4px 0; }
+</style>
 </head>
 <body>
 
-  <h1>Admin Dashboard</h1>
+<h1>Admin Dashboard</h1>
+<div id="queue"></div>
 
-  <div id="queue"></div>
+<script>
+async function loadQueue() {
+  const res = await fetch("/api/queue");
+  const guests = await res.json();
+  const q = document.getElementById("queue");
+  q.innerHTML = "";
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  guests.forEach(g => {
+    const div = document.createElement("div");
+    div.className = "guest";
 
-  <script>
-    async function loadQueue() {
-      const res = await fetch("/api/queue");
-      const guests = await res.json();
-      const q = document.getElementById("queue");
-      q.innerHTML = "";
+    div.innerHTML = `
+      <h3>${g.first_name} ${g.last_name}</h3>
+      <button onclick="setStatus('${g.id}','accepted')">Accept</button>
+      <button onclick="setStatus('${g.id}','declined')">Decline</button>
+      <button onclick="setStatus('${g.id}','help')">Help</button>
+      <button onclick="nextGuest('${g.id}')">Next Guest</button>
+    `;
 
-      guests.forEach(g => {
-        const div = document.createElement("div");
-        div.className = "guest";
+    q.appendChild(div);
+  });
+}
 
-        div.innerHTML = `
-          <h3>${g.first_name} ${g.last_name}</h3>
-          <div id="qr-${g.id}"></div>
-          <button onclick="setStatus('${g.id}','accepted')">Accept</button>
-          <button onclick="setStatus('${g.id}','declined')">Decline</button>
-          <button onclick="setStatus('${g.id}','help')">Help</button>
-          <button onclick="nextGuest('${g.id}')">Next Guest</button>
-        `;
+async function setStatus(id,status) {
+  await fetch("/api/update", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ guestId:id, status })
+  });
+  loadQueue();
+}
 
-        q.appendChild(div);
+async function nextGuest(id) {
+  await fetch("/api/next", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ guestId:id })
+  });
+  loadQueue();
+}
 
-        new QRCode(document.getElementById("qr-" + g.id), {
-          text: location.origin + "/?guest=" + g.id,
-          width: 120,
-          height: 120
-        });
-      });
-    }
-
-    async function setStatus(id, status) {
-      await fetch("/api/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guestId: id, status })
-      });
-      loadQueue();
-    }
-
-    async function nextGuest(id) {
-      await fetch("/api/next", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guestId: id })
-      });
-      loadQueue();
-    }
-
-    loadQueue();
-    setInterval(loadQueue, 3000);
-  </script>
+// Initial load and auto-refresh every 3 seconds
+loadQueue();
+setInterval(loadQueue,3000);
+</script>
 
 </body>
 </html>
