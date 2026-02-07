@@ -1,11 +1,10 @@
 export async function onRequestGet({ params, env }) {
-  const { results } = await env.DB.prepare(
-    `SELECT * FROM guests WHERE id = ?`
-  ).bind(params.id).all();
+  const id = params.id;
+  const guest = await env.DB.prepare(`
+    SELECT id, first_name, last_name, qr_data, status FROM guests WHERE id = ?
+  `).bind(id).first();
 
-  if (!results.length) {
-    return new Response("Not found", { status: 404 });
-  }
+  if (!guest) return new Response("Guest not found", { status: 404 });
 
-  return Response.json(results[0]);
+  return Response.json(guest);
 }
