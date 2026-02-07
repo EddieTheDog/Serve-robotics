@@ -8,8 +8,8 @@
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
   .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; }
-  .guest h3 { margin: 0 0 12px 0; }
-  .guest-container { display: flex; align-items: flex-start; gap: 20px; }
+  .guest h3 { margin: 0 0 12px 0; text-align: center; }
+  .guest-row { display: flex; align-items: flex-start; gap: 20px; }
   .qr-box {
     width: 120px;
     height: 120px;
@@ -25,15 +25,9 @@
     max-height: 100%;
     display: block;
   }
-  .qr-text {
-    margin-top: 6px;
-    font-size: 12px;
-    word-break: break-all;
-    text-align: center;
-    color: #333;
-  }
   .buttons { display: flex; flex-direction: column; gap: 8px; }
   button { padding: 10px; font-size: 16px; cursor: pointer; }
+  .qr-text { margin-top: 12px; font-size: 12px; word-break: break-all; text-align: center; color: #333; }
 </style>
 </head>
 <body>
@@ -54,11 +48,8 @@ async function loadQueue() {
 
     div.innerHTML = `
       <h3>${g.first_name} ${g.last_name}</h3>
-      <div class="guest-container">
-        <div>
-          <div class="qr-box" id="qr-${g.id}"></div>
-          <div class="qr-text" id="qrtext-${g.id}"></div>
-        </div>
+      <div class="guest-row">
+        <div class="qr-box" id="qr-${g.id}"></div>
         <div class="buttons">
           <button onclick="setStatus('${g.id}','accepted')">Accept</button>
           <button onclick="setStatus('${g.id}','declined')">Decline</button>
@@ -66,19 +57,23 @@ async function loadQueue() {
           <button onclick="nextGuest('${g.id}')">Next Guest</button>
         </div>
       </div>
+      <div class="qr-text" id="qrtext-${g.id}"></div>
     `;
     q.appendChild(div);
 
+    // Only create QR code if data exists
     if (g.qr_data) {
-      // Render QR code
-      new QRious({
-        element: document.getElementById(`qr-${g.id}`),
-        value: g.qr_data,
-        size: 120
-      });
-
-      // Show plain text below
-      document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
+      try {
+        new QRious({
+          element: document.getElementById(`qr-${g.id}`),
+          value: g.qr_data,
+          size: 120
+        });
+        document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
+      } catch (err) {
+        console.error("QR code generation failed:", err);
+        document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
+      }
     }
   });
 }
@@ -101,6 +96,7 @@ async function nextGuest(id) {
   loadQueue();
 }
 
+// Initial load + refresh every 3 seconds
 loadQueue();
 setInterval(loadQueue, 3000);
 </script>
