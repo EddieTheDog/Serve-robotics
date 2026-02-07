@@ -3,57 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <title>The Eddie's 2025 - Self Checkin</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; touch-action: manipulation; user-select:none; }
-html, body { width:100%; height:100%; overflow:hidden; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; background:#fff; }
-body { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; }
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action: manipulation; }
+body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; margin:0; padding:0; height:100vh; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; color:#333; }
 #main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; }
-h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; }
+h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; letter-spacing:2px; }
 
-.fake-input { 
-  font-size:24px; 
-  padding:15px; 
-  margin-bottom:15px; 
-  width:100%; 
-  border-radius:8px; 
-  border:2px solid #e0e0e0; 
-  background:#f8f8f8; 
-  text-align:left; 
-  height:48px; /* fixed height */
-  display:flex; 
-  align-items:center; 
-  position:relative; 
-  color:#333; 
-  cursor:text;
-  overflow-x:auto; 
-  white-space:nowrap; 
+/* Fake input styles */
+.fake-input {
+  font-size:24px; padding:15px; margin-bottom:15px; width:100%;
+  border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8;
+  text-align:left; height:48px; display:flex; align-items:center; position:relative; cursor:text;
+  overflow-x:auto; white-space:nowrap; color:#333;
 }
 .fake-input.active { border-color:#000; }
 .fake-input .cursor { width:2px; background:#000; animation:blink 1s step-start infinite; margin-left:2px; height:1em; }
-@keyframes blink { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0;} }
+@keyframes blink { 0%,50%,100%{opacity:1;} 25%,75%{opacity:0;} }
+.fake-input[data-placeholder]::before { content: attr(data-placeholder); color:#aaa; pointer-events:none; }
+.fake-input.has-content::before { display:none; }
 
-/* Placeholder behavior */
-.fake-input[data-placeholder]::before {
-  content: attr(data-placeholder);
-  color: #aaa;
-  pointer-events: none;
-  display: block;
-}
-.fake-input.has-content::before { display: none; }
+button { display:block; font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
+button:active { opacity:0.8; }
 
-button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
 #form-step-2, #waiting { display:none; }
 #camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px; border:4px solid #000; border-radius:12px; overflow:hidden; background:#000; position:relative; }
 #video { width:100%; height:100%; object-fit:cover; }
 #camera-msg { position:absolute; bottom:10px; left:0; right:0; color:white; background:rgba(0,0,0,0.7); padding:5px; font-size:14px; }
+
 #dots { display:none; justify-content:center; gap:15px; margin-top:30px; }
 #dots button { width:50px; height:50px; font-size:12px; border-radius:50%; background:#f0f0f0; color:#ccc; display:flex; align-items:center; justify-content:center; margin:0; }
+
 #custom-keyboard { display:flex; flex-direction:column; position:fixed; bottom:0; left:0; right:0; background:#000; padding:5px; gap:5px; z-index:1000; }
 .keyboard-row { display:flex; justify-content:center; gap:5px; }
 .keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; transition:transform 0.1s, background 0.2s; }
 .keyboard-row button:active { transform:scale(0.95); background:#333; }
+
 #fullscreen-btn { position:absolute; top:20px; right:20px; width:40px; height:40px; background:#000; color:#fff; border-radius:6px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; }
 </style>
 </head>
@@ -104,11 +90,8 @@ function setActiveBox(box){
   boxes.forEach(b=> { let cursor=b.querySelector(".cursor"); if(cursor) cursor.remove(); b.classList.remove("active"); });
   activeBox=box;
   activeBox.classList.add("active");
-
-  // Add cursor
   const cursor=document.createElement("div"); cursor.className="cursor";
   activeBox.appendChild(cursor);
-
   showKeyboard(activeBox);
 }
 
@@ -128,7 +111,7 @@ function showKeyboard(box){
   keyboard.style.display="flex";
 }
 
-// Insert key into active box
+// Insert key
 function insertKey(key){
   if(!activeBox) return;
   let content=activeBox.textContent.replace(/\u200B/g,'');
@@ -137,19 +120,18 @@ function insertKey(key){
   else content+=key;
   activeBox.textContent=content;
 
-  // Remove old cursor and append new one at the end
+  // Update cursor
   let cursor=activeBox.querySelector(".cursor");
   if(cursor) cursor.remove();
   const newCursor=document.createElement("div"); 
   newCursor.className="cursor";
   activeBox.appendChild(newCursor);
 
-  // Update placeholder visibility
+  // Update placeholder
   if(content.length>0) activeBox.classList.add("has-content");
   else activeBox.classList.remove("has-content");
 }
 
-// Activate on click
 boxes.forEach(box=> box.addEventListener("click",()=>setActiveBox(box)));
 
 // Fullscreen
@@ -173,7 +155,7 @@ nextBtn.addEventListener("click", goToScan);
 // Focus first box
 window.onload=()=>setActiveBox(boxes[0]);
 
-// Disable hardware keyboard completely
+// Disable hardware keyboard
 document.addEventListener("keydown", e=>e.preventDefault());
 document.addEventListener("keypress", e=>e.preventDefault());
 document.addEventListener("input", e=>e.preventDefault());
