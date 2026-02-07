@@ -4,15 +4,16 @@
 <meta charset="UTF-8">
 <title>Admin Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
   .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; }
   button { margin: 6px; padding: 10px; font-size: 16px; }
   .guest h3 { margin: 4px 0; }
+  .guest canvas { margin-top: 6px; }
 </style>
 </head>
 <body>
-
 <h1>Admin Dashboard</h1>
 <div id="queue"></div>
 
@@ -29,37 +30,32 @@ async function loadQueue() {
 
     div.innerHTML = `
       <h3>${g.first_name} ${g.last_name}</h3>
+      <div id="qr-${g.id}"></div>
       <button onclick="setStatus('${g.id}','accepted')">Accept</button>
       <button onclick="setStatus('${g.id}','declined')">Decline</button>
       <button onclick="setStatus('${g.id}','help')">Help</button>
       <button onclick="nextGuest('${g.id}')">Next Guest</button>
     `;
     q.appendChild(div);
+
+    if (g.qr_data) {
+      new QRious({ element: document.getElementById(`qr-${g.id}`), value: g.qr_data, size: 100 });
+    }
   });
 }
 
 async function setStatus(id,status) {
-  await fetch("/api/update", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ guestId:id, status })
-  });
+  await fetch("/api/update", { method:"POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ guestId:id, status }) });
   loadQueue();
 }
 
 async function nextGuest(id) {
-  await fetch("/api/next", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ guestId:id })
-  });
+  await fetch("/api/next", { method:"POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ guestId:id }) });
   loadQueue();
 }
 
-// Initial load and refresh
 loadQueue();
 setInterval(loadQueue, 3000);
 </script>
-
 </body>
 </html>
