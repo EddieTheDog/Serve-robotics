@@ -59,14 +59,21 @@ async function loadQueue() {
     `;
     q.appendChild(div);
 
-    // Render QR code and display the text
     if (g.qr_data) {
+      // Render QR code with https:// prepended if missing
+      let qrValue = g.qr_data.trim();
+      if (!qrValue.startsWith("http://") && !qrValue.startsWith("https://")) {
+        qrValue = "https://" + qrValue;
+      }
+
       try {
         new QRious({
           element: document.getElementById(`qr-${g.id}`),
-          value: g.qr_data,
+          value: qrValue,
           size: 120
         });
+
+        // Show the original text under the QR code
         document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
       } catch (err) {
         console.error("QR code generation failed:", err);
