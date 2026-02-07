@@ -7,7 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
-  h1 { text-align: center; margin-bottom: 30px; }
+  h1 { text-align: center; margin-bottom: 10px; }
+  #last-updated { text-align: center; font-size: 12px; margin-bottom: 20px; color: #666; }
   .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; }
   .guest h3 { margin: 0 0 12px 0; text-align: center; }
   .guest-row { display: flex; align-items: flex-start; gap: 20px; }
@@ -28,69 +29,79 @@
 <body>
 
 <h1>Admin Dashboard</h1>
+<div id="last-updated"></div>
 <div id="queue"></div>
 
 <script>
+let guestsCache = {}; // track guests to avoid unnecessary re-renders
+let refreshCooldown = 3000; // 3 seconds cooldown per guest
+
 async function loadQueue() {
   const res = await fetch("/api/queue");
   const guests = await res.json();
   const q = document.getElementById("queue");
-  q.innerHTML = "";
+
+  const now = new Date();
+  document.getElementById("last-updated").innerText = `Last updated: ${now.toLocaleTimeString()}`;
 
   guests.forEach(g => {
-    const div = document.createElement("div");
-    div.className = "guest";
+    const existing = guestsCache[g.id];
+    if (!existing) {
+      // New guest — create elements
+      const div = document.createElement("div");
+      div.className = "guest";
+      div.id = `guest-${g.id}`;
 
-    div.innerHTML = `
-      <h3>${g.first_name} ${g.last_name}</h3>
-      <div class="guest-row">
-        <div class="qr-box" id="qr-${g.id}"></div>
-        <div class="buttons">
-          <button onclick="setStatus('${g.id}','accepted')">Accept</button>
-          <button onclick="setStatus('${g.id}','declined')">Decline</button>
-          <button onclick="setStatus('${g.id}','help')">Help</button>
-          <button onclick="nextGuest('${g.id}')">Next Guest</button>
+      div.innerHTML = `
+        <h3>${g.first_name} ${g.last_name}</h3>
+        <div class="guest-row">
+          <div class="qr-box" id="qr-${g.id}"></div>
+          <div class="buttons">
+            <button onclick="setStatus('${g.id}','accepted')">Accept</button>
+            <button onclick="setStatus('${g.id}','declined')">Decline</button>
+            <button onclick="setStatus('${g.id}','help')">Help</button>
+            <button onclick="nextGuest('${g.id}')">Next Guest</button>
+          </div>
         </div>
-      </div>
-      <div class="qr-text" id="qrtext-${g.id}"></div>
-    `;
-    q.appendChild(div);
+        <div class="qr-text" id="qrtext-${g.id}"></div>
+      `;
+      q.appendChild(div);
 
-    // Only render QR if qr_data exists
-    if (g.qr_data) {
-      const qrBox = document.getElementById(`qr-${g.id}`);
+      // Render QR code with https:// prepended if missing
+      if (g.qr_data) {
+        const qrBox = document.getElementById(`qr-${g.id}`);
+        let qrValue = g.qr_data.trim();
+        if (!qrValue.startsWith("http://") && !qrValue.startsWith("https://")) {
+          qrValue = "https://" + qrValue;
+        }
 
-      // Prepend https:// only for the QR generation, not the stored value
-      let qrValue = g.qr_data.trim();
-      if (!qrValue.startsWith("http://") && !qrValue.startsWith("https://")) {
-        qrValue = "https://" + qrValue;
+        try {
+          new QRious({
+            element: qrBox,
+            value: qrValue,
+            size: 120
+          });
+        } catch (err) {
+          console.error("QR code generation failed:", err);
+        }
+
+        document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
       }
 
-      // Clear any previous QR canvas
-      qrBox.innerHTML = "";
-
-      try {
-        new QRious({
-          element: qrBox,
-          value: qrValue,
-          size: 120
-        });
-      } catch (err) {
-        console.error("QR code generation failed:", err);
-      }
-
-      // Show original text below QR and buttons
-      document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
+      guestsCache[g.id] = true; // mark as rendered
     }
   });
 }
 
+// Status updates
 async function setStatus(id, status) {
   await fetch("/api/update", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ guestId: id, status })
   });
+  // Remove from cache to re-render if needed
+  delete guestsCache[id];
   loadQueue();
 }
 
@@ -100,12 +111,13 @@ async function nextGuest(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ guestId: id })
   });
+  delete guestsCache[id];
   loadQueue();
 }
 
-// Initial load + refresh every 3 seconds
+// Initial load + interval
 loadQueue();
-setInterval(loadQueue, 3000);
+setInterval(loadQueue, refreshCooldown);
 </script>
 
 </body>
