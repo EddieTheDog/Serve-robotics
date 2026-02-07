@@ -7,10 +7,10 @@
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
-  .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; }
-  button { margin: 6px; padding: 10px; font-size: 16px; }
+  .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; }
+  button { margin: 6px; padding: 10px; font-size: 16px; cursor: pointer; }
   .guest h3 { margin: 4px 0; }
-  .guest canvas { margin-top: 6px; }
+  .guest canvas { display: block; margin: 8px auto; }
 </style>
 </head>
 <body>
@@ -28,6 +28,7 @@ async function loadQueue() {
     const div = document.createElement("div");
     div.className = "guest";
 
+    // Container for the QR code
     div.innerHTML = `
       <h3>${g.first_name} ${g.last_name}</h3>
       <div id="qr-${g.id}"></div>
@@ -38,22 +39,38 @@ async function loadQueue() {
     `;
     q.appendChild(div);
 
+    // Render QR code from scanned data
     if (g.qr_data) {
-      new QRious({ element: document.getElementById(`qr-${g.id}`), value: g.qr_data, size: 100 });
+      new QRious({
+        element: document.getElementById(`qr-${g.id}`),
+        value: g.qr_data,
+        size: 120
+      });
     }
   });
 }
 
-async function setStatus(id,status) {
-  await fetch("/api/update", { method:"POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ guestId:id, status }) });
+// Update guest status
+async function setStatus(id, status) {
+  await fetch("/api/update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ guestId: id, status })
+  });
   loadQueue();
 }
 
+// Move guest to next step (completed)
 async function nextGuest(id) {
-  await fetch("/api/next", { method:"POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ guestId:id }) });
+  await fetch("/api/next", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ guestId: id })
+  });
   loadQueue();
 }
 
+// Initial load + refresh every 3 seconds
 loadQueue();
 setInterval(loadQueue, 3000);
 </script>
