@@ -6,13 +6,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; touch-action: manipulation; }
+* { box-sizing:border-box; margin:0; padding:0; touch-action: manipulation; user-select:none; }
 html, body { width:100%; height:100%; overflow:hidden; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; background:#fff; }
 body { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; }
 #main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; }
 h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; }
-input { font-size:24px; padding:15px; margin-bottom:15px; width:100%; text-align:left; border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8; outline:none; }
-input.active-input { border-color:#000; }
+
+.fake-input { 
+  font-size:24px; 
+  padding:15px; 
+  margin-bottom:15px; 
+  width:100%; 
+  border-radius:8px; 
+  border:2px solid #e0e0e0; 
+  background:#f8f8f8; 
+  text-align:left; 
+  height:48px; /* fixed height */
+  display:flex; 
+  align-items:center; 
+  position:relative; 
+  color:#333; 
+  cursor:text;
+  overflow-x:auto; 
+  white-space:nowrap; 
+}
+.fake-input.active { border-color:#000; }
+.fake-input .cursor { width:2px; background:#000; animation:blink 1s step-start infinite; margin-left:2px; height:1em; }
+@keyframes blink { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0;} }
+
+/* Placeholder behavior */
+.fake-input[data-placeholder]::before {
+  content: attr(data-placeholder);
+  color: #aaa;
+  pointer-events: none;
+  display: block;
+}
+.fake-input.has-content::before { display: none; }
+
 button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
 #form-step-2, #waiting { display:none; }
 #camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px; border:4px solid #000; border-radius:12px; overflow:hidden; background:#000; position:relative; }
@@ -22,7 +52,7 @@ button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#
 #dots button { width:50px; height:50px; font-size:12px; border-radius:50%; background:#f0f0f0; color:#ccc; display:flex; align-items:center; justify-content:center; margin:0; }
 #custom-keyboard { display:flex; flex-direction:column; position:fixed; bottom:0; left:0; right:0; background:#000; padding:5px; gap:5px; z-index:1000; }
 .keyboard-row { display:flex; justify-content:center; gap:5px; }
-.keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; user-select:none; transition:transform 0.1s, background 0.2s; }
+.keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; transition:transform 0.1s, background 0.2s; }
 .keyboard-row button:active { transform:scale(0.95); background:#333; }
 #fullscreen-btn { position:absolute; top:20px; right:20px; width:40px; height:40px; background:#000; color:#fff; border-radius:6px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; }
 </style>
@@ -32,8 +62,8 @@ button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#
   <h1>The Eddie's 2025 - Self Checkin</h1>
 
   <div id="form-step-1">
-    <input id="first" placeholder="First Name" autocomplete="off" />
-    <input id="last" placeholder="Last Name" autocomplete="off" />
+    <div id="first" class="fake-input" data-placeholder="First Name"></div>
+    <div id="last" class="fake-input" data-placeholder="Last Name"></div>
     <button id="next-btn">Next</button>
     <div id="custom-keyboard"></div>
     <div id="fullscreen-btn">C</div>
@@ -57,35 +87,40 @@ button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#
 </div>
 
 <script>
-let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="", typingTimer=null, nextPressTimer=null;
-const firstInput=document.getElementById("first"), lastInput=document.getElementById("last"), nextBtn=document.getElementById("next-btn");
+let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="";
+let activeBox=null;
+const boxes=[document.getElementById("first"), document.getElementById("last")];
 const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
+const nextBtn=document.getElementById("next-btn");
 
-// QWERTY layout
 const keyboardRows = [
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
   ["z","x","c","v","b","n","m","DEL"," "]
 ];
 
+// --- Fake input helpers ---
+function setActiveBox(box){
+  boxes.forEach(b=> { let cursor=b.querySelector(".cursor"); if(cursor) cursor.remove(); b.classList.remove("active"); });
+  activeBox=box;
+  activeBox.classList.add("active");
+
+  // Add cursor
+  const cursor=document.createElement("div"); cursor.className="cursor";
+  activeBox.appendChild(cursor);
+
+  showKeyboard(activeBox);
+}
+
 // Show keyboard
-function showKeyboard(inputEl){
+function showKeyboard(box){
   keyboard.innerHTML="";
-  [firstInput,lastInput].forEach(i=>i.classList.remove("active-input"));
-  inputEl?.classList.add("active-input");
   keyboardRows.forEach(row=>{
-    const div=document.createElement("div");
-    div.className="keyboard-row";
+    const div=document.createElement("div"); div.className="keyboard-row";
     row.forEach(key=>{
       const btn=document.createElement("button");
       btn.textContent=key===" "?"␣":key.toUpperCase()==="DEL"?"DEL":key;
-      btn.onclick=()=>{
-        if(!inputEl) return;
-        if(key==="DEL") inputEl.value=inputEl.value.slice(0,-1);
-        else if(key===" ") inputEl.value+=" ";
-        else inputEl.value+=key;
-        resetTypingTimer(inputEl);
-      };
+      btn.onclick=()=>insertKey(key);
       div.appendChild(btn);
     });
     keyboard.appendChild(div);
@@ -93,60 +128,59 @@ function showKeyboard(inputEl){
   keyboard.style.display="flex";
 }
 
-// Auto-switch after 3s inactivity
-function resetTypingTimer(inputEl){
-  clearTimeout(typingTimer);
-  typingTimer=setTimeout(()=>{
-    if(inputEl===firstInput){ lastInput.focus(); showKeyboard(lastInput); }
-    else if(inputEl===lastInput){ nextBtn.click(); }
-  },3000);
+// Insert key into active box
+function insertKey(key){
+  if(!activeBox) return;
+  let content=activeBox.textContent.replace(/\u200B/g,'');
+  if(key==="DEL") content=content.slice(0,-1);
+  else if(key===" ") content+=" ";
+  else content+=key;
+  activeBox.textContent=content;
+
+  // Remove old cursor and append new one at the end
+  let cursor=activeBox.querySelector(".cursor");
+  if(cursor) cursor.remove();
+  const newCursor=document.createElement("div"); 
+  newCursor.className="cursor";
+  activeBox.appendChild(newCursor);
+
+  // Update placeholder visibility
+  if(content.length>0) activeBox.classList.add("has-content");
+  else activeBox.classList.remove("has-content");
 }
 
-// Focus input
-[firstInput,lastInput].forEach(inp=>{
-  inp.addEventListener("focus",()=>showKeyboard(inp));
-  // Disable native typing completely
-  inp.addEventListener("keydown", e=>e.preventDefault());
-  inp.addEventListener("keypress", e=>e.preventDefault());
-});
+// Activate on click
+boxes.forEach(box=> box.addEventListener("click",()=>setActiveBox(box)));
 
-// Fullscreen toggle button
+// Fullscreen
 fsBtn.addEventListener("click",()=>{ 
   const elBody=document.documentElement; 
   if(elBody.requestFullscreen) elBody.requestFullscreen(); 
   else if(elBody.webkitRequestFullscreen) elBody.webkitRequestFullscreen(); 
   else if(elBody.msRequestFullscreen) elBody.msRequestFullscreen();
 });
-
-// Hide fullscreen button when entering fullscreen
-document.addEventListener("fullscreenchange", updateFSButton);
-document.addEventListener("webkitfullscreenchange", updateFSButton);
-document.addEventListener("msfullscreenchange", updateFSButton);
-function updateFSButton(){
-  if(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement){
-    fsBtn.style.display="none";
-  } else {
-    fsBtn.style.display="flex";
-  }
-}
+document.addEventListener("fullscreenchange",()=>{ fsBtn.style.display=(document.fullscreenElement)?'none':'flex'; });
+document.addEventListener("webkitfullscreenchange",()=>{ fsBtn.style.display=(document.webkitFullscreenElement)?'none':'flex'; });
+document.addEventListener("msfullscreenchange",()=>{ fsBtn.style.display=(document.msFullscreenElement)?'none':'flex'; });
 
 // Long press Next for fullscreen
+let nextPressTimer=null;
 nextBtn.addEventListener("mousedown", ()=>{ nextPressTimer=setTimeout(()=>fsBtn.click(),1000); });
 nextBtn.addEventListener("mouseup", ()=>clearTimeout(nextPressTimer));
 nextBtn.addEventListener("mouseleave", ()=>clearTimeout(nextPressTimer));
 nextBtn.addEventListener("click", goToScan);
 
-// Focus first input
-window.onload=()=>showKeyboard(firstInput);
+// Focus first box
+window.onload=()=>setActiveBox(boxes[0]);
 
-// Disable gestures
-document.addEventListener("gesturestart", e=>e.preventDefault());
-document.addEventListener("dblclick", e=>e.preventDefault());
-document.addEventListener("touchmove", e=>{ if(e.scale!==1) e.preventDefault(); },{passive:false});
+// Disable hardware keyboard completely
+document.addEventListener("keydown", e=>e.preventDefault());
+document.addEventListener("keypress", e=>e.preventDefault());
+document.addEventListener("input", e=>e.preventDefault());
 
 // --- QR Scan ---
 function goToScan(){
-  if(!firstInput.value.trim() || !lastInput.value.trim()) return alert("Please enter both names");
+  if(!boxes[0].textContent.trim() || !boxes[1].textContent.trim()) return alert("Please enter both names");
   document.getElementById("form-step-1").style.display="none";
   document.getElementById("form-step-2").style.display="block";
   keyboard.style.display="none";
@@ -173,7 +207,7 @@ function startScanner(){
 
 // --- Submit ---
 async function submitCheckin(){
-  const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:firstInput.value,lastName:lastInput.value,qrData:scannedData})});
+  const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
   const data=await res.json(); guestId=data.guestId;
   document.getElementById("form-step-2").style.display="none";
   document.getElementById("waiting").style.display="block";
@@ -200,11 +234,14 @@ function awaitDismiss(){ fetch("/api/update",{method:"POST", headers:{"Content-T
 // --- Reset kiosk ---
 function resetKiosk(){
   clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
-  firstInput.value=""; lastInput.value=""; document.getElementById("waiting").style.display="none";
-  document.getElementById("form-step-1").style.display="block"; document.getElementById("form-step-2").style.display="none";
-  document.getElementById("dots").style.display="none"; document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
+  boxes.forEach(box=>{ box.textContent=""; box.classList.remove("has-content"); });
+  document.getElementById("waiting").style.display="none";
+  document.getElementById("form-step-1").style.display="block";
+  document.getElementById("form-step-2").style.display="none";
+  document.getElementById("dots").style.display="none";
+  document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
   document.getElementById("camera-msg").innerText="Scan your QR code";
-  showKeyboard(firstInput);
+  setActiveBox(boxes[0]);
 }
 </script>
 </body>
