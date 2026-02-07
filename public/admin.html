@@ -16,13 +16,10 @@
     height: 120px;
     border: 2px dashed #999;
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    display: inline-block;
     background-color: #fff;
+    text-align: center;
   }
-  .qr-box canvas { max-width: 100%; max-height: 100%; display: block; }
   .buttons { display: flex; flex-direction: column; gap: 8px; }
   button { padding: 10px; font-size: 16px; cursor: pointer; }
   .qr-text { margin-top: 12px; font-size: 12px; word-break: break-all; text-align: center; color: #333; }
@@ -59,26 +56,31 @@ async function loadQueue() {
     `;
     q.appendChild(div);
 
+    // Only render QR if qr_data exists
     if (g.qr_data) {
-      // Render QR code with https:// prepended if missing
+      const qrBox = document.getElementById(`qr-${g.id}`);
+
+      // Prepend https:// only for the QR generation, not the stored value
       let qrValue = g.qr_data.trim();
       if (!qrValue.startsWith("http://") && !qrValue.startsWith("https://")) {
         qrValue = "https://" + qrValue;
       }
 
+      // Clear any previous QR canvas
+      qrBox.innerHTML = "";
+
       try {
         new QRious({
-          element: document.getElementById(`qr-${g.id}`),
+          element: qrBox,
           value: qrValue,
           size: 120
         });
-
-        // Show the original text under the QR code
-        document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
       } catch (err) {
         console.error("QR code generation failed:", err);
-        document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
       }
+
+      // Show original text below QR and buttons
+      document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
     }
   });
 }
