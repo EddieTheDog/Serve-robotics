@@ -6,116 +6,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-  /* RESET & BASIC SETUP */
   * { box-sizing: border-box; }
-  
-  body { 
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-    margin: 0;
-    padding: 0;
-    height: 100vh;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color: #ffffff;
-    color: #333;
-  }
-
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; height: 100vh; width: 100%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #fff; color: #333; }
   #main-container { width: 100%; max-width: 600px; padding: 20px; text-align: center; }
-
-  h1 {
-    margin-top: 0;
-    margin-bottom: 30px;
-    color: #000;
-    font-size: 32px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 800;
-  }
-  
+  h1 { margin-top: 0; margin-bottom: 30px; color: #000; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
   #message { font-size: 24px; line-height: 1.5; color: #555; font-weight: 300; margin-bottom: 20px; }
-
-  #camera-container {
-    width: 100%;
-    max-width: 300px;
-    height: 300px;
-    margin: 0 auto 20px auto;
-    border: 4px solid #000;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    background-color: #000;
-  }
-
+  #camera-container { width: 100%; max-width: 300px; height: 300px; margin: 0 auto 20px auto; border: 4px solid #000; border-radius: 12px; overflow: hidden; position: relative; background-color: #000; }
   #video { width: 100%; height: 100%; object-fit: cover; }
-
-  #camera-msg {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    right: 0;
-    color: white;
-    background: rgba(0,0,0,0.7);
-    padding: 5px;
-    font-size: 14px;
-  }
-
-  input { 
-    display: block;
-    font-size: 18px; 
-    padding: 15px; 
-    margin-bottom: 15px; 
-    width: 100%; 
-    background-color: #f8f8f8;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    outline: none;
-    text-align: center;
-    color: #333;
-  }
-
+  #camera-msg { position: absolute; bottom: 10px; left: 0; right: 0; color: white; background: rgba(0,0,0,0.7); padding: 5px; font-size: 14px; }
+  input { display: block; font-size: 18px; padding: 15px; margin-bottom: 15px; width: 100%; background-color: #f8f8f8; border: 2px solid #e0e0e0; border-radius: 8px; outline: none; text-align: center; color: #333; }
   input:focus { border-color: #000; background-color: #fff; }
-
-  button { 
-    display: block;
-    font-size: 18px; 
-    padding: 18px; 
-    margin-top: 10px;
-    width: 100%;
-    background-color: #000;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
-
+  button { display: block; font-size: 18px; padding: 18px; margin-top: 10px; width: 100%; background-color: #000; color: white; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
   button:active { opacity: 0.8; }
-
   #form-step-1, #form-step-2 { display: none; }
   #waiting { display: none; }
   #dots { display: none; justify-content: center; gap: 15px; margin-top: 30px; }
-
-  #dots button { 
-    width: 50px; 
-    height: 50px; 
-    font-size: 12px; 
-    border-radius: 50%;
-    background-color: #f0f0f0;
-    color: #ccc;
-    margin: 0; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  #dots button { width: 50px; height: 50px; font-size: 12px; border-radius: 50%; background-color: #f0f0f0; color: #ccc; margin: 0; display: flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
-
 <div id="main-container">
   <h1>The Eddie's 2025 - Self Checkin</h1>
 
@@ -130,12 +40,10 @@
       <video id="video" playsinline></video>
       <div id="camera-msg">Scan your QR code</div>
     </div>
-    <button onclick="submitCheckin()">Check In</button>
   </div>
 
   <div id="waiting">
     <h2 id="message">Please wait...</h2>
-
     <div id="dots">
       <button onclick="dotClick(0)">●</button>
       <button onclick="dotClick(1)">●</button>
@@ -151,12 +59,9 @@ let dotStep = 0;
 let declineActive = false;
 let scannedData = "";
 
-// Initialize view
 el("form-step-1").style.display = "block";
-
 function el(id) { return document.getElementById(id); }
 
-// --- SCANNER LOGIC ---
 async function goToScan() {
   const first = el("first").value.trim();
   const last = el("last").value.trim();
@@ -184,19 +89,19 @@ function startScanner() {
 
   function tick() {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      const canvasElement = document.createElement("canvas");
-      canvasElement.width = video.videoWidth;
-      canvasElement.height = video.videoHeight;
-      const canvas = canvasElement.getContext("2d");
-      canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-      const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+      const canvas = document.createElement("canvas").getContext("2d");
+      canvas.canvas.width = video.videoWidth;
+      canvas.canvas.height = video.videoHeight;
+      canvas.drawImage(video, 0, 0, canvas.canvas.width, canvas.canvas.height);
+      const imageData = canvas.getImageData(0, 0, canvas.canvas.width, canvas.canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
-      
+
       if (code) {
         scannedData = code.data;
         cameraMsg.innerText = "QR Scanned!";
         cameraMsg.style.background = "green";
         video.srcObject.getTracks().forEach(track => track.stop());
+        submitCheckin(); // AUTO SUBMIT
         return;
       }
     }
@@ -204,7 +109,6 @@ function startScanner() {
   }
 }
 
-// --- CHECK-IN LOGIC ---
 async function submitCheckin() {
   const first = el("first").value.trim();
   const last = el("last").value.trim();
@@ -212,11 +116,7 @@ async function submitCheckin() {
   const res = await fetch("/api/checkin", {
     method:"POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ 
-      firstName: first, 
-      lastName: last,
-      qrData: scannedData
-    })
+    body: JSON.stringify({ firstName: first, lastName: last, qrData: scannedData })
   });
 
   const data = await res.json();
@@ -225,15 +125,10 @@ async function submitCheckin() {
   el("form-step-2").style.display = "none";
   el("waiting").style.display = "block";
   el("message").innerText = "Thank you. Please wait a minute while we analyze your information.";
-
-  dotStep = 0;
-  el("dots").style.display = "none";
-  declineActive = false;
-
+  dotStep = 0; el("dots").style.display = "none"; declineActive = false;
   pollTimer = setInterval(pollStatus, 2000);
 }
 
-// --- EXISTING FUNCTIONS (Unchanged) ---
 async function pollStatus() {
   if (!guestId) return;
   const res = await fetch(`/api/guest/${guestId}`);
@@ -242,14 +137,11 @@ async function pollStatus() {
   switch(g.status) {
     case "accepted":
       el("message").innerText = `${g.first_name}, your name tag is on the way. Please hold.`;
-      el("dots").style.display = "none";
-      declineActive = false;
+      el("dots").style.display = "none"; declineActive = false;
       break;
     case "declined":
       el("message").innerText = "Please wait one additional minute.";
-      el("dots").style.display = "flex";
-      declineActive = true;
-      dotStep = 0;
+      el("dots").style.display = "flex"; declineActive = true; dotStep = 0;
       break;
     case "completed":
     case "dismissed":
@@ -264,9 +156,7 @@ function dotClick(index) {
   if (index === sequence[dotStep]) {
     dotStep++;
     if (dotStep === 3) awaitDismiss();
-  } else {
-    dotStep = 0;
-  }
+  } else { dotStep = 0; }
 }
 
 function awaitDismiss() {
@@ -278,20 +168,10 @@ function awaitDismiss() {
 }
 
 function resetKiosk() {
-  clearInterval(pollTimer);
-  pollTimer = null;
-  guestId = null;
-  scannedData = "";
-  declineActive = false;
-  dotStep = 0;
-
-  el("first").value = "";
-  el("last").value = "";
-  el("waiting").style.display = "none";
-  el("form-step-1").style.display = "block";
-  el("form-step-2").style.display = "none";
-  el("dots").style.display = "none";
-  el("camera-msg").style.background = "rgba(0,0,0,0.7)";
+  clearInterval(pollTimer); pollTimer = null; guestId = null; scannedData = ""; declineActive = false; dotStep = 0;
+  el("first").value = ""; el("last").value = ""; el("waiting").style.display = "none";
+  el("form-step-1").style.display = "block"; el("form-step-2").style.display = "none";
+  el("dots").style.display = "none"; el("camera-msg").style.background = "rgba(0,0,0,0.7)";
   el("camera-msg").innerText = "Scan your QR code";
 }
 </script>
