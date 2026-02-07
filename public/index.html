@@ -7,22 +7,21 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; height: 100vh; width: 100%;
-    display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #fff; color: #333; }
-  #main-container { width: 100%; max-width: 600px; padding: 20px; text-align: center; }
-  h1 { margin-top: 0; margin-bottom: 30px; color: #000; font-size: 32px; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; }
-  #message { font-size: 24px; line-height: 1.5; color: #555; font-weight: 300; margin-bottom: 20px; }
-  #camera-container { width: 100%; max-width: 300px; height: 300px; margin: 0 auto 20px auto; border: 4px solid #000; border-radius: 12px; overflow: hidden; position: relative; background-color: #000; }
-  #video { width: 100%; height: 100%; object-fit: cover; }
-  #camera-msg { position: absolute; bottom: 10px; left: 0; right: 0; color: white; background: rgba(0,0,0,0.7); padding: 5px; font-size: 14px; }
-  input { display: block; font-size: 18px; padding: 15px; margin-bottom: 15px; width: 100%; background-color: #f8f8f8; border: 2px solid #e0e0e0; border-radius: 8px; outline: none; text-align: center; color: #333; }
-  input:focus { border-color: #000; background-color: #fff; }
-  button { display: block; font-size: 18px; padding: 18px; margin-top: 10px; width: 100%; background-color: #000; color: white; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
-  button:active { opacity: 0.8; }
-  #form-step-1, #form-step-2 { display: none; }
-  #waiting { display: none; }
-  #dots { display: none; justify-content: center; gap: 15px; margin-top: 30px; }
-  #dots button { width: 50px; height: 50px; font-size: 12px; border-radius: 50%; background-color: #f0f0f0; color: #ccc; margin: 0; display: flex; align-items: center; justify-content: center; }
+  html, body { height: 100%; margin:0; padding:0; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; }
+  body { display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; color: #333; }
+  #main-container { width: 100%; max-width: 600px; padding: 20px; text-align: center; transition: all 0.3s ease; }
+  h1 { margin: 0 0 30px 0; font-size: 32px; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:#000; }
+  input { display:block; font-size:18px; padding:15px; margin-bottom:15px; width:100%; border:2px solid #e0e0e0; border-radius:8px; background:#f8f8f8; text-align:center; outline:none; color:#333; }
+  input:focus { border-color:#000; background:#fff; }
+  button { display:block; font-size:18px; padding:18px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; text-transform:uppercase; font-weight:700; letter-spacing:1px; cursor:pointer; }
+  button:active { opacity:0.8; }
+  #form-step-1, #form-step-2 { display:none; }
+  #camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px auto; border:4px solid #000; border-radius:12px; overflow:hidden; position:relative; background:#000; }
+  #video { width:100%; height:100%; object-fit:cover; }
+  #camera-msg { position:absolute; bottom:10px; left:0; right:0; color:white; background:rgba(0,0,0,0.7); padding:5px; font-size:14px; }
+  #waiting { display:none; }
+  #dots { display:none; justify-content:center; gap:15px; margin-top:30px; }
+  #dots button { width:50px; height:50px; font-size:12px; border-radius:50%; background:#f0f0f0; color:#ccc; display:flex; align-items:center; justify-content:center; margin:0; }
 </style>
 </head>
 <body>
@@ -32,7 +31,7 @@
   <div id="form-step-1">
     <input id="first" placeholder="First Name" />
     <input id="last" placeholder="Last Name" />
-    <button onclick="goToScan()">Next</button>
+    <button id="next-btn">Next</button>
   </div>
 
   <div id="form-step-2">
@@ -53,38 +52,68 @@
 </div>
 
 <script>
-let guestId = null;
-let pollTimer = null;
-let dotStep = 0;
-let declineActive = false;
-let scannedData = "";
-let typingTimer = null;
+let guestId = null, pollTimer = null, dotStep = 0, declineActive = false, scannedData = "", typingTimer = null;
+const nextButton = document.getElementById("next-btn");
 
-el("form-step-1").style.display = "block";
-el("first").focus(); // autofocus first name field
-
+// Utility
 function el(id) { return document.getElementById(id); }
 
-// Watch input fields for typing and move focus automatically
+// Device detection
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+// Auto-focus & hands-free typing
 function setupAutoFocus() {
   const firstInput = el("first");
   const lastInput = el("last");
 
-  firstInput.addEventListener("input", () => {
-    resetTypingTimer(() => lastInput.focus());
-  });
+  firstInput.focus();
 
-  lastInput.addEventListener("input", () => {
-    resetTypingTimer(() => el("form-step-1").querySelector("button").click());
-  });
+  firstInput.addEventListener("input", () => debounceMove(lastInput));
+  lastInput.addEventListener("input", () => debounceMove(nextButton, true));
 }
 
-// Debounce function: waits 3 seconds after typing stops
-function resetTypingTimer(callback) {
+// Debounce typing
+function debounceMove(nextElem, click=false) {
   clearTimeout(typingTimer);
-  typingTimer = setTimeout(callback, 3000); // 3 seconds
+  typingTimer = setTimeout(() => {
+    if (click) nextElem.click();
+    else nextElem.focus();
+  }, 3000);
 }
 
+// Long press fullscreen detection
+let pressTimer = null;
+nextButton.addEventListener("mousedown", () => { pressTimer = setTimeout(enterFullscreen, 1000); });
+nextButton.addEventListener("mouseup", () => clearTimeout(pressTimer));
+nextButton.addEventListener("mouseleave", () => clearTimeout(pressTimer));
+
+function enterFullscreen() {
+  const docEl = document.documentElement;
+  if (docEl.requestFullscreen) docEl.requestFullscreen();
+  else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+  else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
+}
+
+// Exit fullscreen automatically
+function exitFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (document.webkitFullscreenElement) document.webkitExitFullscreen();
+  else if (document.msFullscreenElement) document.msExitFullscreen();
+}
+
+// Handle keyboard visibility (iPad/IOS)
+function handleKeyboard() {
+  if (!isIOS) return;
+  window.addEventListener('focusin', e => {
+    el("main-container").style.transform = 'translateY(-100px)';
+  });
+  window.addEventListener('focusout', e => {
+    el("main-container").style.transform = 'translateY(0)';
+  });
+}
+
+// Navigation
 async function goToScan() {
   const first = el("first").value.trim();
   const last = el("last").value.trim();
@@ -95,20 +124,14 @@ async function goToScan() {
   startScanner();
 }
 
+// QR scanner
 function startScanner() {
   const video = el("video");
   const cameraMsg = el("camera-msg");
 
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(stream => {
-      video.srcObject = stream;
-      video.play();
-      requestAnimationFrame(tick);
-    })
-    .catch(err => {
-      cameraMsg.innerText = "Camera access denied.";
-      console.error(err);
-    });
+    .then(stream => { video.srcObject = stream; video.play(); requestAnimationFrame(tick); })
+    .catch(err => { cameraMsg.innerText = "Camera access denied."; console.error(err); });
 
   function tick() {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -118,12 +141,10 @@ function startScanner() {
       canvas.drawImage(video, 0, 0, canvas.canvas.width, canvas.canvas.height);
       const imageData = canvas.getImageData(0, 0, canvas.canvas.width, canvas.canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
-
       if (code) {
         scannedData = code.data;
         cameraMsg.innerText = "QR Scanned!";
         cameraMsg.style.background = "green";
-
         video.srcObject.getTracks().forEach(track => track.stop());
         submitCheckin();
         return;
@@ -133,16 +154,15 @@ function startScanner() {
   }
 }
 
+// Submit check-in
 async function submitCheckin() {
   const first = el("first").value.trim();
   const last = el("last").value.trim();
-
   const res = await fetch("/api/checkin", {
     method:"POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({ firstName: first, lastName: last, qrData: scannedData })
   });
-
   const data = await res.json();
   guestId = data.guestId;
 
@@ -153,6 +173,7 @@ async function submitCheckin() {
   pollTimer = setInterval(pollStatus, 2000);
 }
 
+// Polling status
 async function pollStatus() {
   if (!guestId) return;
   const res = await fetch(`/api/guest/${guestId}`);
@@ -174,6 +195,7 @@ async function pollStatus() {
   }
 }
 
+// Dot sequence
 function dotClick(index) {
   if (!declineActive) return;
   const sequence = [1,0,2];
@@ -184,24 +206,24 @@ function dotClick(index) {
 }
 
 function awaitDismiss() {
-  fetch("/api/update", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ guestId, status: "dismissed" })
-  }).then(() => resetKiosk());
+  fetch("/api/update", { method:"POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ guestId, status: "dismissed" }) })
+    .then(() => resetKiosk());
 }
 
+// Reset kiosk
 function resetKiosk() {
   clearInterval(pollTimer); pollTimer = null; guestId = null; scannedData = ""; declineActive = false; dotStep = 0;
   el("first").value = ""; el("last").value = ""; el("waiting").style.display = "none";
   el("form-step-1").style.display = "block"; el("form-step-2").style.display = "none";
   el("dots").style.display = "none"; el("camera-msg").style.background = "rgba(0,0,0,0.7)";
   el("camera-msg").innerText = "Scan your QR code";
-  el("first").focus(); // auto-focus first name again
+  el("first").focus();
+  exitFullscreen();
 }
 
-// Initialize auto-focus handling
+// Initialize everything
 setupAutoFocus();
+handleKeyboard();
 </script>
 </body>
 </html>
