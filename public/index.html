@@ -58,9 +58,32 @@ let pollTimer = null;
 let dotStep = 0;
 let declineActive = false;
 let scannedData = "";
+let typingTimer = null;
 
 el("form-step-1").style.display = "block";
+el("first").focus(); // autofocus first name field
+
 function el(id) { return document.getElementById(id); }
+
+// Watch input fields for typing and move focus automatically
+function setupAutoFocus() {
+  const firstInput = el("first");
+  const lastInput = el("last");
+
+  firstInput.addEventListener("input", () => {
+    resetTypingTimer(() => lastInput.focus());
+  });
+
+  lastInput.addEventListener("input", () => {
+    resetTypingTimer(() => el("form-step-1").querySelector("button").click());
+  });
+}
+
+// Debounce function: waits 3 seconds after typing stops
+function resetTypingTimer(callback) {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(callback, 3000); // 3 seconds
+}
 
 async function goToScan() {
   const first = el("first").value.trim();
@@ -97,12 +120,12 @@ function startScanner() {
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
       if (code) {
-        scannedData = code.data;   // <-- the raw scanned text
+        scannedData = code.data;
         cameraMsg.innerText = "QR Scanned!";
         cameraMsg.style.background = "green";
 
         video.srcObject.getTracks().forEach(track => track.stop());
-        submitCheckin(); // AUTO SUBMIT
+        submitCheckin();
         return;
       }
     }
@@ -174,7 +197,11 @@ function resetKiosk() {
   el("form-step-1").style.display = "block"; el("form-step-2").style.display = "none";
   el("dots").style.display = "none"; el("camera-msg").style.background = "rgba(0,0,0,0.7)";
   el("camera-msg").innerText = "Scan your QR code";
+  el("first").focus(); // auto-focus first name again
 }
+
+// Initialize auto-focus handling
+setupAutoFocus();
 </script>
 </body>
 </html>
