@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <title>The Eddie's 2025 - Self Checkin</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; background:#fff; color:#333; display:flex; flex-direction:column; justify-content:flex-start; align-items:center; height:100vh; width:100%; overflow:hidden; }
-#main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; }
+* { box-sizing:border-box; margin:0; padding:0; touch-action: manipulation; }
+html, body { width:100%; height:100%; overflow:hidden; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; background:#fff; }
+body { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; }
+#main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; }
 h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; }
-input { font-size:24px; padding:15px; margin-bottom:15px; width:100%; text-align:left; border-radius:8px; border:2px solid #e0e0e0; outline:none; background:#f8f8f8; transition:border 0.2s; }
+input { font-size:24px; padding:15px; margin-bottom:15px; width:100%; text-align:left; border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8; outline:none; }
 input.active-input { border-color:#000; }
 button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
 #form-step-2, #waiting { display:none; }
-#camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px; border:4px solid #000; border-radius:12px; overflow:hidden; background:#000; position:relative;}
+#camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px; border:4px solid #000; border-radius:12px; overflow:hidden; background:#000; position:relative; }
 #video { width:100%; height:100%; object-fit:cover; }
 #camera-msg { position:absolute; bottom:10px; left:0; right:0; color:white; background:rgba(0,0,0,0.7); padding:5px; font-size:14px; }
 #dots { display:none; justify-content:center; gap:15px; margin-top:30px; }
@@ -23,6 +24,7 @@ button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#
 .keyboard-row { display:flex; justify-content:center; gap:5px; }
 .keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; user-select:none; transition:transform 0.1s, background 0.2s; }
 .keyboard-row button:active { transform:scale(0.95); background:#333; }
+#fullscreen-btn { position:absolute; top:20px; right:20px; width:40px; height:40px; background:#000; color:#fff; border-radius:6px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; }
 </style>
 </head>
 <body>
@@ -34,6 +36,7 @@ button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#
     <input id="last" placeholder="Last Name" autocomplete="off" />
     <button id="next-btn">Next</button>
     <div id="custom-keyboard"></div>
+    <div id="fullscreen-btn">C</div>
   </div>
 
   <div id="form-step-2">
@@ -56,27 +59,29 @@ button { font-size:18px; padding:18px; margin-top:10px; width:100%; background:#
 <script>
 let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="", typingTimer=null, nextPressTimer=null;
 const firstInput=document.getElementById("first"), lastInput=document.getElementById("last"), nextBtn=document.getElementById("next-btn");
-const keyboard=document.getElementById("custom-keyboard");
+const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
 
-// Keyboard rows layout (QWERTY, lowercase)
 const keyboardRows = [
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
-  ["z","x","c","v","b","n","m"," "]
+  ["z","x","c","v","b","n","m","DEL"," "]
 ];
 
+// Show keyboard
 function showKeyboard(inputEl){
   keyboard.innerHTML="";
   [firstInput,lastInput].forEach(i=>i.classList.remove("active-input"));
-  inputEl.classList.add("active-input");
+  inputEl?.classList.add("active-input");
   keyboardRows.forEach(row=>{
     const div=document.createElement("div");
     div.className="keyboard-row";
     row.forEach(key=>{
       const btn=document.createElement("button");
-      btn.textContent=key===" "?"␣":key;
+      btn.textContent=key===" "?"␣":key.toUpperCase()==="DEL"?"DEL":key;
       btn.onclick=()=>{
-        if(key===" ") inputEl.value+=" ";
+        if(!inputEl) return;
+        if(key==="DEL") inputEl.value=inputEl.value.slice(0,-1);
+        else if(key===" ") inputEl.value+=" ";
         else inputEl.value+=key;
         resetTypingTimer(inputEl);
       };
@@ -96,37 +101,45 @@ function resetTypingTimer(inputEl){
   },3000);
 }
 
-// Highlight active input
+// Input focus
 [firstInput,lastInput].forEach(inp=>{
   inp.addEventListener("focus",()=>showKeyboard(inp));
 });
 
+// Fullscreen button
+fsBtn.addEventListener("click",()=>{ 
+  const elBody=document.documentElement; 
+  if(elBody.requestFullscreen) elBody.requestFullscreen(); 
+  else if(elBody.webkitRequestFullscreen) elBody.webkitRequestFullscreen(); 
+  else if(elBody.msRequestFullscreen) elBody.msRequestFullscreen();
+});
+
 // Long press Next for fullscreen
-nextBtn.addEventListener("mousedown", ()=>{ nextPressTimer=setTimeout(()=>enterFullscreen(),1000); });
+nextBtn.addEventListener("mousedown", ()=>{ nextPressTimer=setTimeout(()=>fsBtn.click(),1000); });
 nextBtn.addEventListener("mouseup", ()=>clearTimeout(nextPressTimer));
 nextBtn.addEventListener("mouseleave", ()=>clearTimeout(nextPressTimer));
 nextBtn.addEventListener("click", goToScan);
 
-// Fullscreen functions
-function enterFullscreen(){ const elBody=document.documentElement; if(elBody.requestFullscreen) elBody.requestFullscreen(); else if(elBody.webkitRequestFullscreen) elBody.webkitRequestFullscreen(); else if(elBody.msRequestFullscreen) elBody.msRequestFullscreen();}
-function exitFullscreen(){ if(document.fullscreenElement) document.exitFullscreen(); else if(document.webkitFullscreenElement) document.webkitExitFullscreen(); else if(document.msFullscreenElement) document.msExitFullscreen(); }
+// Focus first input
+window.onload=()=>showKeyboard(firstInput);
 
-// Focus first input on load
-window.onload = ()=>{ firstInput.focus(); showKeyboard(firstInput); };
-
-// Helper
-function el(id){ return document.getElementById(id); }
+// Disable native typing & gestures
+document.addEventListener("keydown", e=>e.preventDefault());
+document.addEventListener("gesturestart", e=>e.preventDefault());
+document.addEventListener("dblclick", e=>e.preventDefault());
+document.addEventListener("touchmove", e=>{ if(e.scale!==1) e.preventDefault(); },{passive:false});
 
 // --- QR Scan ---
 function goToScan(){
   if(!firstInput.value.trim() || !lastInput.value.trim()) return alert("Please enter both names");
-  el("form-step-1").style.display="none"; el("form-step-2").style.display="block";
+  document.getElementById("form-step-1").style.display="none";
+  document.getElementById("form-step-2").style.display="block";
   keyboard.style.display="none";
   startScanner();
 }
 
 function startScanner(){
-  const video=el("video"), cameraMsg=el("camera-msg");
+  const video=document.getElementById("video"), cameraMsg=document.getElementById("camera-msg");
   navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
     .then(stream=>{ video.srcObject=stream; video.play(); requestAnimationFrame(tick); })
     .catch(err=>{ cameraMsg.innerText="Camera access denied."; console.error(err); });
@@ -147,9 +160,10 @@ function startScanner(){
 async function submitCheckin(){
   const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:firstInput.value,lastName:lastInput.value,qrData:scannedData})});
   const data=await res.json(); guestId=data.guestId;
-  el("form-step-2").style.display="none"; el("waiting").style.display="block";
-  el("message").innerText="Thank you. Please wait a minute while we analyze your information.";
-  dotStep=0; el("dots").style.display="none"; declineActive=false;
+  document.getElementById("form-step-2").style.display="none";
+  document.getElementById("waiting").style.display="block";
+  document.getElementById("message").innerText="Thank you. Please wait a minute while we analyze your information.";
+  dotStep=0; document.getElementById("dots").style.display="none"; declineActive=false;
   pollTimer=setInterval(pollStatus,2000);
 }
 
@@ -158,8 +172,8 @@ async function pollStatus(){
   if(!guestId) return;
   const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
   switch(g.status){
-    case "accepted": el("message").innerText=`${g.first_name}, your name tag is on the way.`; el("dots").style.display="none"; declineActive=false; break;
-    case "declined": el("message").innerText="Please wait one additional minute."; el("dots").style.display="flex"; declineActive=true; dotStep=0; break;
+    case "accepted": document.getElementById("message").innerText=`${g.first_name}, your name tag is on the way.`; document.getElementById("dots").style.display="none"; declineActive=false; break;
+    case "declined": document.getElementById("message").innerText="Please wait one additional minute."; document.getElementById("dots").style.display="flex"; declineActive=true; dotStep=0; break;
     case "completed": case "dismissed": resetKiosk(); break;
   }
 }
@@ -171,11 +185,12 @@ function awaitDismiss(){ fetch("/api/update",{method:"POST", headers:{"Content-T
 // --- Reset kiosk ---
 function resetKiosk(){
   clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
-  firstInput.value=""; lastInput.value=""; el("waiting").style.display="none";
-  el("form-step-1").style.display="block"; el("form-step-2").style.display="none";
-  el("dots").style.display="none"; el("camera-msg").style.background="rgba(0,0,0,0.7)"; el("camera-msg").innerText="Scan your QR code";
-  firstInput.focus(); showKeyboard(firstInput);
-  exitFullscreen();
+  firstInput.value=""; lastInput.value=""; document.getElementById("waiting").style.display="none";
+  document.getElementById("form-step-1").style.display="block"; document.getElementById("form-step-2").style.display="none";
+  document.getElementById("dots").style.display="none"; document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
+  document.getElementById("camera-msg").innerText="Scan your QR code";
+  showKeyboard(firstInput);
+  if(document.fullscreenElement) document.exitFullscreen();
 }
 </script>
 </body>
