@@ -2,31 +2,135 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Event Check-In Kiosk</title>
+<title>The Eddie's 2025 - Self Checkin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #f7f7f7; padding: 40px; }
-  input, button { font-size: 18px; padding: 12px; margin: 8px; }
-  #waiting { display: none; }
-  #dots { display: none; justify-content: center; gap: 16px; margin-top: 20px; }
-  #dots button { width: 50px; height: 50px; font-size: 22px; }
+  /* RESET & BASIC SETUP */
+  * { box-sizing: border-box; }
+  
+  body { 
+    font-family: Arial, sans-serif; 
+    margin: 0;
+    padding: 0;
+    height: 100vh; /* Full viewport height */
+    width: 100%;
+    
+    /* Center Content Logic */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    /* Full Page White Background */
+    background-color: #ffffff;
+    color: #333;
+  }
+
+  /* CONTAINER STYLE */
+  /* This ensures form and waiting screens occupy the same space */
+  #form, #waiting { 
+    width: 100%;
+    max-width: 600px; /* Limits width on big screens so it looks good */
+    padding: 20px;
+    text-align: center;
+  }
+
+  /* TYPOGRAPHY */
+  h1 {
+    margin-top: 0;
+    margin-bottom: 40px;
+    color: #000;
+    font-size: 32px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  #message {
+    font-size: 24px;
+    line-height: 1.6;
+    color: #333;
+    font-weight: normal;
+  }
+
+  /* INPUT FIELDS */
+  input { 
+    display: block;
+    font-size: 20px; 
+    padding: 20px; 
+    margin-bottom: 20px; 
+    width: 100%; 
+    background-color: #f4f4f4;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    text-align: center; /* Centers text inside input */
+  }
+
+  input:focus {
+    border-color: #333;
+    background-color: #fff;
+  }
+
+  /* BUTTONS */
+  button { 
+    display: block;
+    font-size: 22px; 
+    padding: 20px; 
+    margin-top: 20px;
+    width: 100%;
+    background-color: #000; /* Classic Black */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  button:active {
+    opacity: 0.8;
+  }
+
+  /* WAITING & DOTS LOGIC */
+  #waiting { 
+    display: none; 
+  }
+
+  #dots { 
+    display: none; 
+    justify-content: center; 
+    gap: 20px; 
+    margin-top: 40px; 
+  }
+
+  /* Hidden Dots Styling */
+  #dots button { 
+    width: 60px; 
+    height: 60px; 
+    font-size: 14px; 
+    border-radius: 50%;
+    background-color: #eee;
+    color: #ccc;
+    margin: 0; /* Override default button margin */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
 </style>
 </head>
 <body>
 
-<!-- CHECK-IN FORM -->
 <div id="form">
-  <h1>Event Check-In</h1>
-  <input id="first" placeholder="First Name" /><br>
-  <input id="last" placeholder="Last Name" /><br>
+  <h1>The Eddie's 2025 - Self Checkin</h1>
+  <input id="first" placeholder="First Name" />
+  <input id="last" placeholder="Last Name" />
   <button onclick="submitCheckin()">Submit</button>
 </div>
 
-<!-- WAITING SCREEN -->
 <div id="waiting">
   <h1 id="message">Please wait…</h1>
 
-  <!-- THREE DOTS FOR DECLINED GUEST -->
   <div id="dots">
     <button onclick="dotClick(0)">●</button>
     <button onclick="dotClick(1)">●</button>
