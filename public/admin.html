@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
+  h1 { text-align: center; margin-bottom: 30px; }
   .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; }
   .guest h3 { margin: 0 0 12px 0; text-align: center; }
   .guest-row { display: flex; align-items: flex-start; gap: 20px; }
@@ -19,12 +20,9 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    background-color: #fff;
   }
-  .qr-box canvas {
-    max-width: 100%;
-    max-height: 100%;
-    display: block;
-  }
+  .qr-box canvas { max-width: 100%; max-height: 100%; display: block; }
   .buttons { display: flex; flex-direction: column; gap: 8px; }
   button { padding: 10px; font-size: 16px; cursor: pointer; }
   .qr-text { margin-top: 12px; font-size: 12px; word-break: break-all; text-align: center; color: #333; }
@@ -61,7 +59,7 @@ async function loadQueue() {
     `;
     q.appendChild(div);
 
-    // Only create QR code if data exists
+    // Render QR code and display the text
     if (g.qr_data) {
       try {
         new QRious({
