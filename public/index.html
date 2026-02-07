@@ -61,6 +61,7 @@ let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData=""
 const firstInput=document.getElementById("first"), lastInput=document.getElementById("last"), nextBtn=document.getElementById("next-btn");
 const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
 
+// QWERTY layout
 const keyboardRows = [
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
@@ -101,18 +102,33 @@ function resetTypingTimer(inputEl){
   },3000);
 }
 
-// Input focus
+// Focus input
 [firstInput,lastInput].forEach(inp=>{
   inp.addEventListener("focus",()=>showKeyboard(inp));
+  // Disable native typing completely
+  inp.addEventListener("keydown", e=>e.preventDefault());
+  inp.addEventListener("keypress", e=>e.preventDefault());
 });
 
-// Fullscreen button
+// Fullscreen toggle button
 fsBtn.addEventListener("click",()=>{ 
   const elBody=document.documentElement; 
   if(elBody.requestFullscreen) elBody.requestFullscreen(); 
   else if(elBody.webkitRequestFullscreen) elBody.webkitRequestFullscreen(); 
   else if(elBody.msRequestFullscreen) elBody.msRequestFullscreen();
 });
+
+// Hide fullscreen button when entering fullscreen
+document.addEventListener("fullscreenchange", updateFSButton);
+document.addEventListener("webkitfullscreenchange", updateFSButton);
+document.addEventListener("msfullscreenchange", updateFSButton);
+function updateFSButton(){
+  if(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement){
+    fsBtn.style.display="none";
+  } else {
+    fsBtn.style.display="flex";
+  }
+}
 
 // Long press Next for fullscreen
 nextBtn.addEventListener("mousedown", ()=>{ nextPressTimer=setTimeout(()=>fsBtn.click(),1000); });
@@ -123,8 +139,7 @@ nextBtn.addEventListener("click", goToScan);
 // Focus first input
 window.onload=()=>showKeyboard(firstInput);
 
-// Disable native typing & gestures
-document.addEventListener("keydown", e=>e.preventDefault());
+// Disable gestures
 document.addEventListener("gesturestart", e=>e.preventDefault());
 document.addEventListener("dblclick", e=>e.preventDefault());
 document.addEventListener("touchmove", e=>{ if(e.scale!==1) e.preventDefault(); },{passive:false});
@@ -190,7 +205,6 @@ function resetKiosk(){
   document.getElementById("dots").style.display="none"; document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
   document.getElementById("camera-msg").innerText="Scan your QR code";
   showKeyboard(firstInput);
-  if(document.fullscreenElement) document.exitFullscreen();
 }
 </script>
 </body>
