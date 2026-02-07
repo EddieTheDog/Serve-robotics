@@ -33,21 +33,24 @@
 <div id="queue"></div>
 
 <script>
-let guestsCache = {}; // track guests to avoid unnecessary re-renders
-let refreshCooldown = 3000; // 3 seconds cooldown per guest
+const renderedGuests = {}; // Track guests whose QR code is already rendered
+const refreshInterval = 5000; // Check for new guests every 5 seconds
 
 async function loadQueue() {
-  const res = await fetch("/api/queue");
-  const guests = await res.json();
-  const q = document.getElementById("queue");
+  try {
+    const res = await fetch("/api/queue");
+    const guests = await res.json();
+    const q = document.getElementById("queue");
 
-  const now = new Date();
-  document.getElementById("last-updated").innerText = `Last updated: ${now.toLocaleTimeString()}`;
+    // Update last refresh time
+    const now = new Date();
+    document.getElementById("last-updated").innerText = `Last updated: ${now.toLocaleTimeString()}`;
 
-  guests.forEach(g => {
-    const existing = guestsCache[g.id];
-    if (!existing) {
-      // New guest — create elements
+    guests.forEach(g => {
+      // Skip guests already rendered
+      if (renderedGuests[g.id]) return;
+
+      // Create guest container
       const div = document.createElement("div");
       div.className = "guest";
       div.id = `guest-${g.id}`;
@@ -67,7 +70,7 @@ async function loadQueue() {
       `;
       q.appendChild(div);
 
-      // Render QR code with https:// prepended if missing
+      // Render QR code with https:// only for the QR
       if (g.qr_data) {
         const qrBox = document.getElementById(`qr-${g.id}`);
         let qrValue = g.qr_data.trim();
@@ -75,6 +78,7 @@ async function loadQueue() {
           qrValue = "https://" + qrValue;
         }
 
+        // Render the QR code once
         try {
           new QRious({
             element: qrBox,
@@ -85,12 +89,17 @@ async function loadQueue() {
           console.error("QR code generation failed:", err);
         }
 
+        // Show the original scanned text
         document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
       }
 
-      guestsCache[g.id] = true; // mark as rendered
-    }
-  });
+      // Mark guest as rendered
+      renderedGuests[g.id] = true;
+    });
+
+  } catch (err) {
+    console.error("Failed to load queue:", err);
+  }
 }
 
 // Status updates
@@ -100,8 +109,8 @@ async function setStatus(id, status) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ guestId: id, status })
   });
-  // Remove from cache to re-render if needed
-  delete guestsCache[id];
+  // Remove from renderedGuests so next reload will allow re-render if needed
+  delete renderedGuests[id];
   loadQueue();
 }
 
@@ -111,13 +120,15 @@ async function nextGuest(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ guestId: id })
   });
-  delete guestsCache[id];
+  delete renderedGuests[id];
   loadQueue();
 }
 
-// Initial load + interval
+// Initial load
 loadQueue();
-setInterval(loadQueue, refreshCooldown);
+
+// Interval for checking new guests only
+setInterval(loadQueue, refreshInterval);
 </script>
 
 </body>
