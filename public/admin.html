@@ -9,7 +9,7 @@
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
   .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; }
   .guest h3 { margin: 0 0 12px 0; }
-  .guest-container { display: flex; align-items: center; gap: 20px; }
+  .guest-container { display: flex; align-items: flex-start; gap: 20px; }
   .qr-box {
     width: 120px;
     height: 120px;
@@ -18,11 +18,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
   .qr-box canvas {
     max-width: 100%;
     max-height: 100%;
     display: block;
+  }
+  .qr-text {
+    margin-top: 6px;
+    font-size: 12px;
+    word-break: break-all;
+    text-align: center;
+    color: #333;
   }
   .buttons { display: flex; flex-direction: column; gap: 8px; }
   button { padding: 10px; font-size: 16px; cursor: pointer; }
@@ -47,7 +55,10 @@ async function loadQueue() {
     div.innerHTML = `
       <h3>${g.first_name} ${g.last_name}</h3>
       <div class="guest-container">
-        <div class="qr-box" id="qr-${g.id}"></div>
+        <div>
+          <div class="qr-box" id="qr-${g.id}"></div>
+          <div class="qr-text" id="qrtext-${g.id}"></div>
+        </div>
         <div class="buttons">
           <button onclick="setStatus('${g.id}','accepted')">Accept</button>
           <button onclick="setStatus('${g.id}','declined')">Decline</button>
@@ -58,13 +69,16 @@ async function loadQueue() {
     `;
     q.appendChild(div);
 
-    // Render QR code in the box
     if (g.qr_data) {
+      // Render QR code
       new QRious({
         element: document.getElementById(`qr-${g.id}`),
         value: g.qr_data,
         size: 120
       });
+
+      // Show plain text below
+      document.getElementById(`qrtext-${g.id}`).innerText = g.qr_data;
     }
   });
 }
@@ -87,7 +101,6 @@ async function nextGuest(id) {
   loadQueue();
 }
 
-// Initial load + refresh every 3 seconds
 loadQueue();
 setInterval(loadQueue, 3000);
 </script>
