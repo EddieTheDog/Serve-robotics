@@ -77,12 +77,12 @@ function startScanner() {
   const cameraMsg = el("camera-msg");
 
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(function(stream) {
+    .then(stream => {
       video.srcObject = stream;
       video.play();
       requestAnimationFrame(tick);
     })
-    .catch(function(err) {
+    .catch(err => {
       cameraMsg.innerText = "Camera access denied.";
       console.error(err);
     });
@@ -97,9 +97,10 @@ function startScanner() {
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
       if (code) {
-        scannedData = code.data;
+        scannedData = code.data;   // <-- the raw scanned text
         cameraMsg.innerText = "QR Scanned!";
         cameraMsg.style.background = "green";
+
         video.srcObject.getTracks().forEach(track => track.stop());
         submitCheckin(); // AUTO SUBMIT
         return;
