@@ -7,14 +7,29 @@
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 30px; }
-  .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; text-align: center; }
-  button { margin: 6px; padding: 10px; font-size: 16px; cursor: pointer; }
-  .guest h3 { margin: 4px 0 12px 0; }
-  .qr-box { display: inline-block; width: 180px; height: 180px; border: 2px dashed #999; border-radius: 12px; margin-bottom: 12px; }
-  .guest canvas { width: 100%; height: 100%; display: block; margin: 0 auto; }
+  .guest { border: 1px solid #ccc; padding: 16px; margin-bottom: 20px; border-radius: 8px; }
+  .guest h3 { margin: 0 0 12px 0; }
+  .guest-container { display: flex; align-items: center; gap: 20px; }
+  .qr-box {
+    width: 120px;
+    height: 120px;
+    border: 2px dashed #999;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-box canvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+  }
+  .buttons { display: flex; flex-direction: column; gap: 8px; }
+  button { padding: 10px; font-size: 16px; cursor: pointer; }
 </style>
 </head>
 <body>
+
 <h1>Admin Dashboard</h1>
 <div id="queue"></div>
 
@@ -31,12 +46,14 @@ async function loadQueue() {
 
     div.innerHTML = `
       <h3>${g.first_name} ${g.last_name}</h3>
-      <div class="qr-box" id="qr-${g.id}"></div>
-      <div>
-        <button onclick="setStatus('${g.id}','accepted')">Accept</button>
-        <button onclick="setStatus('${g.id}','declined')">Decline</button>
-        <button onclick="setStatus('${g.id}','help')">Help</button>
-        <button onclick="nextGuest('${g.id}')">Next Guest</button>
+      <div class="guest-container">
+        <div class="qr-box" id="qr-${g.id}"></div>
+        <div class="buttons">
+          <button onclick="setStatus('${g.id}','accepted')">Accept</button>
+          <button onclick="setStatus('${g.id}','declined')">Decline</button>
+          <button onclick="setStatus('${g.id}','help')">Help</button>
+          <button onclick="nextGuest('${g.id}')">Next Guest</button>
+        </div>
       </div>
     `;
     q.appendChild(div);
@@ -46,7 +63,7 @@ async function loadQueue() {
       new QRious({
         element: document.getElementById(`qr-${g.id}`),
         value: g.qr_data,
-        size: 180
+        size: 120
       });
     }
   });
@@ -74,5 +91,6 @@ async function nextGuest(id) {
 loadQueue();
 setInterval(loadQueue, 3000);
 </script>
+
 </body>
 </html>
