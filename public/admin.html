@@ -20,6 +20,12 @@
     background-color: #fff;
     text-align: center;
   }
+  .qr-box canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+  }
   .buttons { display: flex; flex-direction: column; gap: 8px; }
   button { padding: 10px; font-size: 16px; cursor: pointer; }
   .qr-text { margin-top: 12px; font-size: 12px; word-break: break-all; text-align: center; color: #333; }
@@ -60,18 +66,22 @@ async function loadQueue() {
     if (g.qr_data) {
       const qrBox = document.getElementById(`qr-${g.id}`);
 
-      // Prepend https:// only for the QR generation, not the stored value
+      // Clear any previous QR content
+      qrBox.innerHTML = "";
+
+      // Create a canvas for QRious
+      const canvas = document.createElement("canvas");
+      qrBox.appendChild(canvas);
+
+      // Prepend https:// only for QR generation
       let qrValue = g.qr_data.trim();
       if (!qrValue.startsWith("http://") && !qrValue.startsWith("https://")) {
         qrValue = "https://" + qrValue;
       }
 
-      // Clear any previous QR canvas
-      qrBox.innerHTML = "";
-
       try {
         new QRious({
-          element: qrBox,
+          element: canvas,
           value: qrValue,
           size: 120
         });
