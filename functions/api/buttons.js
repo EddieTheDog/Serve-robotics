@@ -21,7 +21,18 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPatch({ request, env }) {
-  const { id, label, emoji, visible } = await request.json();
+  const body = await request.json();
+
+  // Bulk reorder
+  if (body.reorder) {
+    const stmts = body.reorder.map(({ id, sort_order }) =>
+      env.DB.prepare(`UPDATE custom_buttons SET sort_order = ? WHERE id = ?`).bind(sort_order, id)
+    );
+    await env.DB.batch(stmts);
+    return Response.json({ success: true });
+  }
+
+  const { id, label, emoji, visible } = body;
   if (!id) return new Response('Missing id', { status: 400 });
   const updates = [];
   const binds = [];
