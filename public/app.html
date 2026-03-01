@@ -6,76 +6,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Eddies">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background: #f2f2f7;
-  color: #000;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-}
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; min-height: -webkit-fill-available; }
 
-/* ---- Header ---- */
-.header {
-  background: #000;
-  color: #fff;
-  padding: 16px 20px 22px;
-  padding-top: calc(env(safe-area-inset-top, 20px) + 16px);
-}
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
+.header { background: #000; color: #fff; padding: 16px 20px 22px; padding-top: calc(env(safe-area-inset-top, 20px) + 16px); }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .event-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; }
 .clock { font-size: 15px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
 .greeting { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 8px; }
-
-/* Badge pill */
-.badge-pill {
-  display: inline-block;
-  background: #fff;
-  color: #000;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-radius: 20px;
-  padding: 4px 12px;
-  margin-top: 4px;
-}
+.badge-pill { display: inline-block; background: #fff; color: #000; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 20px; padding: 4px 12px; margin-top: 4px; }
 .badge-pill.eddie-plus { background: #FFD700; color: #000; }
 .badge-pill.vip { background: #9b59b6; color: #fff; }
 .badge-pill.staff { background: #2196F3; color: #fff; }
 .badge-pill.press { background: #ff9500; color: #fff; }
 
-.seat-label { font-size: 14px; color: #aaa; margin-top: 6px; }
-
-/* ---- Content ---- */
-.content {
-  padding: 20px 16px;
-  padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px);
-  max-width: 600px;
-  margin: 0 auto;
-}
-.section-label {
-  font-size: 13px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1px; color: #888; margin: 24px 0 10px 4px;
-}
-
-/* ---- Cards ---- */
+.content { padding: 20px 16px; padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 40px); max-width: 600px; margin: 0 auto; }
+.section-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 24px 0 10px 4px; }
 .card { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-/* ---- Help Button ---- */
-.help-btn {
-  background: #000; color: #fff; border: none; border-radius: 16px;
-  padding: 20px; width: 100%; display: flex; align-items: center;
-  gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s;
-}
+.help-btn { background: #000; color: #fff; border: none; border-radius: 16px; padding: 20px; width: 100%; display: flex; align-items: center; gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s; }
 .help-btn:active { opacity: 0.75; }
 .help-btn.sent { background: #34c759; }
 .help-btn.resolved-state { background: #007aff; }
@@ -83,35 +36,15 @@ body {
 .help-text strong { display: block; font-size: 18px; font-weight: 700; }
 .help-text span { font-size: 13px; opacity: 0.7; }
 
-/* ---- Help Reason Sheet ---- */
-.sheet-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5); z-index: 200;
-  align-items: flex-end; justify-content: center;
-}
+.sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
 .sheet-overlay.open { display: flex; }
-.sheet {
-  background: #f2f2f7; border-radius: 20px 20px 0 0;
-  padding: 20px 20px calc(env(safe-area-inset-bottom,20px) + 20px);
-  width: 100%; max-width: 600px;
-}
+.sheet { background: #f2f2f7; border-radius: 20px 20px 0 0; padding: 20px 20px calc(env(safe-area-inset-bottom,20px) + 20px); width: 100%; max-width: 600px; }
 .sheet-title { font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-.reason-btn {
-  width: 100%; display: flex; align-items: center; gap: 14px;
-  background: #fff; border: none; border-radius: 14px;
-  padding: 16px 18px; margin-bottom: 10px;
-  font-size: 17px; font-weight: 600; cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: left;
-}
+.reason-btn { width: 100%; display: flex; align-items: center; gap: 14px; background: #fff; border: none; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; font-size: 17px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: left; }
 .reason-btn:active { opacity: 0.7; }
 .reason-emoji { font-size: 24px; flex-shrink: 0; }
-.sheet-cancel {
-  width: 100%; padding: 16px; margin-top: 6px;
-  background: #fff; border: none; border-radius: 14px;
-  font-size: 17px; font-weight: 700; color: #ff3b30; cursor: pointer;
-}
+.sheet-cancel { width: 100%; padding: 16px; margin-top: 6px; background: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; color: #ff3b30; cursor: pointer; }
 
-/* ---- Schedule ---- */
 .schedule-item { padding: 16px 18px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 14px; }
 .schedule-item:last-child { border-bottom: none; }
 .schedule-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; margin-top: 6px; flex-shrink: 0; }
@@ -121,36 +54,41 @@ body {
 .schedule-info span { font-size: 14px; color: #888; }
 .live-badge { display: inline-block; background: #ff3b30; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: middle; }
 
-/* ---- Custom Buttons ---- */
 .custom-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.custom-action-btn {
-  background: #fff; border: none; border-radius: 14px;
-  padding: 18px 14px; display: flex; flex-direction: column;
-  align-items: center; gap: 8px; cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: opacity 0.15s;
-}
+.custom-action-btn { background: #fff; border: none; border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: opacity 0.15s; }
 .custom-action-btn:active { opacity: 0.7; }
 .custom-action-btn .ca-emoji { font-size: 28px; }
 .custom-action-btn .ca-label { font-size: 14px; font-weight: 700; text-align: center; }
+.custom-action-btn .ca-hint { font-size: 10px; color: #aaa; }
 
-/* ---- Info ---- */
 .info-row { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #f0f0f0; }
 .info-row:last-child { border-bottom: none; }
 .info-icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
 .info-row span { font-size: 16px; font-weight: 500; }
 
-/* ---- Toast ---- */
-#toast {
-  position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 20px);
-  left: 50%; transform: translateX(-50%) translateY(100px);
-  background: #000; color: #fff; padding: 14px 24px;
-  border-radius: 30px; font-size: 15px; font-weight: 700;
-  transition: transform 0.3s ease; z-index: 300; white-space: nowrap;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
+/* Notice modal */
+#notice-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 400; align-items: center; justify-content: center; padding: 32px 24px; }
+#notice-overlay.open { display: flex; }
+.notice-box { background: #fff; border-radius: 24px; padding: 32px 24px; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+.notice-icon { font-size: 48px; margin-bottom: 16px; }
+.notice-message { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 16px; color: #000; }
+.notice-timer { font-size: 13px; color: #aaa; margin-bottom: 20px; min-height: 18px; }
+.notice-ok-btn { width: 100%; padding: 16px; background: #000; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; }
+.notice-ok-btn:active { opacity: 0.8; }
+
+/* Message modal */
+#msg-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 350; align-items: center; justify-content: center; padding: 32px 24px; }
+#msg-overlay.open { display: flex; }
+.msg-box { background: #fff; border-radius: 24px; padding: 28px 24px; max-width: 360px; width: 100%; text-align: center; }
+.msg-emoji { font-size: 40px; margin-bottom: 12px; }
+.msg-title { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+.msg-body { font-size: 16px; color: #555; line-height: 1.5; margin-bottom: 24px; }
+.msg-close { width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; }
+.msg-close:active { opacity: 0.8; }
+
+#toast { position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 20px); left: 50%; transform: translateX(-50%) translateY(100px); background: #000; color: #fff; padding: 14px 24px; border-radius: 30px; font-size: 15px; font-weight: 700; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 #toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ---- Screens ---- */
 #loading-screen { min-height: 100vh; background: #000; display: flex; align-items: center; justify-content: center; }
 .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -185,20 +123,19 @@ body {
     </div>
     <div class="greeting">Hello, <span id="guest-name">—</span> 👋</div>
     <div id="badge-wrap"></div>
-    <div id="seat-wrap"></div>
   </div>
 
   <div class="content">
     <div class="section-label">Actions</div>
-    <button class="help-btn" id="help-btn" onclick="openHelpSheet()">
-      <div class="help-icon">🆘</div>
-      <div class="help-text">
-        <strong id="help-btn-title">Call for Help</strong>
-        <span id="help-btn-sub">A staff member will come to you</span>
-      </div>
-    </button>
-
-    <!-- Custom buttons rendered here -->
+    <div id="help-wrap">
+      <button class="help-btn" id="help-btn" onclick="openHelpSheet()">
+        <div class="help-icon">🆘</div>
+        <div class="help-text">
+          <strong id="help-btn-title">Call for Help</strong>
+          <span id="help-btn-sub">A staff member will come to you</span>
+        </div>
+      </button>
+    </div>
     <div id="custom-buttons-wrap"></div>
 
     <div class="section-label">What's Happening</div>
@@ -208,19 +145,38 @@ body {
 
     <div class="section-label">Info</div>
     <div class="card">
-      <div class="info-row"><div class="info-icon">📍</div><span id="info-location">—</span></div>
       <div class="info-row"><div class="info-icon">📅</div><span id="info-date">—</span></div>
       <div class="info-row"><div class="info-icon">🎟️</div><span id="info-name-badge">—</span></div>
     </div>
   </div>
 </div>
 
-<!-- Help Reason Sheet -->
+<!-- Help Sheet -->
 <div class="sheet-overlay" id="help-sheet">
   <div class="sheet">
     <div class="sheet-title">What do you need help with?</div>
     <div id="reason-list"></div>
     <button class="sheet-cancel" onclick="closeHelpSheet()">Cancel</button>
+  </div>
+</div>
+
+<!-- Notice Modal -->
+<div id="notice-overlay">
+  <div class="notice-box">
+    <div class="notice-icon">📢</div>
+    <div class="notice-message" id="notice-message"></div>
+    <div class="notice-timer" id="notice-timer"></div>
+    <button class="notice-ok-btn" onclick="dismissNotice()">OK</button>
+  </div>
+</div>
+
+<!-- Message Button Modal -->
+<div id="msg-overlay">
+  <div class="msg-box">
+    <div class="msg-emoji" id="msg-emoji"></div>
+    <div class="msg-title" id="msg-title"></div>
+    <div class="msg-body" id="msg-body"></div>
+    <button class="msg-close" onclick="document.getElementById('msg-overlay').classList.remove('open')">Close</button>
   </div>
 </div>
 
@@ -234,20 +190,18 @@ body {
   let helpSent = false;
   let helpPending = false;
   let lastRefreshSignal = null;
+  let currentNoticeId = null;
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
-  // ---- Clock ----
+  // Clock
   function updateClock() {
-    const now = new Date();
-    const h = now.getHours(), m = now.getMinutes().toString().padStart(2,'0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    document.getElementById('clock').textContent = `${(h%12)||12}:${m} ${ampm}`;
+    const now = new Date(), h = now.getHours(), m = now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('clock').textContent = `${(h%12)||12}:${m} ${h>=12?'PM':'AM'}`;
   }
-  updateClock();
-  setInterval(updateClock, 1000);
+  updateClock(); setInterval(updateClock, 1000);
 
-  // ---- Load guest ----
+  // Load guest
   async function loadGuest() {
     if (!token) { showError(); return; }
     try {
@@ -262,129 +216,104 @@ body {
       loadCustomButtons();
       loadHelpReasons();
       pollLoop();
-    } catch (e) { showError(); }
+    } catch(e) { showError(); }
   }
 
   function renderGuest() {
     const g = guestData;
     document.getElementById('guest-name').textContent = g.first_name;
     document.getElementById('info-name-badge').textContent = `${g.first_name} ${g.last_name}`;
-    document.getElementById('info-date').textContent = new Date().toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
-
+    document.getElementById('info-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
     // Badge
-    const badgeWrap = document.getElementById('badge-wrap');
+    const bw = document.getElementById('badge-wrap');
     if (g.badge) {
       const slug = g.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-      badgeWrap.innerHTML = `<span class="badge-pill ${slug}">${esc(g.badge)}</span>`;
-    } else {
-      badgeWrap.innerHTML = '';
-    }
-
-    // Seat
-    const seatWrap = document.getElementById('seat-wrap');
-    seatWrap.innerHTML = g.seat ? `<div class="seat-label">Seat: ${esc(g.seat)}</div>` : '';
+      bw.innerHTML = `<span class="badge-pill ${slug}">${esc(g.badge)}</span>`;
+    } else { bw.innerHTML = ''; }
+    // Help button visibility
+    document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
   }
 
-  // ---- Schedule ----
+  // Schedule
   async function loadSchedule() {
     try {
       const res = await fetch('/api/schedule');
       const items = await res.json();
       const card = document.getElementById('schedule-card');
-      const list = Array.isArray(items) ? items : (items.items || []);
-      if (!list.length) {
-        card.innerHTML = `<div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Nothing scheduled yet.</span></div></div>`;
-        return;
-      }
+      const list = Array.isArray(items) ? items : (items.items||[]);
+      if (!list.length) { card.innerHTML = `<div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Nothing scheduled yet.</span></div></div>`; return; }
       card.innerHTML = list.map(item => `
         <div class="schedule-item">
-          <div class="schedule-dot ${item.is_live ? 'live' : ''}"></div>
+          <div class="schedule-dot ${item.is_live?'live':''}"></div>
           <div class="schedule-info">
-            <strong>${esc(item.title)}${item.is_live ? '<span class="live-badge">Now</span>' : ''}</strong>
-            ${item.description ? `<span>${esc(item.description)}</span>` : ''}
+            <strong>${esc(item.title)}${item.is_live?'<span class="live-badge">Now</span>':''}</strong>
+            ${item.description?`<span>${esc(item.description)}</span>`:''}
           </div>
         </div>`).join('');
-      document.getElementById('info-location').textContent = items.location || 'See staff for details';
     } catch(e) {}
   }
 
+  // Custom buttons — supports links (starts with http) and messages (starts with msg:)
   async function loadCustomButtons() {
     try {
       const res = await fetch('/api/buttons');
       const buttons = await res.json();
       const wrap = document.getElementById('custom-buttons-wrap');
       if (!buttons.length) { wrap.innerHTML = ''; return; }
-      wrap.innerHTML = `
-        <div class="section-label">More</div>
+      // Only show section label if there are buttons
+      const hasActions = buttons.length > 0;
+      wrap.innerHTML = (hasActions ? '<div class="section-label">More</div>' : '') + `
         <div class="custom-btn-grid">
           ${buttons.map(b => {
-            const hasLink = b.action && b.action !== 'none';
-            return `<button class="custom-action-btn" onclick="${hasLink ? `openLink('${esc(b.action)}')` : ''}">
+            const isLink = b.action && b.action.startsWith('http');
+            const isMsg = b.action && b.action.startsWith('msg:');
+            const msgContent = isMsg ? b.action.slice(4) : '';
+            return `<button class="custom-action-btn" onclick="${isLink ? `openLink('${esc(b.action)}')` : isMsg ? `showMsgModal('${esc(b.emoji)}','${esc(b.label)}','${esc(msgContent)}')` : ''}">
               <span class="ca-emoji">${esc(b.emoji)}</span>
               <span class="ca-label">${esc(b.label)}</span>
-              ${hasLink ? '<span style="font-size:10px;color:#aaa;margin-top:2px;">Tap to open</span>' : ''}
+              ${isLink ? '<span class="ca-hint">Tap to open ↗</span>' : ''}
             </button>`;
           }).join('')}
         </div>`;
     } catch(e) {}
   }
 
-  function openLink(url) {
-    if (!url || url === 'none') return;
-    window.open(url, '_blank', 'noopener');
+  function openLink(url) { if (url) window.open(url, '_blank', 'noopener'); }
+
+  function showMsgModal(emoji, title, body) {
+    document.getElementById('msg-emoji').textContent = emoji || '💬';
+    document.getElementById('msg-title').textContent = title;
+    document.getElementById('msg-body').textContent = body;
+    document.getElementById('msg-overlay').classList.add('open');
   }
 
-  // ---- Help Reasons ----
+  // Help
   let helpReasons = [];
   async function loadHelpReasons() {
-    try {
-      const res = await fetch('/api/help-reasons');
-      helpReasons = await res.json();
-    } catch(e) {}
+    try { const res = await fetch('/api/help-reasons'); helpReasons = await res.json(); } catch(e) {}
   }
-
   function openHelpSheet() {
-    if (helpSent) return;
-    const list = document.getElementById('reason-list');
-    if (!helpReasons.length) {
-      // No reasons configured, just send directly
-      sendHelp('I need help');
-      return;
-    }
-    list.innerHTML = helpReasons.map(r => `
+    if (helpSent || guestData?.help_disabled) return;
+    if (!helpReasons.length) { sendHelp('I need help'); return; }
+    document.getElementById('reason-list').innerHTML = helpReasons.map(r => `
       <button class="reason-btn" onclick="sendHelp('${esc(r.label)}')">
-        <span class="reason-emoji">${r.emoji}</span>
-        <span>${esc(r.label)}</span>
+        <span class="reason-emoji">${r.emoji}</span><span>${esc(r.label)}</span>
       </button>`).join('');
     document.getElementById('help-sheet').classList.add('open');
   }
-
-  function closeHelpSheet() {
-    document.getElementById('help-sheet').classList.remove('open');
-  }
-
+  function closeHelpSheet() { document.getElementById('help-sheet').classList.remove('open'); }
   async function sendHelp(reason) {
     closeHelpSheet();
     if (helpSent || !guestData) return;
-    helpSent = true;
-    helpPending = true;
+    helpSent = true; helpPending = true;
     const btn = document.getElementById('help-btn');
     btn.classList.add('sent');
     document.getElementById('help-btn-title').textContent = 'Help is on the way!';
     document.getElementById('help-btn-sub').textContent = reason;
-
     try {
-      await fetch('/api/help', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ token, guestId: guestData.id, reason })
-      });
-    } catch(e) {
-      showToast('Could not send — please find a staff member');
-      resetHelpBtn();
-    }
+      await fetch('/api/help', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, guestId:guestData.id, reason})});
+    } catch(e) { showToast('Could not send — please find a staff member'); resetHelpBtn(); }
   }
-
   function resetHelpBtn() {
     helpSent = false; helpPending = false;
     const btn = document.getElementById('help-btn');
@@ -393,80 +322,79 @@ body {
     document.getElementById('help-btn-sub').textContent = 'A staff member will come to you';
   }
 
-  // ---- Poll loop ---- checks refresh signal, help resolved, guest updates
+  // Notices
+  async function checkNotices() {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/notices?token=${encodeURIComponent(token)}`);
+      const notices = await res.json();
+      if (notices.length > 0 && notices[0].id !== currentNoticeId) showNotice(notices[0]);
+    } catch(e) {}
+  }
+  function showNotice(notice) {
+    currentNoticeId = notice.id;
+    document.getElementById('notice-message').textContent = notice.message;
+    document.getElementById('notice-overlay').classList.add('open');
+    const timerEl = document.getElementById('notice-timer');
+    if (notice.duration > 0) {
+      let remaining = notice.duration;
+      timerEl.textContent = `Closes in ${remaining}s`;
+      const iv = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) { clearInterval(iv); dismissNotice(); }
+        else timerEl.textContent = `Closes in ${remaining}s`;
+      }, 1000);
+    } else { timerEl.textContent = ''; }
+  }
+  async function dismissNotice() {
+    document.getElementById('notice-overlay').classList.remove('open');
+    if (!currentNoticeId) return;
+    try { await fetch('/api/notices', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentNoticeId, token})}); } catch(e) {}
+    currentNoticeId = null;
+  }
+
+  // Poll loop
   async function pollLoop() {
     setInterval(async () => {
       try {
-        // Check refresh signal
-        const rfRes = await fetch('/api/refresh');
-        const rf = await rfRes.json();
-        if (lastRefreshSignal === null) {
+        const rf = await (await fetch('/api/refresh')).json();
+        if (lastRefreshSignal === null) { lastRefreshSignal = rf.signal; }
+        else if (rf.signal !== lastRefreshSignal) {
           lastRefreshSignal = rf.signal;
-        } else if (rf.signal !== lastRefreshSignal) {
-          lastRefreshSignal = rf.signal;
-          loadSchedule();
-          loadCustomButtons();
-          loadHelpReasons();
-          // Re-fetch guest data for badge/seat updates
+          loadSchedule(); loadCustomButtons(); loadHelpReasons();
           const gRes = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-          if (gRes.ok) {
-            const updated = await gRes.json();
-            if (updated.locked) { showLocked(); return; }
-            guestData = updated;
-            renderGuest();
-          }
+          if (gRes.ok) { const u = await gRes.json(); if (u.locked){showLocked();return;} guestData=u; renderGuest(); }
         }
-
-        // Check if help was resolved
         if (helpPending) {
-          const hrRes = await fetch(`/api/help?token=${encodeURIComponent(token)}`);
-          const hr = await hrRes.json();
+          const hr = await (await fetch(`/api/help?token=${encodeURIComponent(token)}`)).json();
           if (hr.resolved) {
-            helpPending = false;
-            helpSent = false;
+            helpPending = false; helpSent = false;
             const btn = document.getElementById('help-btn');
-            btn.classList.remove('sent');
-            btn.classList.add('resolved-state');
+            btn.classList.remove('sent'); btn.classList.add('resolved-state');
             document.getElementById('help-btn-title').textContent = 'Help Completed ✓';
             document.getElementById('help-btn-sub').textContent = 'Thanks! Tap to request again.';
             showToast('✓ Your help request was resolved!');
-            // After 5s reset button
-            setTimeout(() => {
-              btn.classList.remove('resolved-state');
-              resetHelpBtn();
-            }, 5000);
+            setTimeout(() => { btn.classList.remove('resolved-state'); resetHelpBtn(); }, 5000);
           }
         }
+        checkNotices();
       } catch(e) {}
     }, 8000);
   }
 
-  // ---- Toast ----
+  // Toast
   let toastTimer;
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    t.textContent = msg; t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // ---- Screen helpers ----
-  function showApp() {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  }
-  function showLocked() {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('locked-screen').style.display = 'flex';
-  }
-  function showError() {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('error-screen').style.display = 'flex';
-  }
-  function esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  function showApp() { document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
+  function showLocked() { document.getElementById('loading-screen').style.display='none'; document.getElementById('locked-screen').style.display='flex'; }
+  function showError() { document.getElementById('loading-screen').style.display='none'; document.getElementById('error-screen').style.display='flex'; }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
   loadGuest();
 </script>
