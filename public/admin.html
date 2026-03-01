@@ -139,6 +139,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div class="tab" onclick="switchTab('help')">Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
   <div class="tab" onclick="switchTab('buttons')">Buttons</div>
   <div class="tab" onclick="switchTab('reasons')">Help Reasons</div>
+  <div class="tab" onclick="switchTab('notices')">📢 Notices</div>
 </div>
 
 <!-- QUEUE -->
@@ -176,7 +177,13 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <input type="text" id="new-btn-emoji" placeholder="Emoji e.g. 🗳️" style="max-width:90px;">
       <input type="text" id="new-btn-label" placeholder="Button label e.g. Vote Now">
     </div>
-    <input type="url" id="new-btn-url" placeholder="Link URL (optional) e.g. https://vote.example.com" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;">
+    <select id="new-btn-type" onchange="toggleBtnTypeField()" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;background:#fff;">
+      <option value="none">No action (display only)</option>
+      <option value="link">Open a link</option>
+      <option value="message">Show a message</option>
+    </select>
+    <input type="url" id="new-btn-url" placeholder="https://example.com" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;display:none;">
+    <textarea id="new-btn-msg" placeholder="Message text shown when tapped..." rows="3" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;resize:none;display:none;"></textarea>
     <button class="btn full" onclick="addButton()">+ Add Button</button>
   </div>
   <div id="buttons-list"></div>
@@ -194,6 +201,30 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <button class="btn full" onclick="addReason()">+ Add Reason</button>
   </div>
   <div id="reasons-list"></div>
+</div>
+
+<!-- NOTICES -->
+<div class="tab-content" id="tab-notices">
+  <div class="section-label">Send a Notice</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Notices pop up on the attendee's screen with an OK button. You can send to one person or everyone.</p>
+  <div class="add-form">
+    <select id="notice-target" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;background:#fff;">
+      <option value="ALL">📣 Everyone</option>
+    </select>
+    <textarea id="notice-message-input" rows="3" placeholder="Type your notice message..." style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;resize:none;"></textarea>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <label style="font-size:14px;font-weight:600;white-space:nowrap;">Auto-close after:</label>
+      <select id="notice-duration" style="flex:1;padding:10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
+        <option value="0">Requires OK tap</option>
+        <option value="10">10 seconds</option>
+        <option value="30">30 seconds</option>
+        <option value="60">60 seconds</option>
+      </select>
+    </div>
+    <button class="btn full" onclick="sendNotice()">📢 Send Notice</button>
+  </div>
+  <div class="section-label">Recent Notices</div>
+  <div id="notices-list"></div>
 </div>
 
 <!-- Delete Modal -->
@@ -215,12 +246,12 @@ const BASE_URL = location.origin;
 const BADGES = ['', 'Eddie +', 'VIP', 'Staff', 'Press'];
 
 // ---- Tab switching ----
-const TAB_NAMES = ['queue','guests','schedule','help','buttons','reasons'];
+const TAB_NAMES = ['queue','guests','schedule','help','buttons','reasons','notices'];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, buttons: loadButtons, reasons: loadReasons };
+  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, buttons: loadButtons, reasons: loadReasons, notices: loadNotices };
   if (loaders[name]) loaders[name]();
   if (name === 'help') clearHelpAlert();
 }
@@ -299,39 +330,44 @@ async function loadGuests() {
 
   guests.forEach(g => {
     const isLocked = g.locked == 1;
+    const helpOff = g.help_disabled == 1;
     const appUrl = g.app_token ? `${BASE_URL}/app?token=${g.app_token}` : null;
     const div = document.createElement('div');
-    div.className = `guest-card`;
+    div.className = 'guest-card';
     div.id = `gc-${g.id}`;
     div.innerHTML = `
       <div class="guest-header">
         <div>
           <div class="guest-name">${esc(g.first_name)} ${esc(g.last_name)}</div>
-          ${g.seat ? `<div style="font-size:13px;color:#888;margin-top:2px;">Seat: ${esc(g.seat)}</div>` : ''}
-          ${g.badge ? `<div style="font-size:13px;font-weight:700;margin-top:2px;">${esc(g.badge)}</div>` : ''}
+          ${g.seat ? `<div style="font-size:13px;color:#888;margin-top:2px;">📍 ${esc(g.seat)}</div>` : ''}
+          ${g.badge ? `<div style="font-size:13px;font-weight:700;margin-top:2px;">🏅 ${esc(g.badge)}</div>` : ''}
         </div>
         <div class="guest-status ${g.status}${isLocked?' locked':''}">${isLocked?'Locked':g.status}</div>
       </div>
       <div class="guest-row">
         <div class="qr-box" id="gqr-${g.id}"></div>
         <div class="guest-actions">
-          <button class="btn small" onclick="toggleEdit('${g.id}')">Edit Name</button>
-          <button class="btn small ${isLocked?'green':'orange'}" onclick="toggleLock('${g.id}',${isLocked})">${isLocked?'Unlock':'Lock'}</button>
+          <button class="btn small" onclick="toggleEdit('${g.id}')">✏️ Edit</button>
+          <button class="btn small ${isLocked?'green':'orange'}" onclick="toggleLock('${g.id}',${isLocked})">${isLocked?'🔓 Unlock':'🔒 Lock'}</button>
+          <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'🆘 Enable Help':'🚫 Disable Help'}</button>
           <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
           ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy Link</button>` : ''}
         </div>
       </div>
-      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;">
-        <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Badge:</label>
-        <select class="badge-select" onchange="saveBadge('${g.id}',this.value)">
-          ${BADGES.map(b => `<option value="${b}" ${g.badge===b?'selected':''}>${b||'None'}</option>`).join('')}
-        </select>
-      </div>
       <div class="edit-form" id="ef-${g.id}">
-        <input type="text" id="ef-first-${g.id}" value="${esc(g.first_name)}" placeholder="First Name">
-        <input type="text" id="ef-last-${g.id}" value="${esc(g.last_name)}" placeholder="Last Name">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <input type="text" id="ef-first-${g.id}" value="${esc(g.first_name)}" placeholder="First Name">
+          <input type="text" id="ef-last-${g.id}" value="${esc(g.last_name)}" placeholder="Last Name">
+        </div>
+        <input type="text" id="ef-seat-${g.id}" value="${esc(g.seat||'')}" placeholder="Seat (e.g. Table 3, Seat B)">
+        <div style="margin:8px 0;display:flex;align-items:center;gap:10px;">
+          <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Badge:</label>
+          <select id="ef-badge-${g.id}" class="badge-select">
+            ${BADGES.map(b => `<option value="${b}" ${(g.badge||'')===b?'selected':''}>${b||'None'}</option>`).join('')}
+          </select>
+        </div>
         <div class="edit-btns">
-          <button class="btn small" onclick="saveEdit('${g.id}')">Save</button>
+          <button class="btn small" onclick="saveFullEdit('${g.id}')">Save All</button>
           <button class="btn small gray" onclick="toggleEdit('${g.id}')">Cancel</button>
         </div>
       </div>
@@ -344,18 +380,27 @@ async function loadGuests() {
 }
 
 function toggleEdit(id) { document.getElementById(`ef-${id}`).classList.toggle('open'); }
-async function saveEdit(id) {
+
+async function saveFullEdit(id) {
   const first = document.getElementById(`ef-first-${id}`).value.trim();
   const last = document.getElementById(`ef-last-${id}`).value.trim();
-  if (!first || !last) return alert('Both fields required');
-  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,first_name:first,last_name:last})});
+  const seat = document.getElementById(`ef-seat-${id}`).value.trim();
+  const badge = document.getElementById(`ef-badge-${id}`).value;
+  if (!first || !last) return alert('First and last name required');
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({guestId:id, first_name:first, last_name:last, seat, badge})});
   loadGuests();
 }
+
 async function saveBadge(id, badge) {
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,badge})});
 }
 async function toggleLock(id, isLocked) {
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,locked:isLocked?0:1})});
+  loadGuests();
+}
+async function toggleHelp(id, helpOff) {
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,help_disabled:helpOff?0:1})});
   loadGuests();
 }
 function openDeleteModal(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('open'); }
@@ -457,15 +502,33 @@ async function loadButtons() {
       <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
     </div>`).join('');
 }
+function toggleBtnTypeField() {
+  const type = document.getElementById('new-btn-type').value;
+  document.getElementById('new-btn-url').style.display = type === 'link' ? 'block' : 'none';
+  document.getElementById('new-btn-msg').style.display = type === 'message' ? 'block' : 'none';
+}
 async function addButton() {
   const label = document.getElementById('new-btn-label').value.trim();
   const emoji = document.getElementById('new-btn-emoji').value.trim() || '🔘';
-  const url = document.getElementById('new-btn-url').value.trim();
+  const type = document.getElementById('new-btn-type').value;
   if (!label) return alert('Label required');
-  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action: url || 'none'})});
+  let action = 'none';
+  if (type === 'link') {
+    const url = document.getElementById('new-btn-url').value.trim();
+    if (!url) return alert('URL required for link type');
+    action = url;
+  } else if (type === 'message') {
+    const msg = document.getElementById('new-btn-msg').value.trim();
+    if (!msg) return alert('Message text required');
+    action = 'msg:' + msg;
+  }
+  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action})});
   document.getElementById('new-btn-label').value = '';
   document.getElementById('new-btn-emoji').value = '';
   document.getElementById('new-btn-url').value = '';
+  document.getElementById('new-btn-msg').value = '';
+  document.getElementById('new-btn-type').value = 'none';
+  toggleBtnTypeField();
   loadButtons();
 }
 async function deleteButton(id) {
@@ -498,6 +561,46 @@ async function addReason() {
 async function deleteReason(id) {
   await fetch('/api/help-reasons', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
   loadReasons();
+}
+
+// ---- NOTICES ----
+async function loadNotices() {
+  // Populate target dropdown with guests
+  const gRes = await fetch('/api/admin-guests');
+  const guests = await gRes.json();
+  const sel = document.getElementById('notice-target');
+  // Keep 'ALL' option, rebuild rest
+  sel.innerHTML = '<option value="ALL">📣 Everyone</option>' +
+    guests.filter(g => g.app_token).map(g => `<option value="${g.id}">${esc(g.first_name)} ${esc(g.last_name)}</option>`).join('');
+
+  // Load recent notices
+  const res = await fetch('/api/notices');
+  const items = await res.json();
+  const el = document.getElementById('notices-list');
+  if (!items.length) { el.innerHTML = '<div class="empty">No notices sent yet</div>'; return; }
+  el.innerHTML = items.map(n => `
+    <div class="help-item ${n.dismissed?'resolved':''}">
+      <div class="help-info">
+        <strong>${esc(n.recipient)}</strong>
+        <span>${esc(n.message)}</span>
+        <div style="font-size:12px;color:#aaa;margin-top:4px;">${timeAgo(n.created_at)}${n.duration?` · Auto-closes ${n.duration}s`:' · Requires OK'}</div>
+      </div>
+      <span style="font-size:13px;color:${n.dismissed?'#34c759':'#aaa'};">${n.dismissed?'✓ Seen':'Pending'}</span>
+    </div>`).join('');
+}
+
+async function sendNotice() {
+  const message = document.getElementById('notice-message-input').value.trim();
+  const guestId = document.getElementById('notice-target').value;
+  const duration = parseInt(document.getElementById('notice-duration').value);
+  if (!message) return alert('Message required');
+  const btn = event.target;
+  btn.textContent = 'Sending...'; btn.disabled = true;
+  await fetch('/api/notices', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({message, guestId, duration})});
+  document.getElementById('notice-message-input').value = '';
+  btn.textContent = '📢 Send Notice'; btn.disabled = false;
+  loadNotices();
 }
 
 // ---- Help alert polling ----
