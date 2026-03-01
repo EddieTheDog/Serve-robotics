@@ -140,6 +140,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div class="tab" onclick="switchTab('buttons')">Buttons</div>
   <div class="tab" onclick="switchTab('reasons')">Help Reasons</div>
   <div class="tab" onclick="switchTab('notices')">📢 Notices</div>
+  <div class="tab" onclick="switchTab('fields')">Custom Fields</div>
 </div>
 
 <!-- QUEUE -->
@@ -227,6 +228,24 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div id="notices-list"></div>
 </div>
 
+
+<!-- CUSTOM FIELDS -->
+<div class="tab-content" id="tab-fields">
+  <div class="section-label">Custom Info Fields</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab.</p>
+  <div class="add-form">
+    <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-field-label" placeholder="Field label e.g. Meal Choice" style="flex:1;">
+      <select id="new-field-type" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
+        <option value="text">Text input</option>
+        <option value="checkbox">Checkbox (yes/no)</option>
+      </select>
+    </div>
+    <button class="btn full" onclick="addCustomField()">+ Add Field</button>
+  </div>
+  <div id="custom-fields-list"></div>
+</div>
+
 <!-- Delete Modal -->
 <div class="modal-overlay" id="delete-modal">
   <div class="modal">
@@ -246,12 +265,12 @@ const BASE_URL = location.origin;
 const BADGES = ['', 'Eddie +', 'VIP', 'Staff', 'Press'];
 
 // ---- Tab switching ----
-const TAB_NAMES = ['queue','guests','schedule','help','buttons','reasons','notices'];
+const TAB_NAMES = ['queue','guests','schedule','help','buttons','reasons','notices','fields'];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, buttons: loadButtons, reasons: loadReasons, notices: loadNotices };
+  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, buttons: loadButtons, reasons: loadReasons, notices: loadNotices, fields: loadCustomFields };
   if (loaders[name]) loaders[name]();
   if (name === 'help') clearHelpAlert();
 }
@@ -487,20 +506,46 @@ async function resolveHelp(id) {
 }
 
 // ---- CUSTOM BUTTONS ----
+let buttonsList = [];
 async function loadButtons() {
   const res = await fetch('/api/buttons');
-  const items = await res.json();
+  buttonsList = await res.json();
+  renderButtonsList();
+}
+function renderButtonsList() {
   const el = document.getElementById('buttons-list');
-  if (!items.length) { el.innerHTML = '<div class="empty">No custom buttons yet. Add one above.</div>'; return; }
-  el.innerHTML = items.map(b => `
-    <div class="config-item">
+  if (!buttonsList.length) { el.innerHTML = '<div class="empty">No custom buttons yet. Add one above.</div>'; return; }
+  el.innerHTML = buttonsList.map((b, i) => {
+    const actionDesc = b.action && b.action !== 'none'
+      ? (b.action.startsWith('msg:') ? '💬 ' + b.action.slice(4) : '🔗 ' + b.action)
+      : '';
+    return `<div class="config-item" id="btn-row-${b.id}">
+      <div style="display:flex;flex-direction:column;gap:2px;margin-right:8px;">
+        <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},1)" ${i===buttonsList.length-1?'disabled':''}>↓</button>
+      </div>
       <span class="ci-emoji">${esc(b.emoji)}</span>
       <div style="flex:1;">
         <div class="ci-label">${esc(b.label)}</div>
-        ${b.action && b.action !== 'none' ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">🔗 ${esc(b.action)}</div>` : ''}
+        ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
       </div>
       <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+async function moveButton(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= buttonsList.length) return;
+  // Swap
+  [buttonsList[index], buttonsList[newIndex]] = [buttonsList[newIndex], buttonsList[index]];
+  // Assign new sort_orders
+  const updates = buttonsList.map((b, i) => ({ id: b.id, sort_order: i }));
+  renderButtonsList();
+  await fetch('/api/buttons', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ reorder: updates })
+  });
 }
 function toggleBtnTypeField() {
   const type = document.getElementById('new-btn-type').value;
@@ -601,6 +646,36 @@ async function sendNotice() {
   document.getElementById('notice-message-input').value = '';
   btn.textContent = '📢 Send Notice'; btn.disabled = false;
   loadNotices();
+}
+
+// ---- CUSTOM FIELDS ----
+async function loadCustomFields() {
+  const res = await fetch('/api/custom-fields');
+  const fields = await res.json();
+  const el = document.getElementById('custom-fields-list');
+  if (!fields.length) { el.innerHTML = '<div class="empty">No custom fields yet. Add one above.</div>'; return; }
+  el.innerHTML = fields.map(f => `
+    <div class="config-item">
+      <span class="ci-emoji">${f.field_type === 'checkbox' ? '☑️' : '📝'}</span>
+      <div style="flex:1;">
+        <div class="ci-label">${esc(f.label)}</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">${f.field_type === 'checkbox' ? 'Checkbox' : 'Text input'}</div>
+      </div>
+      <button class="btn small red" onclick="deleteCustomField('${f.id}')">Remove</button>
+    </div>`).join('');
+}
+async function addCustomField() {
+  const label = document.getElementById('new-field-label').value.trim();
+  const field_type = document.getElementById('new-field-type').value;
+  if (!label) return alert('Label required');
+  await fetch('/api/custom-fields', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',label,field_type})});
+  document.getElementById('new-field-label').value = '';
+  loadCustomFields();
+}
+async function deleteCustomField(id) {
+  if (!confirm('Remove this field? All guest values for it will be deleted.')) return;
+  await fetch('/api/custom-fields', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadCustomFields();
 }
 
 // ---- Help alert polling ----
