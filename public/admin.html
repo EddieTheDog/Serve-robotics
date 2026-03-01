@@ -176,6 +176,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <input type="text" id="new-btn-emoji" placeholder="Emoji e.g. 🗳️" style="max-width:90px;">
       <input type="text" id="new-btn-label" placeholder="Button label e.g. Vote Now">
     </div>
+    <input type="url" id="new-btn-url" placeholder="Link URL (optional) e.g. https://vote.example.com" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;">
     <button class="btn full" onclick="addButton()">+ Add Button</button>
   </div>
   <div id="buttons-list"></div>
@@ -449,17 +450,22 @@ async function loadButtons() {
   el.innerHTML = items.map(b => `
     <div class="config-item">
       <span class="ci-emoji">${esc(b.emoji)}</span>
-      <span class="ci-label">${esc(b.label)}</span>
+      <div style="flex:1;">
+        <div class="ci-label">${esc(b.label)}</div>
+        ${b.action && b.action !== 'none' ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">🔗 ${esc(b.action)}</div>` : ''}
+      </div>
       <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
     </div>`).join('');
 }
 async function addButton() {
   const label = document.getElementById('new-btn-label').value.trim();
   const emoji = document.getElementById('new-btn-emoji').value.trim() || '🔘';
+  const url = document.getElementById('new-btn-url').value.trim();
   if (!label) return alert('Label required');
-  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label,emoji})});
+  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action: url || 'none'})});
   document.getElementById('new-btn-label').value = '';
   document.getElementById('new-btn-emoji').value = '';
+  document.getElementById('new-btn-url').value = '';
   loadButtons();
 }
 async function deleteButton(id) {
