@@ -308,7 +308,6 @@ body {
     } catch(e) {}
   }
 
-  // ---- Custom Buttons ----
   async function loadCustomButtons() {
     try {
       const res = await fetch('/api/buttons');
@@ -318,13 +317,21 @@ body {
       wrap.innerHTML = `
         <div class="section-label">More</div>
         <div class="custom-btn-grid">
-          ${buttons.map(b => `
-            <button class="custom-action-btn">
+          ${buttons.map(b => {
+            const hasLink = b.action && b.action !== 'none';
+            return `<button class="custom-action-btn" onclick="${hasLink ? `openLink('${esc(b.action)}')` : ''}">
               <span class="ca-emoji">${esc(b.emoji)}</span>
               <span class="ca-label">${esc(b.label)}</span>
-            </button>`).join('')}
+              ${hasLink ? '<span style="font-size:10px;color:#aaa;margin-top:2px;">Tap to open</span>' : ''}
+            </button>`;
+          }).join('')}
         </div>`;
     } catch(e) {}
+  }
+
+  function openLink(url) {
+    if (!url || url === 'none') return;
+    window.open(url, '_blank', 'noopener');
   }
 
   // ---- Help Reasons ----
@@ -408,7 +415,6 @@ body {
             guestData = updated;
             renderGuest();
           }
-          showToast('✨ Updated!');
         }
 
         // Check if help was resolved
@@ -442,7 +448,7 @@ body {
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
   }
 
   // ---- Screen helpers ----
