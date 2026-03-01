@@ -6,196 +6,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background: #f2f2f7;
-  color: #000;
-  min-height: 100vh;
-}
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; }
 
-.topbar {
-  background: #000;
-  color: #fff;
-  padding: 16px 20px;
-  padding-top: calc(env(safe-area-inset-top, 20px) + 12px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
-}
+.topbar { background: #000; color: #fff; padding: 16px 20px; padding-top: calc(env(safe-area-inset-top, 20px) + 12px); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .topbar h1 { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-.refresh-btn {
-  background: #fff;
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
+.refresh-btn { background: #fff; color: #000; border: none; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
 
-/* ---- Guest List ---- */
 #guest-list-view { padding: 16px; }
-.section-label {
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1px; color: #888; margin: 8px 0 10px 4px;
-}
-.guest-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
+.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 8px 0 10px 4px; }
+.guest-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: opacity 0.15s; }
 .guest-card:active { opacity: 0.7; }
 .guest-card-left .name { font-size: 18px; font-weight: 700; }
 .guest-card-left .meta { font-size: 13px; color: #888; margin-top: 2px; }
 .guest-card-arrow { font-size: 20px; color: #ccc; }
 .empty { text-align: center; color: #aaa; padding: 60px 20px; font-size: 16px; }
 
-/* ---- Editor View ---- */
-#editor-view {
-  display: none;
-  padding: 20px;
-  padding-bottom: 40px;
-  max-width: 500px;
-  margin: 0 auto;
-}
-.back-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  font-weight: 600;
-  color: #000;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+#editor-view { display: none; padding: 20px; padding-bottom: 40px; max-width: 500px; margin: 0 auto; }
+.back-btn { background: none; border: none; font-size: 16px; font-weight: 600; color: #000; cursor: pointer; padding: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
 
-.hello-card {
-  background: #000;
-  color: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  text-align: center;
-}
+.hello-card { background: #000; color: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
 .hello-card .hello-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
 .hello-card .guest-big-name { font-size: 28px; font-weight: 800; }
 
-.field-card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
+.field-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .field-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
-.field-card input, .field-card textarea {
-  width: 100%;
-  font-size: 18px;
-  padding: 12px 14px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-family: inherit;
-  outline: none;
-  color: #000;
+.field-card input[type="text"], .field-card textarea {
+  width: 100%; font-size: 18px; padding: 12px 14px;
+  border: 2px solid #e0e0e0; border-radius: 10px;
+  font-family: inherit; outline: none; color: #000;
 }
 .field-card input:focus, .field-card textarea:focus { border-color: #000; }
 .field-card textarea { resize: none; }
 
-/* Badge picker */
-.badge-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.badge-option {
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 2px solid #e0e0e0;
-  font-size: 14px;
-  font-weight: 700;
+/* Checkbox field */
+.checkbox-field {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0;
   cursor: pointer;
-  background: #f8f8f8;
-  color: #555;
-  transition: all 0.15s;
 }
-.badge-option.selected {
-  background: #000;
-  color: #fff;
-  border-color: #000;
+.checkbox-field input[type="checkbox"] {
+  width: 24px; height: 24px; flex-shrink: 0;
+  accent-color: #000; cursor: pointer;
 }
+.checkbox-field-label { font-size: 17px; font-weight: 500; }
+
+/* Badge picker */
+.badge-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge-option { padding: 8px 16px; border-radius: 20px; border: 2px solid #e0e0e0; font-size: 14px; font-weight: 700; cursor: pointer; background: #f8f8f8; color: #555; transition: all 0.15s; }
+.badge-option.selected { background: #000; color: #fff; border-color: #000; }
 .badge-option.none { background: #f0f0f0; color: #888; }
 .badge-option.none.selected { background: #555; border-color: #555; }
 
-.done-btn {
-  width: 100%;
-  padding: 18px;
-  font-size: 18px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  margin-top: 8px;
-}
+.done-btn { width: 100%; padding: 18px; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #000; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
 .done-btn:active { opacity: 0.8; }
 
-/* ---- QR Modal ---- */
-#qr-modal {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.85);
-  z-index: 500;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  text-align: center;
-  padding: 40px 24px;
-}
+/* QR Modal */
+#qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 40px 24px; overflow-y: auto; }
 #qr-modal.open { display: flex; }
-#qr-modal .modal-name {
-  color: #fff;
-  font-size: 26px;
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-#qr-modal .modal-meta {
-  color: #aaa;
-  font-size: 15px;
-  margin-bottom: 24px;
-}
-#qr-canvas-wrap {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 24px;
-}
-.modal-close-btn {
-  background: #fff;
-  color: #000;
-  border: none;
-  border-radius: 12px;
-  padding: 16px 40px;
-  font-size: 18px;
-  font-weight: 800;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
+#qr-modal .modal-name { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+#qr-modal .modal-sub { color: #aaa; font-size: 14px; margin-bottom: 6px; }
+#qr-modal .modal-fields { color: #ccc; font-size: 14px; margin-bottom: 20px; max-width: 280px; line-height: 1.6; }
+#qr-canvas-wrap { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 24px; }
+.modal-close-btn { background: #fff; color: #000; border: none; border-radius: 12px; padding: 16px 40px; font-size: 18px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
 </style>
 </head>
 <body>
@@ -205,13 +77,11 @@ body {
   <button class="refresh-btn" onclick="loadGuests()">Refresh</button>
 </div>
 
-<!-- Guest List -->
 <div id="guest-list-view">
   <div class="section-label">Accepted — Awaiting Setup</div>
   <div id="guest-list"></div>
 </div>
 
-<!-- Editor -->
 <div id="editor-view">
   <button class="back-btn" onclick="showList()">← Back</button>
 
@@ -221,7 +91,7 @@ body {
   </div>
 
   <div class="field-card">
-    <div class="field-label">What seat are you in?</div>
+    <div class="field-label">Seat</div>
     <input type="text" id="ev-seat" placeholder="e.g. Table 3, Seat B" inputmode="text" autocomplete="off">
   </div>
 
@@ -230,10 +100,8 @@ body {
     <div class="badge-options" id="badge-options"></div>
   </div>
 
-  <div class="field-card">
-    <div class="field-label">Notes (optional)</div>
-    <textarea id="ev-notes" rows="3" placeholder="Any extra info..."></textarea>
-  </div>
+  <!-- Custom fields injected here -->
+  <div id="custom-fields-wrap"></div>
 
   <button class="done-btn" onclick="saveDone()">Done — Show QR</button>
 </div>
@@ -241,7 +109,8 @@ body {
 <!-- QR Modal -->
 <div id="qr-modal">
   <div class="modal-name" id="qr-name"></div>
-  <div class="modal-meta" id="qr-meta"></div>
+  <div class="modal-sub" id="qr-sub"></div>
+  <div class="modal-fields" id="qr-fields"></div>
   <div id="qr-canvas-wrap"><canvas id="qr-canvas"></canvas></div>
   <button class="modal-close-btn" onclick="closeQR()">Done</button>
 </div>
@@ -250,45 +119,62 @@ body {
 <script>
 let currentGuest = null;
 let selectedBadge = '';
+let customFields = [];
 const BADGE_OPTIONS = ['None', 'Eddie +', 'VIP', 'Staff', 'Press'];
 
-// ---- Init ----
 async function loadGuests() {
-  const res = await fetch('/api/editor');
-  const guests = await res.json();
-  const el = document.getElementById('guest-list');
+  try {
+    const res = await fetch('/api/editor');
+    const data = await res.json();
+    customFields = data.fields || [];
+    const guests = data.guests || [];
+    const el = document.getElementById('guest-list');
 
-  if (guests.length === 0) {
-    el.innerHTML = '<div class="empty">No accepted guests waiting.<br>Accept a guest from the admin dashboard first.</div>';
-    return;
+    if (!guests.length) {
+      el.innerHTML = '<div class="empty">No accepted guests waiting.<br>Accept a guest from the admin dashboard first.</div>';
+      return;
+    }
+    el.innerHTML = guests.map(g => `
+      <div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
+        <div class="guest-card-left">
+          <div class="name">${esc(g.first_name)} ${esc(g.last_name)}</div>
+          <div class="meta">${g.seat ? '📍 ' + esc(g.seat) : 'No seat set'}${g.badge ? ' · ' + esc(g.badge) : ''}</div>
+        </div>
+        <div class="guest-card-arrow">›</div>
+      </div>`).join('');
+  } catch(e) {
+    document.getElementById('guest-list').innerHTML = '<div class="empty">Could not load guests. Check connection.</div>';
   }
-
-  el.innerHTML = guests.map(g => `
-    <div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
-      <div class="guest-card-left">
-        <div class="name">${esc(g.first_name)} ${esc(g.last_name)}</div>
-        <div class="meta">${g.seat ? 'Seat: ' + esc(g.seat) : 'No seat set'} ${g.badge ? '· ' + esc(g.badge) : ''}</div>
-      </div>
-      <div class="guest-card-arrow">›</div>
-    </div>
-  `).join('');
 }
 
-// ---- Open editor for a guest ----
 function openEditor(guest) {
   currentGuest = guest;
   selectedBadge = guest.badge || '';
 
   document.getElementById('ev-name').textContent = guest.first_name + ' ' + guest.last_name;
   document.getElementById('ev-seat').value = guest.seat || '';
-  document.getElementById('ev-notes').value = '';
 
-  // Render badge options
-  const badgeEl = document.getElementById('badge-options');
-  badgeEl.innerHTML = BADGE_OPTIONS.map(b => `
-    <div class="badge-option ${b === 'None' ? 'none' : ''} ${(selectedBadge === b || (b === 'None' && !selectedBadge)) ? 'selected' : ''}"
-      onclick="selectBadge('${b}')">${b}</div>
-  `).join('');
+  // Badge options
+  document.getElementById('badge-options').innerHTML = BADGE_OPTIONS.map(b => `
+    <div class="badge-option ${b==='None'?'none':''} ${(selectedBadge===b||(b==='None'&&!selectedBadge))?'selected':''}"
+      onclick="selectBadge('${b}')">${b}</div>`).join('');
+
+  // Custom fields
+  const wrap = document.getElementById('custom-fields-wrap');
+  if (!customFields.length) { wrap.innerHTML = ''; }
+  else {
+    wrap.innerHTML = customFields.map(f => `
+      <div class="field-card" id="cf-card-${f.id}">
+        <div class="field-label">${esc(f.label)}</div>
+        ${f.field_type === 'checkbox'
+          ? `<label class="checkbox-field">
+               <input type="checkbox" id="cf-${f.id}" value="1">
+               <span class="checkbox-field-label">${esc(f.label)}</span>
+             </label>`
+          : `<input type="text" id="cf-${f.id}" placeholder="Enter ${esc(f.label).toLowerCase()}..." autocomplete="off">`
+        }
+      </div>`).join('');
+  }
 
   document.getElementById('guest-list-view').style.display = 'none';
   document.getElementById('editor-view').style.display = 'block';
@@ -297,8 +183,7 @@ function openEditor(guest) {
 function selectBadge(badge) {
   selectedBadge = badge === 'None' ? '' : badge;
   document.querySelectorAll('.badge-option').forEach(el => {
-    const isSelected = el.textContent === (selectedBadge || 'None');
-    el.classList.toggle('selected', isSelected);
+    el.classList.toggle('selected', el.textContent === (selectedBadge || 'None'));
   });
 }
 
@@ -308,25 +193,30 @@ function showList() {
   loadGuests();
 }
 
-// ---- Save and show QR ----
 async function saveDone() {
   if (!currentGuest) return;
   const seat = document.getElementById('ev-seat').value.trim();
   const badge = selectedBadge;
 
+  // Gather custom field values
+  const fieldValues = {};
+  customFields.forEach(f => {
+    const el = document.getElementById(`cf-${f.id}`);
+    if (!el) return;
+    fieldValues[f.id] = f.field_type === 'checkbox' ? (el.checked ? 'yes' : 'no') : el.value.trim();
+  });
+
   const btn = document.querySelector('.done-btn');
-  btn.textContent = 'Saving...';
-  btn.style.opacity = '0.6';
+  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
 
   try {
     await fetch('/api/editor', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestId: currentGuest.id, seat, badge })
+      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, fieldValues })
     });
-
-    showQR(currentGuest, seat, badge);
-  } catch (e) {
+    showQR(currentGuest, seat, badge, fieldValues);
+  } catch(e) {
     alert('Save failed — check connection');
   } finally {
     btn.textContent = 'Done — Show QR';
@@ -334,20 +224,27 @@ async function saveDone() {
   }
 }
 
-// ---- QR Modal ----
-function showQR(guest, seat, badge) {
+function showQR(guest, seat, badge, fieldValues) {
   const appUrl = `${location.origin}/app?token=${guest.app_token}`;
-
   document.getElementById('qr-name').textContent = guest.first_name + ' ' + guest.last_name;
-  document.getElementById('qr-meta').textContent = [
-    seat ? 'Seat: ' + seat : '',
-    badge || ''
-  ].filter(Boolean).join(' · ') || 'Ready to go';
+
+  // Sub line: seat + badge
+  const subParts = [seat ? '📍 ' + seat : '', badge ? '🏅 ' + badge : ''].filter(Boolean);
+  document.getElementById('qr-sub').textContent = subParts.join(' · ') || '';
+
+  // Custom field summary
+  const fieldLines = customFields
+    .map(f => {
+      const v = fieldValues[f.id] ?? '';
+      if (!v || v === 'no') return null;
+      return f.field_type === 'checkbox' ? '✓ ' + f.label : f.label + ': ' + v;
+    })
+    .filter(Boolean);
+  document.getElementById('qr-fields').textContent = fieldLines.join('\n');
 
   const canvas = document.getElementById('qr-canvas');
   canvas.width = 220; canvas.height = 220;
   new QRious({ element: canvas, value: appUrl, size: 220 });
-
   document.getElementById('qr-modal').classList.add('open');
 }
 
@@ -356,12 +253,9 @@ function closeQR() {
   showList();
 }
 
-function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 loadGuests();
-// Auto-refresh list every 10s
 setInterval(() => {
   if (document.getElementById('guest-list-view').style.display !== 'none') loadGuests();
 }, 10000);
