@@ -11,6 +11,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Only handle http/https requests — ignore chrome-extension and others
+  if (!e.request.url.startsWith('http')) return;
+
   // Network first for API calls, cache first for static
   if (e.request.url.includes('/api/')) {
     e.respondWith(fetch(e.request).catch(() => new Response('{"error":"offline"}', {headers:{'Content-Type':'application/json'}})));
