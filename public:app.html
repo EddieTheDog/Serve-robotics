@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Eddie's 2025</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Eddies">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: #f2f2f7;
+  color: #000;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Safe area padding for iPhone notch */
+.safe-top { padding-top: env(safe-area-inset-top, 44px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
+
+/* ---- Header ---- */
+.header {
+  background: #000;
+  color: #fff;
+  padding: 16px 20px 20px;
+  padding-top: calc(env(safe-area-inset-top, 20px) + 16px);
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.event-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #aaa;
+}
+.clock {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.greeting {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+.greeting .name { color: #fff; }
+
+/* ---- Content ---- */
+.content {
+  padding: 20px 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 80px);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ---- Section Label ---- */
+.section-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin: 24px 0 10px 4px;
+}
+
+/* ---- Cards ---- */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ---- Help Button ---- */
+.help-btn {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: opacity 0.15s;
+}
+.help-btn:active { opacity: 0.75; }
+.help-btn.sent { background: #34c759; }
+.help-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.help-text strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+}
+.help-text span {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* ---- Schedule Items ---- */
+.schedule-item {
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.schedule-item:last-child { border-bottom: none; }
+.schedule-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.schedule-dot.live {
+  background: #ff3b30;
+  box-shadow: 0 0 0 3px rgba(255,59,48,0.2);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255,59,48,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(255,59,48,0.05); }
+}
+.schedule-info strong {
+  font-size: 16px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+.schedule-info span {
+  font-size: 14px;
+  color: #888;
+}
+.live-badge {
+  display: inline-block;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ---- Info Card ---- */
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.info-row:last-child { border-bottom: none; }
+.info-icon {
+  font-size: 22px;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.info-row span { font-size: 16px; font-weight: 500; }
+
+/* ---- Locked Screen ---- */
+#locked-screen {
+  display: none;
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+}
+#locked-screen .lock-icon { font-size: 64px; margin-bottom: 24px; }
+#locked-screen h2 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+#locked-screen p { font-size: 16px; color: #aaa; }
+
+/* ---- Loading ---- */
+#loading-screen {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #333;
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Error ---- */
+#error-screen {
+  display: none;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  background: #fff;
+}
+#error-screen h2 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+#error-screen p { font-size: 16px; color: #888; }
+
+/* ---- Main App ---- */
+#app { display: none; }
+</style>
+</head>
+<body>
+
+<div id="loading-screen"><div class="spinner"></div></div>
+
+<div id="locked-screen">
+  <div class="lock-icon">🔒</div>
+  <h2>Account Locked</h2>
+  <p>Please see a staff member for assistance.</p>
+</div>
+
+<div id="error-screen">
+  <h2>Invalid Link</h2>
+  <p>This link is not valid. Please scan your badge QR code again or see a staff member.</p>
+</div>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <span class="event-title">The Eddie's 2025</span>
+      <span class="clock" id="clock">—</span>
+    </div>
+    <div class="greeting">Hello, <span class="name" id="guest-name">—</span> 👋</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Call for Help -->
+    <div class="section-label">Actions</div>
+    <button class="help-btn" id="help-btn" onclick="callForHelp()">
+      <div class="help-icon">🆘</div>
+      <div class="help-text">
+        <strong id="help-btn-title">Call for Help</strong>
+        <span id="help-btn-sub">A staff member will come to you</span>
+      </div>
+    </button>
+
+    <!-- Schedule -->
+    <div class="section-label">What's Happening</div>
+    <div class="card" id="schedule-card">
+      <div class="schedule-item">
+        <div class="schedule-dot"></div>
+        <div class="schedule-info"><span>Loading schedule...</span></div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="section-label">Info</div>
+    <div class="card">
+      <div class="info-row">
+        <div class="info-icon">📍</div>
+        <span id="info-location">Loading...</span>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">📅</div>
+        <span id="info-date">—</span>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">🎟️</div>
+        <span id="info-name-badge">—</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+  let guestData = null;
+  let helpSent = false;
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+
+  // ---- Clock ----
+  function updateClock() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = (h % 12) || 12;
+    document.getElementById('clock').textContent = `${h12}:${m} ${ampm}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ---- Load guest ----
+  async function loadGuest() {
+    if (!token) {
+      showError();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
+      if (!res.ok) { showError(); return; }
+      const data = await res.json();
+
+      if (data.locked) {
+        showLocked();
+        return;
+      }
+
+      guestData = data;
+      document.getElementById('guest-name').textContent = data.first_name;
+      document.getElementById('info-name-badge').textContent = `${data.first_name} ${data.last_name}`;
+
+      // Set date to today nicely
+      const today = new Date();
+      document.getElementById('info-date').textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+      showApp();
+      loadSchedule();
+    } catch (e) {
+      showError();
+    }
+  }
+
+  // ---- Load schedule ----
+  async function loadSchedule() {
+    try {
+      const res = await fetch('/api/schedule');
+      const items = await res.json();
+      const card = document.getElementById('schedule-card');
+
+      // Update location from first item's meta if present
+      if (items.location) {
+        document.getElementById('info-location').textContent = items.location;
+      }
+
+      const scheduleItems = Array.isArray(items) ? items : (items.items || []);
+
+      if (scheduleItems.length === 0) {
+        card.innerHTML = `<div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Nothing scheduled yet — check back soon.</span></div></div>`;
+        return;
+      }
+
+      card.innerHTML = scheduleItems.map(item => `
+        <div class="schedule-item">
+          <div class="schedule-dot ${item.is_live ? 'live' : ''}"></div>
+          <div class="schedule-info">
+            <strong>${escHtml(item.title)}${item.is_live ? '<span class="live-badge">Now</span>' : ''}</strong>
+            ${item.description ? `<span>${escHtml(item.description)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('info-location').textContent = items.location || 'See staff for details';
+    } catch (e) {
+      document.getElementById('schedule-card').innerHTML = `<div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Schedule unavailable.</span></div></div>`;
+    }
+  }
+
+  // ---- Call for help ----
+  async function callForHelp() {
+    if (helpSent || !guestData) return;
+    const btn = document.getElementById('help-btn');
+    btn.style.opacity = '0.6';
+    btn.style.pointerEvents = 'none';
+
+    try {
+      await fetch('/api/help', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, guestId: guestData.id })
+      });
+      helpSent = true;
+      btn.classList.add('sent');
+      btn.style.opacity = '1';
+      document.getElementById('help-btn-title').textContent = 'Help is on the way!';
+      document.getElementById('help-btn-sub').textContent = 'A staff member will find you soon';
+
+      // Reset after 60s so they can call again
+      setTimeout(() => {
+        helpSent = false;
+        btn.classList.remove('sent');
+        btn.style.pointerEvents = '';
+        document.getElementById('help-btn-title').textContent = 'Call for Help';
+        document.getElementById('help-btn-sub').textContent = 'A staff member will come to you';
+      }, 60000);
+    } catch (e) {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = '';
+      alert('Could not send help request. Please find a staff member.');
+    }
+  }
+
+  // ---- Screen helpers ----
+  function showApp() {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+  function showLocked() {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('locked-screen').style.display = 'flex';
+  }
+  function showError() {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('error-screen').style.display = 'flex';
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Refresh schedule every 30s
+  setInterval(() => { if (guestData) loadSchedule(); }, 30000);
+
+  loadGuest();
+</script>
+</body>
+</html>

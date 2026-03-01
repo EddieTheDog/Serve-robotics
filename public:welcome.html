@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Eddie's 2025</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Eddies">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: #fff;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.logo {
+  width: 90px;
+  height: 90px;
+  background: #000;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+}
+.logo span {
+  color: #fff;
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #888;
+  margin-bottom: 40px;
+}
+
+.step-card {
+  background: #f8f8f8;
+  border-radius: 16px;
+  padding: 24px 20px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+}
+.step-num {
+  width: 36px;
+  height: 36px;
+  background: #000;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.step-text strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.step-text span {
+  font-size: 14px;
+  color: #888;
+}
+
+.share-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.continue-btn {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  margin-top: 24px;
+  padding: 18px;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+.continue-btn:active { opacity: 0.8; }
+
+.skip {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #aaa;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Arrow pointing to Safari share bar */
+.bottom-hint {
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  background: #000;
+  color: #fff;
+  padding: 16px 20px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  display: none;
+  text-align: center;
+  border-radius: 20px 20px 0 0;
+  z-index: 100;
+}
+.bottom-hint.show { display: block; }
+.bottom-hint .arrow { font-size: 28px; }
+</style>
+</head>
+<body>
+
+<div class="logo"><span>E</span></div>
+<h1>The Eddie's 2025</h1>
+<p class="subtitle">Add this to your home screen for the full experience</p>
+
+<div class="step-card">
+  <div class="step-num">1</div>
+  <div class="step-text">
+    <strong>Tap the Share button</strong>
+    <span>It's the box with an arrow at the bottom of Safari</span>
+  </div>
+</div>
+
+<div class="step-card">
+  <div class="step-num">2</div>
+  <div class="step-text">
+    <strong>Tap "Add to Home Screen"</strong>
+    <span>Scroll down in the share sheet to find it</span>
+  </div>
+</div>
+
+<div class="step-card">
+  <div class="step-num">3</div>
+  <div class="step-text">
+    <strong>Tap "Add" in the top right</strong>
+    <span>The app will appear on your home screen</span>
+  </div>
+</div>
+
+<a id="open-btn" class="continue-btn" href="#">Open the App</a>
+<div class="skip" onclick="goToApp()">Skip and open in browser</div>
+
+<div class="bottom-hint" id="hint">
+  <div class="arrow">↓</div>
+  Tap the Share button below, then "Add to Home Screen"
+</div>
+
+<script>
+  // Pass token through
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+  const appUrl = token ? `/app?token=${token}` : '/app';
+
+  document.getElementById('open-btn').href = appUrl;
+
+  function goToApp() {
+    location.href = appUrl;
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+
+  // Show hint arrow on iOS Safari (not standalone)
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone;
+  if (isIOS && !isStandalone) {
+    document.getElementById('hint').classList.add('show');
+  }
+</script>
+</body>
+</html>

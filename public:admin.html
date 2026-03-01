@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard — The Eddie's 2025</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; }
+
+/* ---- Top bar ---- */
+.topbar {
+  background: #000;
+  color: #fff;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar h1 { font-size: 20px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.topbar-right { display: flex; gap: 10px; align-items: center; }
+
+/* ---- Help Alert Banner ---- */
+#help-banner {
+  display: none;
+  background: #ff3b30;
+  color: #fff;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  animation: flash 1s ease infinite alternate;
+}
+@keyframes flash { from { opacity: 1; } to { opacity: 0.7; } }
+#help-banner.show { display: block; }
+
+/* ---- Tabs ---- */
+.tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 57px;
+  z-index: 99;
+}
+.tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  color: #aaa;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s;
+}
+.tab.active { color: #000; border-bottom-color: #000; }
+
+/* ---- Content ---- */
+.tab-content { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+/* ---- Section label ---- */
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin: 20px 0 10px;
+}
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #000;
+  color: #fff;
+}
+.btn:active { opacity: 0.8; }
+.btn.green { background: #34c759; }
+.btn.red { background: #ff3b30; }
+.btn.gray { background: #e0e0e0; color: #333; }
+.btn.orange { background: #ff9500; }
+.btn.small { padding: 7px 14px; font-size: 13px; }
+.btn.full { width: 100%; display: block; text-align: center; }
+
+/* ---- Guest Cards ---- */
+.guest-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.guest-card.help-active { border: 2px solid #ff3b30; }
+.guest-card.locked-card { opacity: 0.6; }
+.guest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.guest-name { font-size: 18px; font-weight: 700; }
+.guest-status {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #e0e0e0;
+  color: #555;
+}
+.guest-status.waiting { background: #fff3cd; color: #856404; }
+.guest-status.accepted { background: #d4edda; color: #155724; }
+.guest-status.declined { background: #f8d7da; color: #721c24; }
+.guest-status.help { background: #ff3b30; color: #fff; animation: flash 1s infinite alternate; }
+.guest-status.completed { background: #e0e0e0; color: #888; }
+.guest-status.locked { background: #333; color: #fff; }
+
+.guest-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.qr-box {
+  width: 100px; height: 100px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff;
+}
+.qr-box canvas { display: block; }
+.guest-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+
+.edit-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f0f0; display: none; }
+.edit-form.open { display: block; }
+.edit-form input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  outline: none;
+  font-family: inherit;
+}
+.edit-form input:focus { border-color: #000; }
+.edit-form .edit-btns { display: flex; gap: 8px; }
+
+/* ---- Queue tab: check-in queue ---- */
+.queue-guest { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.queue-guest h3 { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+.queue-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.queue-btns { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.queue-btns button {
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background: #000;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.queue-btns button:active { opacity: 0.8; }
+.qr-text { margin-top: 8px; font-size: 11px; word-break: break-all; color: #888; text-align: center; }
+
+/* ---- Schedule editor ---- */
+.schedule-item-row {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.schedule-item-row.is-live { border: 2px solid #ff3b30; }
+.schedule-inputs { flex: 1; }
+.schedule-inputs input, .schedule-inputs textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  outline: none;
+  font-family: inherit;
+  resize: none;
+}
+.schedule-inputs input:focus, .schedule-inputs textarea:focus { border-color: #000; }
+.schedule-item-controls { display: flex; flex-direction: column; gap: 8px; }
+.go-live-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #e0e0e0;
+  color: #555;
+  letter-spacing: 0.5px;
+}
+.go-live-btn.live { background: #ff3b30; color: #fff; }
+.add-schedule-area { margin-top: 16px; }
+
+/* ---- Help log ---- */
+.help-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.help-item.resolved { opacity: 0.5; }
+.help-info strong { font-size: 15px; font-weight: 700; display: block; }
+.help-info span { font-size: 13px; color: #888; }
+
+/* ---- Modal ---- */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 24px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+}
+.modal h3 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+.modal p { font-size: 15px; color: #555; margin-bottom: 24px; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btns button { flex: 1; padding: 14px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; }
+.modal-confirm { background: #ff3b30; color: #fff; }
+.modal-cancel { background: #e0e0e0; color: #333; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Admin — The Eddie's 2025</h1>
+  <div class="topbar-right">
+    <span id="help-count" style="background:#ff3b30;color:#fff;border-radius:20px;padding:4px 12px;font-weight:700;font-size:14px;display:none;">⚠ Help!</span>
+  </div>
+</div>
+
+<div id="help-banner" onclick="switchTab('help')">
+  ⚠️ HELP REQUEST — Tap to view
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('queue')">Queue</div>
+  <div class="tab" onclick="switchTab('guests')">Guests</div>
+  <div class="tab" onclick="switchTab('schedule')">Schedule</div>
+  <div class="tab" onclick="switchTab('help')">Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+</div>
+
+<!-- QUEUE TAB -->
+<div class="tab-content active" id="tab-queue">
+  <div class="section-label">Check-In Queue</div>
+  <div id="queue-list"></div>
+</div>
+
+<!-- GUESTS TAB -->
+<div class="tab-content" id="tab-guests">
+  <div class="section-label">All Attendees</div>
+  <div id="guests-list"></div>
+</div>
+
+<!-- SCHEDULE TAB -->
+<div class="tab-content" id="tab-schedule">
+  <div class="section-label">Event Schedule</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Add items below. Hit <strong>Go Live</strong> to highlight an item as "Happening Now" in the attendee app.</p>
+  <div id="schedule-list"></div>
+  <div class="add-schedule-area">
+    <button class="btn full" onclick="addScheduleItem()">+ Add Schedule Item</button>
+  </div>
+</div>
+
+<!-- HELP TAB -->
+<div class="tab-content" id="tab-help">
+  <div class="section-label">Help Requests</div>
+  <div id="help-list"></div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h3>Delete Guest?</h3>
+    <p>This will permanently remove this guest and their account. This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let deleteTargetId = null;
+let scheduleItems = [];
+let prevHelpCount = 0;
+const BASE_URL = location.origin;
+
+// ---- Tab switching ----
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const tabs = ['queue','guests','schedule','help'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'queue') loadQueue();
+  if (name === 'guests') loadGuests();
+  if (name === 'schedule') loadSchedule();
+  if (name === 'help') { loadHelp(); clearHelpAlert(); }
+}
+
+// ---- QUEUE ----
+async function loadQueue() {
+  const res = await fetch('/api/queue');
+  const guests = await res.json();
+  const el = document.getElementById('queue-list');
+  el.innerHTML = '';
+
+  if (guests.length === 0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px 0;">No guests in queue</p>';
+    return;
+  }
+
+  guests.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'queue-guest';
+    div.innerHTML = `
+      <h3>${esc(g.first_name)} ${esc(g.last_name)}</h3>
+      <div class="queue-row">
+        <div class="qr-box" id="qq-${g.id}"></div>
+        <div class="queue-btns">
+          <button onclick="queueAccept('${g.id}')" style="background:#34c759;">Accept</button>
+          <button onclick="queueDecline('${g.id}')" style="background:#ff3b30;">Decline</button>
+          <button onclick="queueNext('${g.id}')" style="background:#555;">Next Guest</button>
+        </div>
+      </div>
+      <div class="qr-text" id="qrtext-${g.id}"></div>
+    `;
+    el.appendChild(div);
+
+    // Render QR (the app link)
+    if (g.app_token) {
+      const appUrl = `${BASE_URL}/app?token=${g.app_token}`;
+      renderQR(`qq-${g.id}`, appUrl);
+      document.getElementById(`qrtext-${g.id}`).textContent = appUrl;
+    } else if (g.qr_data) {
+      const qrVal = g.qr_data.startsWith('http') ? g.qr_data : 'https://' + g.qr_data;
+      renderQR(`qq-${g.id}`, qrVal);
+      document.getElementById(`qrtext-${g.id}`).textContent = g.qr_data;
+    }
+  });
+}
+
+async function queueAccept(id) {
+  // Accept and generate app token if not present
+  await fetch('/api/update', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ guestId: id, status: 'accepted' }) });
+  await fetch('/api/generate-token', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ guestId: id }) });
+  loadQueue();
+}
+async function queueDecline(id) {
+  await setStatus(id, 'declined'); loadQueue();
+}
+async function queueNext(id) {
+  await fetch('/api/next', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ guestId: id }) });
+  loadQueue();
+}
+
+// ---- GUESTS ----
+async function loadGuests() {
+  const res = await fetch('/api/admin-guests');
+  const guests = await res.json();
+  const el = document.getElementById('guests-list');
+  el.innerHTML = '';
+
+  if (guests.length === 0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px 0;">No guests yet</p>';
+    return;
+  }
+
+  guests.forEach(g => {
+    const isLocked = g.locked == 1;
+    const div = document.createElement('div');
+    div.className = `guest-card ${isLocked ? 'locked-card' : ''}`;
+    div.id = `gc-${g.id}`;
+
+    const appToken = g.app_token;
+    const appUrl = appToken ? `${BASE_URL}/app?token=${appToken}` : null;
+
+    div.innerHTML = `
+      <div class="guest-header">
+        <div class="guest-name">${esc(g.first_name)} ${esc(g.last_name)}</div>
+        <div class="guest-status ${g.status}${isLocked ? ' locked' : ''}">${isLocked ? 'Locked' : g.status}</div>
+      </div>
+      <div class="guest-row">
+        <div class="qr-box" id="gqr-${g.id}"></div>
+        <div class="guest-actions">
+          <button class="btn small" onclick="toggleEdit('${g.id}')">Edit Name</button>
+          <button class="btn small ${isLocked ? 'green' : 'orange'}" onclick="toggleLock('${g.id}', ${isLocked})">${isLocked ? 'Unlock' : 'Lock'}</button>
+          <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
+          ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy App Link</button>` : ''}
+        </div>
+      </div>
+      <div class="edit-form" id="ef-${g.id}">
+        <input type="text" id="ef-first-${g.id}" value="${esc(g.first_name)}" placeholder="First Name">
+        <input type="text" id="ef-last-${g.id}" value="${esc(g.last_name)}" placeholder="Last Name">
+        <div class="edit-btns">
+          <button class="btn small" onclick="saveEdit('${g.id}')">Save</button>
+          <button class="btn small gray" onclick="toggleEdit('${g.id}')">Cancel</button>
+        </div>
+      </div>
+      ${appUrl ? `<div style="font-size:11px;color:#aaa;margin-top:8px;word-break:break-all;">${appUrl}</div>` : ''}
+    `;
+    el.appendChild(div);
+
+    // QR: show app link QR if token exists
+    if (appToken) {
+      renderQR(`gqr-${g.id}`, `${BASE_URL}/app?token=${appToken}`);
+    } else if (g.qr_data) {
+      const qrVal = g.qr_data.startsWith('http') ? g.qr_data : 'https://' + g.qr_data;
+      renderQR(`gqr-${g.id}`, qrVal);
+    }
+  });
+}
+
+function toggleEdit(id) {
+  const ef = document.getElementById(`ef-${id}`);
+  ef.classList.toggle('open');
+}
+
+async function saveEdit(id) {
+  const first = document.getElementById(`ef-first-${id}`).value.trim();
+  const last = document.getElementById(`ef-last-${id}`).value.trim();
+  if (!first || !last) return alert('Both fields required');
+  await fetch('/api/admin-guests', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ guestId: id, first_name: first, last_name: last })
+  });
+  loadGuests();
+}
+
+async function toggleLock(id, isLocked) {
+  await fetch('/api/admin-guests', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ guestId: id, locked: isLocked ? 0 : 1 })
+  });
+  loadGuests();
+}
+
+function openDeleteModal(id) {
+  deleteTargetId = id;
+  document.getElementById('delete-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  deleteTargetId = null;
+}
+async function confirmDelete() {
+  if (!deleteTargetId) return;
+  await fetch('/api/admin-guests', {
+    method: 'DELETE',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ guestId: deleteTargetId })
+  });
+  closeModal();
+  loadGuests();
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => alert('Link copied!')).catch(() => alert(url));
+}
+
+// ---- SCHEDULE ----
+async function loadSchedule() {
+  const res = await fetch('/api/schedule');
+  const data = await res.json();
+  scheduleItems = Array.isArray(data) ? data : (data.items || []);
+  renderScheduleEditor();
+}
+
+function renderScheduleEditor() {
+  const el = document.getElementById('schedule-list');
+  el.innerHTML = '';
+  scheduleItems.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = `schedule-item-row ${item.is_live ? 'is-live' : ''}`;
+    div.id = `si-${item.id}`;
+    div.innerHTML = `
+      <div class="schedule-inputs">
+        <input type="text" value="${esc(item.title)}" placeholder="Title" id="si-title-${item.id}" oninput="markDirty('${item.id}')">
+        <textarea rows="2" placeholder="Description (optional)" id="si-desc-${item.id}" oninput="markDirty('${item.id}')">${esc(item.description || '')}</textarea>
+        <div style="display:flex;gap:8px;">
+          <button class="btn small" onclick="saveScheduleItem('${item.id}')">Save</button>
+          <button class="btn small red" onclick="deleteScheduleItem('${item.id}')">Remove</button>
+        </div>
+      </div>
+      <div class="schedule-item-controls">
+        <button class="go-live-btn ${item.is_live ? 'live' : ''}" onclick="goLive('${item.id}', ${item.is_live ? 0 : 1})">
+          ${item.is_live ? '🔴 Live' : 'Go Live'}
+        </button>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function markDirty(id) { /* just visual, save on button click */ }
+
+async function saveScheduleItem(id) {
+  const title = document.getElementById(`si-title-${id}`).value.trim();
+  const description = document.getElementById(`si-desc-${id}`).value.trim();
+  if (!title) return alert('Title is required');
+  await fetch('/api/schedule', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ id, title, description })
+  });
+  loadSchedule();
+}
+
+async function deleteScheduleItem(id) {
+  if (!confirm('Remove this schedule item?')) return;
+  await fetch('/api/schedule', {
+    method: 'DELETE',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ id })
+  });
+  loadSchedule();
+}
+
+async function goLive(id, liveVal) {
+  // Set this item live (and un-live all others)
+  await fetch('/api/schedule', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action: 'go-live', id, is_live: liveVal })
+  });
+  loadSchedule();
+}
+
+async function addScheduleItem() {
+  await fetch('/api/schedule', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action: 'create', title: 'New Item', description: '' })
+  });
+  loadSchedule();
+}
+
+// ---- HELP ----
+async function loadHelp() {
+  const res = await fetch('/api/help');
+  const items = await res.json();
+  const el = document.getElementById('help-list');
+
+  if (items.length === 0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px 0;">No help requests yet</p>';
+    return;
+  }
+
+  el.innerHTML = items.map(h => `
+    <div class="help-item ${h.resolved ? 'resolved' : ''}">
+      <div class="help-info">
+        <strong>${esc(h.first_name)} ${esc(h.last_name)}</strong>
+        <span>${timeAgo(h.created_at)}</span>
+      </div>
+      ${!h.resolved ? `<button class="btn small green" onclick="resolveHelp('${h.id}')">Resolve</button>` : '<span style="color:#34c759;font-size:13px;font-weight:700;">✓ Resolved</span>'}
+    </div>
+  `).join('');
+}
+
+async function resolveHelp(id) {
+  await fetch('/api/help', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ id })
+  });
+  loadHelp();
+  checkHelpAlerts();
+}
+
+// ---- Help alert polling ----
+async function checkHelpAlerts() {
+  try {
+    const res = await fetch('/api/help?unresolved=1');
+    const items = await res.json();
+    const count = items.length;
+    const banner = document.getElementById('help-banner');
+    const badge = document.getElementById('help-badge');
+    const counter = document.getElementById('help-count');
+
+    if (count > 0) {
+      banner.classList.add('show');
+      badge.style.display = 'inline';
+      badge.textContent = count;
+      counter.style.display = 'inline';
+
+      // Play alert sound if new requests came in
+      if (count > prevHelpCount) {
+        playAlertSound();
+      }
+    } else {
+      banner.classList.remove('show');
+      badge.style.display = 'none';
+      counter.style.display = 'none';
+    }
+    prevHelpCount = count;
+  } catch (e) {}
+}
+
+function clearHelpAlert() {
+  // Don't clear — just let them resolve
+}
+
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [440, 550, 660].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.3);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.3);
+    });
+  } catch (e) {}
+}
+
+// ---- Helpers ----
+async function setStatus(id, status) {
+  await fetch('/api/update', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ guestId: id, status })
+  });
+}
+
+function renderQR(containerId, value) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  box.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  box.appendChild(canvas);
+  try {
+    new QRious({ element: canvas, value, size: 100 });
+  } catch (e) {}
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ${mins % 60}m ago`;
+}
+
+// ---- Init ----
+loadQueue();
+checkHelpAlerts();
+setInterval(checkHelpAlerts, 5000);
+setInterval(() => {
+  const active = document.querySelector('.tab.active');
+  if (!active) return;
+  const tabs = ['queue','guests','schedule','help'];
+  const activeIdx = [...document.querySelectorAll('.tab')].indexOf(active);
+  if (activeIdx === 0) loadQueue();
+  if (activeIdx === 1) loadGuests();
+  if (activeIdx === 3) loadHelp();
+}, 5000);
+</script>
+</body>
+</html>
