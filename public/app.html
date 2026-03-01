@@ -147,7 +147,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="card">
       <div class="info-row"><div class="info-icon">📅</div><span id="info-date">—</span></div>
       <div class="info-row"><div class="info-icon">🎟️</div><span id="info-name-badge">—</span></div>
+      <div class="info-row" id="info-seat-row" style="display:none;"><div class="info-icon">📍</div><span id="info-seat">—</span></div>
+      <div class="info-row" id="info-badge-row" style="display:none;"><div class="info-icon">🏅</div><span id="info-badge">—</span></div>
     </div>
+    <div id="custom-fields-info-wrap"></div>
   </div>
 </div>
 
@@ -224,7 +227,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('guest-name').textContent = g.first_name;
     document.getElementById('info-name-badge').textContent = `${g.first_name} ${g.last_name}`;
     document.getElementById('info-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-    // Badge
+    // Badge pill in header
     const bw = document.getElementById('badge-wrap');
     if (g.badge) {
       const slug = g.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
@@ -232,6 +235,26 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     } else { bw.innerHTML = ''; }
     // Help button visibility
     document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
+    // Seat row
+    const seatRow = document.getElementById('info-seat-row');
+    if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
+    else { seatRow.style.display='none'; }
+    // Badge row in info
+    const badgeRow = document.getElementById('info-badge-row');
+    if (g.badge) { badgeRow.style.display='flex'; document.getElementById('info-badge').textContent = g.badge; }
+    else { badgeRow.style.display='none'; }
+    // Custom fields
+    const cfWrap = document.getElementById('custom-fields-info-wrap');
+    const fields = (g.custom_fields || []).filter(f => f.value && f.value !== 'no');
+    if (!fields.length) { cfWrap.innerHTML = ''; }
+    else {
+      cfWrap.innerHTML = `<div class="card">` +
+        fields.map(f => {
+          const display = f.field_type === 'checkbox' ? `✓ ${esc(f.label)}` : esc(f.value);
+          const icon = f.field_type === 'checkbox' ? '☑️' : 'ℹ️';
+          return `<div class="info-row"><div class="info-icon">${icon}</div><span>${display}</span></div>`;
+        }).join('') + `</div>`;
+    }
   }
 
   // Schedule
