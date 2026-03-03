@@ -200,16 +200,27 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 <!-- HELP REASONS -->
 <div class="tab-content" id="tab-reasons">
-  <div class="section-label">Help Request Reasons</div>
-  <p style="font-size:14px;color:#888;margin-bottom:16px;">When an attendee taps "Call for Help", they pick from these reasons. Edit them here.</p>
+  <div class="section-label">🆘 Help Request Reasons</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Shown when a guest taps <strong>Call for Help</strong>. An "Other" option with a text box is always added automatically.</p>
   <div class="add-form">
     <div class="add-form-row" style="margin-bottom:8px;">
-      <input type="text" id="new-reason-emoji" placeholder="Emoji e.g. 🎤" style="max-width:90px;">
-      <input type="text" id="new-reason-label" placeholder="Reason label e.g. Microphone needed">
+      <input type="text" id="new-reason-emoji" placeholder="Emoji" style="max-width:90px;">
+      <input type="text" id="new-reason-label" placeholder="Reason e.g. Microphone needed">
     </div>
-    <button class="btn full" onclick="addReason()">+ Add Reason</button>
+    <button class="btn full" onclick="addReason('help')">+ Add Help Reason</button>
   </div>
   <div id="reasons-list"></div>
+
+  <div class="section-label" style="margin-top:32px;">🛎️ Accommodation Request Reasons</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Shown when a guest taps <strong>Request Accommodation</strong>. Also always includes an "Other" option.</p>
+  <div class="add-form">
+    <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-accom-reason-emoji" placeholder="Emoji" style="max-width:90px;">
+      <input type="text" id="new-accom-reason-label" placeholder="Reason e.g. Dietary request">
+    </div>
+    <button class="btn full" onclick="addReason('accommodation')">+ Add Accommodation Reason</button>
+  </div>
+  <div id="accom-reasons-list"></div>
 </div>
 
 <!-- NOTICES -->
@@ -358,6 +369,12 @@ async function loadGuests() {
   guests.forEach(g => {
     const isLocked = g.locked == 1;
     const helpOff = g.help_disabled == 1;
+    const accomOn = g.accom_enabled == 1;
+    const accomDisabled = g.accom_disabled == 1;
+    // effectiveAccom: eligible if badge-eligible OR manually enabled, shown unless disabled
+    const ACCOM_ELIGIBLE_BADGES = ['Eddie +', 'VIP', 'Staff'];
+    const badgeEligible = g.badge && ACCOM_ELIGIBLE_BADGES.includes(g.badge);
+    const accomEffective = (badgeEligible || accomOn) && !accomDisabled;
     const appUrl = g.app_token ? `${BASE_URL}/app?token=${g.app_token}` : null;
     const div = document.createElement('div');
     div.className = 'guest-card';
@@ -377,6 +394,7 @@ async function loadGuests() {
           <button class="btn small" onclick="toggleEdit('${g.id}')">✏️ Edit</button>
           <button class="btn small ${isLocked?'green':'orange'}" onclick="toggleLock('${g.id}',${isLocked})">${isLocked?'🔓 Unlock':'🔒 Lock'}</button>
           <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'🆘 Enable Help':'🚫 Disable Help'}</button>
+          <button class="btn small ${accomEffective?'orange':'green'}" onclick="toggleAccomAccess('${g.id}',${accomEffective?1:0},${accomOn?1:0})" title="${accomEffective?'Disable accommodations for this guest':'Enable accommodations for this guest'}">${accomEffective?'🛎️ Disable Accom':'🛎️ Enable Accom'}</button>
           <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
           ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy Link</button>` : ''}
         </div>
@@ -428,6 +446,15 @@ async function toggleLock(id, isLocked) {
 }
 async function toggleHelp(id, helpOff) {
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,help_disabled:helpOff?0:1})});
+  loadGuests();
+}
+async function toggleAccomAccess(id, isEffective, isManuallyEnabled) {
+  // If currently showing: disable it (set accom_disabled=1, accom_enabled=0)
+  // If currently hidden: enable it (set accom_enabled=1, accom_disabled=0)
+  const body = isEffective
+    ? { guestId: id, accom_disabled: 1, accom_enabled: 0 }
+    : { guestId: id, accom_disabled: 0, accom_enabled: 1 };
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   loadGuests();
 }
 function openDeleteModal(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('open'); }
@@ -617,24 +644,38 @@ async function deleteButton(id) {
 
 // ---- HELP REASONS ----
 async function loadReasons() {
-  const res = await fetch('/api/help-reasons');
+  // Load help reasons
+  const res = await fetch('/api/help-reasons?type=help');
   const items = await res.json();
   const el = document.getElementById('reasons-list');
-  if (!items.length) { el.innerHTML = '<div class="empty">No reasons configured.</div>'; return; }
-  el.innerHTML = items.map(r => `
+  if (!items.length) { el.innerHTML = '<div class="empty">No help reasons yet. The "Other" option is always shown automatically.</div>'; }
+  else { el.innerHTML = items.map(r => `
     <div class="config-item">
       <span class="ci-emoji">${esc(r.emoji)}</span>
       <span class="ci-label">${esc(r.label)}</span>
       <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
-    </div>`).join('');
+    </div>`).join(''); }
+
+  // Load accommodation reasons
+  const aRes = await fetch('/api/help-reasons?type=accommodation');
+  const aItems = await aRes.json();
+  const aEl = document.getElementById('accom-reasons-list');
+  if (!aItems.length) { aEl.innerHTML = '<div class="empty">No accommodation reasons yet. The "Other" option is always shown automatically.</div>'; }
+  else { aEl.innerHTML = aItems.map(r => `
+    <div class="config-item">
+      <span class="ci-emoji">${esc(r.emoji)}</span>
+      <span class="ci-label">${esc(r.label)}</span>
+      <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
+    </div>`).join(''); }
 }
-async function addReason() {
-  const label = document.getElementById('new-reason-label').value.trim();
-  const emoji = document.getElementById('new-reason-emoji').value.trim() || '🙋';
+async function addReason(type) {
+  const isAccom = type === 'accommodation';
+  const label = document.getElementById(isAccom ? 'new-accom-reason-label' : 'new-reason-label').value.trim();
+  const emoji = document.getElementById(isAccom ? 'new-accom-reason-emoji' : 'new-reason-emoji').value.trim() || '🙋';
   if (!label) return alert('Label required');
-  await fetch('/api/help-reasons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label,emoji})});
-  document.getElementById('new-reason-label').value = '';
-  document.getElementById('new-reason-emoji').value = '';
+  await fetch('/api/help-reasons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label,emoji,type})});
+  document.getElementById(isAccom ? 'new-accom-reason-label' : 'new-reason-label').value = '';
+  document.getElementById(isAccom ? 'new-accom-reason-emoji' : 'new-reason-emoji').value = '';
   loadReasons();
 }
 async function deleteReason(id) {
