@@ -262,10 +262,12 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     } else { bw.innerHTML = ''; }
     // Help button visibility
     document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
-    // Accommodations button — show for Eddie+, VIP, Staff (you can adjust this list)
+    // Accommodations visibility:
+    // Show if: (badge is eligible OR manually enabled) AND NOT manually disabled
     const ACCOM_BADGES = ['Eddie +', 'VIP', 'Staff'];
-    const showAccom = g.badge && ACCOM_BADGES.includes(g.badge);
-    document.getElementById('accom-wrap').style.display = showAccom ? 'block' : 'none';
+    const badgeEligible = g.badge && ACCOM_BADGES.includes(g.badge);
+    const finalShowAccom = (badgeEligible || g.accom_enabled == 1) && !g.accom_disabled;
+    document.getElementById('accom-wrap').style.display = finalShowAccom ? 'block' : 'none';
     // Seat row
     const seatRow = document.getElementById('info-seat-row');
     if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
@@ -341,18 +343,53 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('msg-overlay').classList.add('open');
   }
 
-  // Help
+  // Help & Accommodation Reasons
   let helpReasons = [];
+  let accomReasons = [];
   async function loadHelpReasons() {
-    try { const res = await fetch('/api/help-reasons'); helpReasons = await res.json(); } catch(e) {}
+    try {
+      const [hRes, aRes] = await Promise.all([
+        fetch('/api/help-reasons?type=help'),
+        fetch('/api/help-reasons?type=accommodation')
+      ]);
+      helpReasons = await hRes.json();
+      accomReasons = await aRes.json();
+    } catch(e) {}
   }
-  function openHelpSheet() {
-    if (helpSent || guestData?.help_disabled) return;
-    if (!helpReasons.length) { sendHelp('I need help'); return; }
-    document.getElementById('reason-list').innerHTML = helpReasons.map(r => `
-      <button class="reason-btn" onclick="sendHelp('${esc(r.label)}')">
+
+  function buildReasonList(reasons, sendFn) {
+    const items = reasons.map(r => `
+      <button class="reason-btn" onclick="${sendFn}('${esc(r.label)}')">
         <span class="reason-emoji">${r.emoji}</span><span>${esc(r.label)}</span>
       </button>`).join('');
+    // Always append "Other" with inline text box
+    const otherId = sendFn + '-other-input';
+    const other = `
+      <div style="margin-bottom:10px;">
+        <button class="reason-btn" onclick="toggleOtherInput('${otherId}')">
+          <span class="reason-emoji">✏️</span><span>Other</span>
+        </button>
+        <div id="${otherId}" style="display:none;padding:10px 0 0;">
+          <input type="text" id="${otherId}-text" placeholder="Describe what you need..."
+            style="width:100%;padding:14px;font-size:16px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;outline:none;margin-bottom:8px;">
+          <button class="reason-btn" style="background:#000;color:#fff;justify-content:center;"
+            onclick="${sendFn}(document.getElementById('${otherId}-text').value.trim()||'Other')">
+            Send
+          </button>
+        </div>
+      </div>`;
+    return items + other;
+  }
+
+  function toggleOtherInput(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'block') setTimeout(() => document.getElementById(id+'-text')?.focus(), 50);
+  }
+
+  function openHelpSheet() {
+    if (helpSent || guestData?.help_disabled) return;
+    document.getElementById('reason-list').innerHTML = buildReasonList(helpReasons, 'sendHelp');
     document.getElementById('help-sheet').classList.add('open');
   }
   function closeHelpSheet() { document.getElementById('help-sheet').classList.remove('open'); }
@@ -362,19 +399,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
   function openAccomSheet() {
     if (accomSent) return;
-    const list = document.getElementById('accom-reason-list');
-    // Reuse help reasons but framed differently, or use a fixed set
-    const accomReasons = helpReasons.length ? helpReasons : [
-      {emoji:'🍽️', label:'Dietary / food request'},
-      {emoji:'♿', label:'Mobility assistance'},
-      {emoji:'🎧', label:'Audio / hearing assistance'},
-      {emoji:'💺', label:'Seating adjustment'},
-      {emoji:'❓', label:'Other request'}
-    ];
-    list.innerHTML = accomReasons.map(r => `
-      <button class="reason-btn" onclick="sendAccom('${esc(r.label)}')">
-        <span class="reason-emoji">${r.emoji}</span><span>${esc(r.label)}</span>
-      </button>`).join('');
+    document.getElementById('accom-reason-list').innerHTML = buildReasonList(accomReasons, 'sendAccom');
     document.getElementById('accom-sheet').classList.add('open');
   }
 
