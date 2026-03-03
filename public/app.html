@@ -32,6 +32,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .help-btn:active { opacity: 0.75; }
 .help-btn.sent { background: #34c759; }
 .help-btn.resolved-state { background: #007aff; }
+.accom-btn {
+  background: #6c3d9e; color: #fff; border: none; border-radius: 16px;
+  padding: 20px; width: 100%; display: flex; align-items: center;
+  gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s;
+  margin-top: 10px;
+}
+.accom-btn:active { opacity: 0.75; }
+.accom-btn.sent { background: #34c759; }
+.accom-btn.resolved-state { background: #007aff; }
 .help-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
 .help-text strong { display: block; font-size: 18px; font-weight: 700; }
 .help-text span { font-size: 13px; opacity: 0.7; }
@@ -163,6 +172,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   </div>
 </div>
 
+<!-- Accommodations Sheet -->
+<div class="sheet-overlay" id="accom-sheet">
+  <div class="sheet">
+    <div class="sheet-title">What do you need?</div>
+    <div id="accom-reason-list"></div>
+    <button class="sheet-cancel" onclick="document.getElementById('accom-sheet').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
 <!-- Notice Modal -->
 <div id="notice-overlay">
   <div class="notice-box">
@@ -235,6 +253,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     } else { bw.innerHTML = ''; }
     // Help button visibility
     document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
+    // Accommodations button — show for Eddie+, VIP, Staff (you can adjust this list)
+    const ACCOM_BADGES = ['Eddie +', 'VIP', 'Staff'];
+    const showAccom = g.badge && ACCOM_BADGES.includes(g.badge);
+    document.getElementById('accom-wrap').style.display = showAccom ? 'block' : 'none';
     // Seat row
     const seatRow = document.getElementById('info-seat-row');
     if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
@@ -325,6 +347,56 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('help-sheet').classList.add('open');
   }
   function closeHelpSheet() { document.getElementById('help-sheet').classList.remove('open'); }
+  // ---- Accommodations ----
+  let accomSent = false;
+  let accomPending = false;
+
+  function openAccomSheet() {
+    if (accomSent) return;
+    const list = document.getElementById('accom-reason-list');
+    // Reuse help reasons but framed differently, or use a fixed set
+    const accomReasons = helpReasons.length ? helpReasons : [
+      {emoji:'🍽️', label:'Dietary / food request'},
+      {emoji:'♿', label:'Mobility assistance'},
+      {emoji:'🎧', label:'Audio / hearing assistance'},
+      {emoji:'💺', label:'Seating adjustment'},
+      {emoji:'❓', label:'Other request'}
+    ];
+    list.innerHTML = accomReasons.map(r => `
+      <button class="reason-btn" onclick="sendAccom('${esc(r.label)}')">
+        <span class="reason-emoji">${r.emoji}</span><span>${esc(r.label)}</span>
+      </button>`).join('');
+    document.getElementById('accom-sheet').classList.add('open');
+  }
+
+  async function sendAccom(reason) {
+    document.getElementById('accom-sheet').classList.remove('open');
+    if (accomSent || !guestData) return;
+    accomSent = true; accomPending = true;
+    const btn = document.getElementById('accom-btn');
+    btn.classList.add('sent');
+    document.getElementById('accom-btn-title').textContent = 'Request Received!';
+    document.getElementById('accom-btn-sub').textContent = reason;
+    try {
+      await fetch('/api/help', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token, guestId: guestData.id, reason, type: 'accommodation' })
+      });
+    } catch(e) {
+      showToast('Could not send — please find a staff member');
+      resetAccomBtn();
+    }
+  }
+
+  function resetAccomBtn() {
+    accomSent = false; accomPending = false;
+    const btn = document.getElementById('accom-btn');
+    btn.classList.remove('sent','resolved-state');
+    document.getElementById('accom-btn-title').textContent = 'Request Accommodation';
+    document.getElementById('accom-btn-sub').textContent = 'Special requests & assistance';
+  }
+
   async function sendHelp(reason) {
     closeHelpSheet();
     if (helpSent || !guestData) return;
@@ -398,6 +470,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
             document.getElementById('help-btn-sub').textContent = 'Thanks! Tap to request again.';
             showToast('✓ Your help request was resolved!');
             setTimeout(() => { btn.classList.remove('resolved-state'); resetHelpBtn(); }, 5000);
+          }
+        }
+        if (accomPending) {
+          const ar = await (await fetch(`/api/help?token=${encodeURIComponent(token)}&type=accommodation`)).json();
+          if (ar.resolved) {
+            accomPending = false; accomSent = false;
+            const btn = document.getElementById('accom-btn');
+            btn.classList.remove('sent'); btn.classList.add('resolved-state');
+            document.getElementById('accom-btn-title').textContent = 'Request Handled ✓';
+            document.getElementById('accom-btn-sub').textContent = 'Tap to make another request';
+            showToast('✓ Your accommodation request was handled!');
+            setTimeout(() => { btn.classList.remove('resolved-state'); resetAccomBtn(); }, 5000);
           }
         }
         checkNotices();
