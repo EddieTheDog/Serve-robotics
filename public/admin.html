@@ -136,7 +136,8 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div class="tab active" onclick="switchTab('queue')">Queue</div>
   <div class="tab" onclick="switchTab('guests')">Guests</div>
   <div class="tab" onclick="switchTab('schedule')">Schedule</div>
-  <div class="tab" onclick="switchTab('help')">Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+  <div class="tab" onclick="switchTab('help')">🆘 Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+  <div class="tab" onclick="switchTab('accommodations')">🛎️ Accommodations <span id="accom-badge" style="display:none;background:#9b59b6;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
   <div class="tab" onclick="switchTab('buttons')">Buttons</div>
   <div class="tab" onclick="switchTab('reasons')">Help Reasons</div>
   <div class="tab" onclick="switchTab('notices')">📢 Notices</div>
@@ -167,6 +168,13 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <div class="tab-content" id="tab-help">
   <div class="section-label">Help Requests</div>
   <div id="help-list"></div>
+</div>
+
+<!-- ACCOMMODATIONS -->
+<div class="tab-content" id="tab-accommodations">
+  <div class="section-label">Accommodation Requests</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Requests from Eddie+ and other eligible guests. These are not emergencies — no flashing alert — but they do appear as a badge on this tab.</p>
+  <div id="accom-list"></div>
 </div>
 
 <!-- CUSTOM BUTTONS -->
@@ -265,12 +273,12 @@ const BASE_URL = location.origin;
 const BADGES = ['', 'Eddie +', 'VIP', 'Staff', 'Press'];
 
 // ---- Tab switching ----
-const TAB_NAMES = ['queue','guests','schedule','help','buttons','reasons','notices','fields'];
+const TAB_NAMES = ['queue','guests','schedule','help','accommodations','buttons','reasons','notices','fields'];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, buttons: loadButtons, reasons: loadReasons, notices: loadNotices, fields: loadCustomFields };
+  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, accommodations: loadAccommodations, buttons: loadButtons, reasons: loadReasons, notices: loadNotices, fields: loadCustomFields };
   if (loaders[name]) loaders[name]();
   if (name === 'help') clearHelpAlert();
 }
@@ -505,6 +513,32 @@ async function resolveHelp(id) {
   loadHelp(); checkHelpAlerts();
 }
 
+// ---- ACCOMMODATIONS ----
+async function loadAccommodations() {
+  const res = await fetch('/api/help?type=accommodation');
+  const items = await res.json();
+  const el = document.getElementById('accom-list');
+  if (!items.length) { el.innerHTML = '<div class="empty">No accommodation requests yet</div>'; return; }
+  el.innerHTML = items.map(h => `
+    <div class="help-item ${h.resolved ? 'resolved' : ''}">
+      <div class="help-info">
+        <strong>${esc(h.first_name)} ${esc(h.last_name)}</strong>
+        ${h.badge ? `<span style="font-size:12px;font-weight:700;color:#9b59b6;">${esc(h.badge)}</span>` : ''}
+        ${h.seat ? `<span>📍 ${esc(h.seat)}</span>` : ''}
+        ${h.message ? `<span class="help-reason-tag">${esc(h.message)}</span>` : ''}
+        <div style="margin-top:4px;font-size:12px;color:#aaa;">${timeAgo(h.created_at)}</div>
+      </div>
+      ${!h.resolved ? `<button class="btn small green" onclick="resolveAccom('${h.id}')">Resolve ✓</button>` : '<span style="color:#34c759;font-size:13px;font-weight:700;">✓ Done</span>'}
+    </div>`).join('');
+}
+async function resolveAccom(id) {
+  await fetch('/api/help', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadAccommodations();
+  // Clear badge
+  const badge = document.getElementById('accom-badge');
+  badge.style.display = 'none';
+}
+
 // ---- CUSTOM BUTTONS ----
 let buttonsList = [];
 async function loadButtons() {
@@ -698,6 +732,16 @@ async function checkHelpAlerts() {
       counter.style.display = 'none';
     }
     prevHelpCount = count;
+    // Check accommodation requests (silent — just badge on tab)
+    const aRes = await fetch('/api/help?unresolved=1&type=accommodation');
+    const aItems = await aRes.json();
+    const accomBadge = document.getElementById('accom-badge');
+    if (aItems.length > 0) {
+      accomBadge.style.display = 'inline';
+      accomBadge.textContent = aItems.length;
+    } else {
+      accomBadge.style.display = 'none';
+    }
   } catch(e) {}
 }
 function clearHelpAlert() {}
