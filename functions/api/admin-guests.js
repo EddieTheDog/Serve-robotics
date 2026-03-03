@@ -1,6 +1,6 @@
 export async function onRequestGet({ env }) {
   const { results } = await env.DB.prepare(`
-    SELECT id, first_name, last_name, status, app_token, locked, qr_data, seat, badge, help_disabled, created_at
+    SELECT id, first_name, last_name, status, app_token, locked, qr_data, seat, badge, help_disabled, accom_enabled, accom_disabled, created_at
     FROM guests ORDER BY created_at DESC
   `).all();
   return Response.json(results);
@@ -21,6 +21,8 @@ export async function onRequestPatch({ request, env }) {
   if (body.badge !== undefined) { updates.push('badge = ?'); binds.push(body.badge); }
   if (body.seat !== undefined) { updates.push('seat = ?'); binds.push(body.seat); }
   if (body.help_disabled !== undefined) { updates.push('help_disabled = ?'); binds.push(body.help_disabled); }
+  if (body.accom_enabled !== undefined) { updates.push('accom_enabled = ?'); binds.push(body.accom_enabled); }
+  if (body.accom_disabled !== undefined) { updates.push('accom_disabled = ?'); binds.push(body.accom_disabled); }
 
   binds.push(guestId);
   await env.DB.prepare(`UPDATE guests SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
