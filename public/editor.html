@@ -8,113 +8,85 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; }
 
-.topbar { background: #000; color: #fff; padding: 16px 20px; padding-top: calc(env(safe-area-inset-top, 20px) + 12px); display: flex; align-items: center; justify-content: space-between; gap: 8px; position: sticky; top: 0; z-index: 100; }
-.topbar h1 { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; flex: 1; }
-.topbar-btn { background: #333; color: #fff; border: none; border-radius: 8px; padding: 8px 13px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-.topbar-btn.active { background: #007aff; }
-
-/* Search bar */
-#search-bar { background: #fff; padding: 12px 16px; border-bottom: 1px solid #e0e0e0; display: none; }
-#search-input { width: 100%; padding: 12px 14px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; }
-#search-input:focus { border-color: #000; }
-
-/* Scan banner */
-#scan-banner { background: #007aff; color: #fff; text-align: center; padding: 12px 16px; font-size: 14px; font-weight: 700; display: none; cursor: pointer; }
+.topbar { background: #000; color: #fff; padding: 16px 20px; padding-top: calc(env(safe-area-inset-top, 20px) + 12px); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar h1 { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.refresh-btn { background: #fff; color: #000; border: none; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
 
 #guest-list-view { padding: 16px; }
-.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 4px 0 10px 4px; }
-.guest-card { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; }
-.guest-card-info { flex: 1; cursor: pointer; }
-.guest-card-info .name { font-size: 17px; font-weight: 700; }
-.guest-card-info .meta { font-size: 13px; color: #888; margin-top: 2px; }
-.guest-card-arrow { font-size: 20px; color: #ccc; cursor: pointer; }
+.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 8px 0 10px 4px; }
+.guest-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: opacity 0.15s; }
+.guest-card:active { opacity: 0.7; }
+.guest-card-left .name { font-size: 18px; font-weight: 700; }
+.guest-card-left .meta { font-size: 13px; color: #888; margin-top: 2px; }
+.guest-card-arrow { font-size: 20px; color: #ccc; }
 .empty { text-align: center; color: #aaa; padding: 60px 20px; font-size: 16px; }
 
-/* Editor view */
 #editor-view { display: none; padding: 20px; padding-bottom: 40px; max-width: 500px; margin: 0 auto; }
 .back-btn { background: none; border: none; font-size: 16px; font-weight: 600; color: #000; cursor: pointer; padding: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
+
 .hello-card { background: #000; color: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
-.hello-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.guest-big-name { font-size: 26px; font-weight: 800; }
+.hello-card .hello-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.hello-card .guest-big-name { font-size: 28px; font-weight: 800; }
+
 .field-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .field-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
-.field-card input[type="text"] { width: 100%; font-size: 17px; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; color: #000; }
-.field-card input:focus { border-color: #000; }
+.field-card input[type="text"], .field-card textarea {
+  width: 100%; font-size: 18px; padding: 12px 14px;
+  border: 2px solid #e0e0e0; border-radius: 10px;
+  font-family: inherit; outline: none; color: #000;
+}
+.field-card input:focus, .field-card textarea:focus { border-color: #000; }
+.field-card textarea { resize: none; }
 
+/* Checkbox field */
+.checkbox-field {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0;
+  cursor: pointer;
+}
+.checkbox-field input[type="checkbox"] {
+  width: 24px; height: 24px; flex-shrink: 0;
+  accent-color: #000; cursor: pointer;
+}
+.checkbox-field-label { font-size: 17px; font-weight: 500; }
+
+/* Badge picker */
 .badge-options { display: flex; flex-wrap: wrap; gap: 8px; }
-.badge-option { padding: 8px 16px; border-radius: 20px; border: 2px solid #e0e0e0; font-size: 14px; font-weight: 700; cursor: pointer; background: #f8f8f8; color: #555; }
+.badge-option { padding: 8px 16px; border-radius: 20px; border: 2px solid #e0e0e0; font-size: 14px; font-weight: 700; cursor: pointer; background: #f8f8f8; color: #555; transition: all 0.15s; }
 .badge-option.selected { background: #000; color: #fff; border-color: #000; }
-.badge-option.none.selected { background: #777; border-color: #777; }
+.badge-option.none { background: #f0f0f0; color: #888; }
+.badge-option.none.selected { background: #555; border-color: #555; }
 
-/* Grant toggles — only things you can turn ON */
-.grant-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-.grant-row:last-child { border-bottom: none; }
-.grant-info { flex: 1; }
-.grant-name { font-size: 16px; font-weight: 600; }
-.grant-desc { font-size: 12px; color: #aaa; margin-top: 2px; }
-.toggle { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 31px; cursor: pointer; transition: 0.2s; }
-.toggle-slider:before { content: ''; position: absolute; width: 27px; height: 27px; left: 2px; bottom: 2px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-input:checked + .toggle-slider { background: #34c759; }
-input:checked + .toggle-slider:before { transform: translateX(20px); }
-.grant-note { font-size: 12px; color: #007aff; margin-top: 8px; padding: 8px 12px; background: #e8f0ff; border-radius: 8px; }
-
-.checkbox-field { display: flex; align-items: center; gap: 14px; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
-.checkbox-field:last-child { border-bottom: none; }
-.checkbox-field input[type="checkbox"] { width: 24px; height: 24px; flex-shrink: 0; accent-color: #000; cursor: pointer; }
-.checkbox-field-label { font-size: 16px; font-weight: 500; }
-
-.done-btn { width: 100%; padding: 17px; font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #000; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
+.done-btn { width: 100%; padding: 18px; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #000; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
 .done-btn:active { opacity: 0.8; }
-.save-btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 700; background: #555; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
 
-/* QR modal */
-#qr-modal { display: none; position: fixed; inset: 0; background: #000; z-index: 500; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
+/* QR Modal */
+#qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 40px 24px; overflow-y: auto; }
 #qr-modal.open { display: flex; }
-.qr-name { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-.qr-sub { color: #aaa; font-size: 14px; margin-bottom: 20px; }
-.qr-wrap { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 24px; }
-.qr-btns { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 10px; }
-.qr-close-btn { background: #fff; color: #000; border: none; border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer; }
-.qr-edit-btn { background: #333; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
-
-/* Scan modal */
-#scan-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 600; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; }
-#scan-modal.open { display: flex; }
-.scan-box { background: #fff; border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px; text-align: center; }
-.scan-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-.scan-desc { font-size: 14px; color: #888; margin-bottom: 20px; line-height: 1.5; }
-.scan-input { width: 100%; padding: 14px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; margin-bottom: 12px; }
-.scan-input:focus { border-color: #000; }
-.scan-go-btn { width: 100%; padding: 15px; background: #000; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-.scan-cancel-btn { width: 100%; padding: 13px; background: #f0f0f0; color: #555; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
-.scan-error { color: #ff3b30; font-size: 14px; font-weight: 600; margin-top: 8px; min-height: 20px; }
+#qr-modal .modal-name { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+#qr-modal .modal-sub { color: #aaa; font-size: 14px; margin-bottom: 6px; }
+#qr-modal .modal-fields { color: #ccc; font-size: 14px; margin-bottom: 20px; max-width: 280px; line-height: 1.6; }
+#qr-canvas-wrap { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 24px; }
+.modal-close-btn { background: #fff; color: #000; border: none; border-radius: 12px; padding: 16px 40px; font-size: 18px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <h1>Staff Editor</h1>
-  <button class="topbar-btn" id="btn-scan" onclick="openScanModal()">📷 Scan</button>
-  <button class="topbar-btn active" id="btn-all" onclick="setMode('all')">All</button>
-  <button class="topbar-btn" id="btn-setup" onclick="setMode('setup')">New</button>
-  <button class="topbar-btn" onclick="loadGuests()">↻</button>
-</div>
-
-<div id="search-bar">
-  <input type="text" id="search-input" placeholder="Search guests..." oninput="filterGuests()">
+  <h1>Editor</h1>
+  <button class="refresh-btn" onclick="loadGuests()">Refresh</button>
 </div>
 
 <div id="guest-list-view">
-  <div class="section-label" id="list-label">All Accepted Guests</div>
+  <div class="section-label">Accepted — Awaiting Setup</div>
   <div id="guest-list"></div>
 </div>
 
 <div id="editor-view">
   <button class="back-btn" onclick="showList()">← Back</button>
+
   <div class="hello-card">
-    <div class="hello-label" id="editor-mode-label">Editing</div>
+    <div class="hello-label">Setting up</div>
     <div class="guest-big-name" id="ev-name">—</div>
   </div>
 
@@ -128,50 +100,19 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div class="badge-options" id="badge-options"></div>
   </div>
 
-  <!-- Access grants — only show toggles that can be turned ON -->
-  <div class="field-card" id="access-card">
-    <div class="field-label">Extra Access</div>
-    <div id="access-rows"></div>
-  </div>
-
-  <!-- Custom fields -->
+  <!-- Custom fields injected here -->
   <div id="custom-fields-wrap"></div>
 
-  <button class="done-btn" id="done-btn" onclick="saveDone()">Done — Show QR</button>
-  <button class="save-btn" onclick="saveOnly()">Save Only</button>
+  <button class="done-btn" onclick="saveDone()">Done — Show QR</button>
 </div>
 
 <!-- QR Modal -->
 <div id="qr-modal">
-  <div class="qr-name" id="qr-name"></div>
-  <div class="qr-sub" id="qr-sub"></div>
-  <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
-  <div class="qr-btns">
-    <button class="qr-edit-btn" onclick="continueEditing()">✏️ Keep Editing</button>
-    <button class="qr-close-btn" onclick="closeQR()">Done</button>
-  </div>
-</div>
-
-<!-- Scan Modal -->
-<div id="scan-modal">
-  <div class="scan-box">
-    <div class="scan-title">📷 Scan Barcode</div>
-    <!-- Camera view -->
-    <div id="scan-camera-wrap" style="display:none;position:relative;margin-bottom:14px;">
-      <video id="scan-video" autoplay playsinline muted
-        style="width:100%;border-radius:12px;background:#000;display:block;max-height:240px;object-fit:cover;"></video>
-      <canvas id="scan-canvas" style="display:none;"></canvas>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-        <div style="width:160px;height:160px;border:3px solid rgba(255,255,255,0.6);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
-      </div>
-    </div>
-    <div id="scan-status" style="font-size:13px;color:#aaa;text-align:center;margin-bottom:12px;min-height:18px;"></div>
-    <div class="scan-desc" id="scan-desc">Point camera at the barcode on their badge. Or type their name to search.</div>
-    <input type="text" id="scan-input" class="scan-input" placeholder="Search by name..." oninput="onScanInput()">
-    <button class="scan-go-btn" onclick="doNameSearch()">Search by Name</button>
-    <button class="scan-cancel-btn" onclick="closeScanModal()">Cancel</button>
-    <div class="scan-error" id="scan-error"></div>
-  </div>
+  <div class="modal-name" id="qr-name"></div>
+  <div class="modal-sub" id="qr-sub"></div>
+  <div class="modal-fields" id="qr-fields"></div>
+  <div id="qr-canvas-wrap"><canvas id="qr-canvas"></canvas></div>
+  <button class="modal-close-btn" onclick="closeQR()">Done</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
@@ -179,64 +120,31 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 let currentGuest = null;
 let selectedBadge = '';
 let customFields = [];
-let allGuests = [];
-let currentMode = 'all';
 const BADGE_OPTIONS = ['None', 'Eddie +', 'VIP', 'Staff', 'Press'];
-// Badges that automatically get accommodation access
-const AUTO_ACCOM_BADGES = ['Eddie +', 'VIP', 'Staff'];
-
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('btn-all').classList.toggle('active', mode === 'all');
-  document.getElementById('btn-setup').classList.toggle('active', mode === 'setup');
-  document.getElementById('search-bar').style.display = mode === 'all' ? 'block' : 'none';
-  document.getElementById('list-label').textContent = mode === 'setup' ? 'New — Awaiting Setup' : 'All Accepted Guests';
-  renderGuestList(allGuests);
-}
 
 async function loadGuests() {
   try {
     const res = await fetch('/api/editor');
     const data = await res.json();
     customFields = data.fields || [];
-    allGuests = data.guests || [];
-    renderGuestList(allGuests);
+    const guests = data.guests || [];
+    const el = document.getElementById('guest-list');
+
+    if (!guests.length) {
+      el.innerHTML = '<div class="empty">No accepted guests waiting.<br>Accept a guest from the admin dashboard first.</div>';
+      return;
+    }
+    el.innerHTML = guests.map(g => `
+      <div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
+        <div class="guest-card-left">
+          <div class="name">${esc(g.first_name)} ${esc(g.last_name)}</div>
+          <div class="meta">${g.seat ? '📍 ' + esc(g.seat) : 'No seat set'}${g.badge ? ' · ' + esc(g.badge) : ''}</div>
+        </div>
+        <div class="guest-card-arrow">›</div>
+      </div>`).join('');
   } catch(e) {
-    document.getElementById('guest-list').innerHTML = '<div class="empty">Could not load. Check connection.</div>';
+    document.getElementById('guest-list').innerHTML = '<div class="empty">Could not load guests. Check connection.</div>';
   }
-}
-
-function filterGuests() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const filtered = q ? allGuests.filter(g =>
-    (g.first_name + ' ' + g.last_name).toLowerCase().includes(q)
-  ) : allGuests;
-  renderGuestList(filtered);
-}
-
-function renderGuestList(guests) {
-  let list = guests;
-  if (currentMode === 'setup') list = guests.filter(g => !g.seat && !g.badge);
-  const el = document.getElementById('guest-list');
-  if (!list.length) {
-    el.innerHTML = `<div class="empty">${currentMode === 'setup' ? 'All guests are set up.' : 'No guests found.'}</div>`;
-    return;
-  }
-  el.innerHTML = list.map(g => {
-    const hasAccom = g.accom_enabled || AUTO_ACCOM_BADGES.includes(g.badge);
-    const meta = [
-      g.seat ? '📍 ' + esc(g.seat) : 'No seat',
-      g.badge ? esc(g.badge) : '',
-      hasAccom ? '🛎️' : ''
-    ].filter(Boolean).join(' · ');
-    return `<div class="guest-card">
-      <div class="guest-card-info" onclick='openEditor(${JSON.stringify(g)})'>
-        <div class="name">${esc(g.first_name)} ${esc(g.last_name)}</div>
-        <div class="meta">${meta}</div>
-      </div>
-      <div class="guest-card-arrow" onclick='openEditor(${JSON.stringify(g)})'>›</div>
-    </div>`;
-  }).join('');
 }
 
 function openEditor(guest) {
@@ -245,64 +153,38 @@ function openEditor(guest) {
 
   document.getElementById('ev-name').textContent = guest.first_name + ' ' + guest.last_name;
   document.getElementById('ev-seat').value = guest.seat || '';
-  document.getElementById('editor-mode-label').textContent = guest.seat || guest.badge ? 'Editing' : 'Setting up';
 
   // Badge options
   document.getElementById('badge-options').innerHTML = BADGE_OPTIONS.map(b => `
     <div class="badge-option ${b==='None'?'none':''} ${(selectedBadge===b||(b==='None'&&!selectedBadge))?'selected':''}"
       onclick="selectBadge('${b}')">${b}</div>`).join('');
 
-  // Access grants — only show things that can be turned ON
-  // Don't show accom if their badge already gives it automatically
-  renderAccessToggles(guest);
-
   // Custom fields
   const wrap = document.getElementById('custom-fields-wrap');
-  wrap.innerHTML = customFields.map(f => `
-    <div class="field-card">
-      <div class="field-label">${esc(f.label)}</div>
-      ${f.field_type === 'checkbox'
-        ? `<label class="checkbox-field"><input type="checkbox" id="cf-${f.id}"><span class="checkbox-field-label">${esc(f.label)}</span></label>`
-        : `<input type="text" id="cf-${f.id}" placeholder="${esc(f.label)}..." autocomplete="off">`}
-    </div>`).join('');
+  if (!customFields.length) { wrap.innerHTML = ''; }
+  else {
+    wrap.innerHTML = customFields.map(f => `
+      <div class="field-card" id="cf-card-${f.id}">
+        <div class="field-label">${esc(f.label)}</div>
+        ${f.field_type === 'checkbox'
+          ? `<label class="checkbox-field">
+               <input type="checkbox" id="cf-${f.id}" value="1">
+               <span class="checkbox-field-label">${esc(f.label)}</span>
+             </label>`
+          : `<input type="text" id="cf-${f.id}" placeholder="Enter ${esc(f.label).toLowerCase()}..." autocomplete="off">`
+        }
+      </div>`).join('');
+  }
 
   document.getElementById('guest-list-view').style.display = 'none';
   document.getElementById('editor-view').style.display = 'block';
 }
 
-function renderAccessToggles(guest) {
-  const autoAccom = AUTO_ACCOM_BADGES.includes(selectedBadge || guest.badge || '');
-  const rows = [];
-
-  if (!autoAccom) {
-    // Only show manual accom toggle if badge doesn't already grant it
-    rows.push(`
-      <div class="grant-row">
-        <div class="grant-info">
-          <div class="grant-name">🛎️ Accommodations</div>
-          <div class="grant-desc">Enables the accommodation request button</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="ev-accom" ${guest.accom_enabled ? 'checked' : ''}>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>`);
-  } else {
-    rows.push(`<div class="grant-note">🛎️ Accommodations auto-granted via ${esc(selectedBadge || guest.badge)} badge</div>`);
-  }
-
-  document.getElementById('access-rows').innerHTML = rows.join('');
-  // Hide card if nothing to show for badge guests (it's handled automatically)
-  document.getElementById('access-card').style.display = 'block';
-}
-
-function selectBadge(b) {
-  selectedBadge = b === 'None' ? '' : b;
-  document.querySelectorAll('.badge-option').forEach(el =>
-    el.classList.toggle('selected', el.textContent === (selectedBadge || 'None'))
-  );
-  // Re-render access toggles since badge changed
-  if (currentGuest) renderAccessToggles(currentGuest);
+function selectBadge(badge) {
+  selectedBadge = badge === 'None' ? '' : badge;
+  document.querySelectorAll('.badge-option').forEach(el => {
+    el.classList.toggle('selected', el.textContent === (selectedBadge || 'None'));
+  });
 }
 
 function showList() {
@@ -311,13 +193,12 @@ function showList() {
   loadGuests();
 }
 
-async function doSave() {
+async function saveDone() {
+  if (!currentGuest) return;
   const seat = document.getElementById('ev-seat').value.trim();
   const badge = selectedBadge;
-  const autoAccom = AUTO_ACCOM_BADGES.includes(badge);
-  const accomEl = document.getElementById('ev-accom');
-  const accom_enabled = autoAccom ? 1 : (accomEl ? (accomEl.checked ? 1 : 0) : 0);
 
+  // Gather custom field values
   const fieldValues = {};
   customFields.forEach(f => {
     const el = document.getElementById(`cf-${f.id}`);
@@ -325,39 +206,45 @@ async function doSave() {
     fieldValues[f.id] = f.field_type === 'checkbox' ? (el.checked ? 'yes' : 'no') : el.value.trim();
   });
 
+  const btn = document.querySelector('.done-btn');
+  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
+
   try {
     await fetch('/api/editor', {
-      method: 'PATCH', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, fieldValues, accom_enabled })
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, fieldValues })
     });
-    return { seat, badge, fieldValues };
-  } catch(e) { alert('Save failed — check connection'); return null; }
-}
-
-async function saveOnly() {
-  const btn = document.querySelector('.save-btn');
-  btn.textContent = 'Saving...';
-  const result = await doSave();
-  btn.textContent = result ? 'Saved ✓' : 'Save Only';
-  if (result) setTimeout(() => { btn.textContent = 'Save Only'; }, 2000);
-}
-
-async function saveDone() {
-  const btn = document.getElementById('done-btn');
-  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
-  const result = await doSave();
-  btn.textContent = 'Done — Show QR'; btn.style.opacity = '1';
-  if (result) showQR(currentGuest, result.seat, result.badge, result.fieldValues);
+    showQR(currentGuest, seat, badge, fieldValues);
+  } catch(e) {
+    alert('Save failed — check connection');
+  } finally {
+    btn.textContent = 'Done — Show QR';
+    btn.style.opacity = '1';
+  }
 }
 
 function showQR(guest, seat, badge, fieldValues) {
   const appUrl = `${location.origin}/app?token=${guest.app_token}`;
   document.getElementById('qr-name').textContent = guest.first_name + ' ' + guest.last_name;
-  const sub = [seat ? '📍 ' + seat : '', badge || ''].filter(Boolean).join(' · ');
-  document.getElementById('qr-sub').textContent = sub || "Ready to go";
+
+  // Sub line: seat + badge
+  const subParts = [seat ? '📍 ' + seat : '', badge ? '🏅 ' + badge : ''].filter(Boolean);
+  document.getElementById('qr-sub').textContent = subParts.join(' · ') || '';
+
+  // Custom field summary
+  const fieldLines = customFields
+    .map(f => {
+      const v = fieldValues[f.id] ?? '';
+      if (!v || v === 'no') return null;
+      return f.field_type === 'checkbox' ? '✓ ' + f.label : f.label + ': ' + v;
+    })
+    .filter(Boolean);
+  document.getElementById('qr-fields').textContent = fieldLines.join('\n');
+
   const canvas = document.getElementById('qr-canvas');
-  canvas.width = 240; canvas.height = 240;
-  new QRious({ element: canvas, value: appUrl, size: 240 });
+  canvas.width = 220; canvas.height = 220;
+  new QRious({ element: canvas, value: appUrl, size: 220 });
   document.getElementById('qr-modal').classList.add('open');
 }
 
@@ -366,154 +253,12 @@ function closeQR() {
   showList();
 }
 
-function continueEditing() {
-  document.getElementById('qr-modal').classList.remove('open');
-  // Stay on editor view with same guest
-}
-
-// ---- Camera QR Scanner ----
-let scanStream = null;
-let scanInterval = null;
-
-async function openScanModal() {
-  document.getElementById('scan-input').value = '';
-  document.getElementById('scan-error').textContent = '';
-  document.getElementById('scan-modal').classList.add('open');
-  document.getElementById('scan-status').textContent = 'Starting camera...';
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
-    scanStream = stream;
-    const video = document.getElementById('scan-video');
-    video.srcObject = stream;
-    document.getElementById('scan-camera-wrap').style.display = 'block';
-    document.getElementById('scan-desc').style.display = 'none';
-    document.getElementById('scan-status').textContent = 'Point camera at guest\'s barcode...';
-
-    // Poll frames for QR using BarcodeDetector if available
-    if ('BarcodeDetector' in window) {
-      const detector = new BarcodeDetector({ formats: ['code_128','pdf417','code_39','ean_13','upc_a','qr_code'] });
-      scanInterval = setInterval(async () => {
-        if (video.readyState < 2) return;
-        try {
-          const barcodes = await detector.detect(video);
-          if (barcodes.length > 0) {
-            const raw = barcodes[0].rawValue;
-            stopCamera();
-            await handleScannedValue(raw);
-          }
-        } catch(e) {}
-      }, 400);
-    } else {
-      // BarcodeDetector not available — use canvas sampling fallback hint
-      document.getElementById('scan-status').textContent = 'Camera active — barcode scanning not supported on this device';
-    }
-  } catch(e) {
-    document.getElementById('scan-camera-wrap').style.display = 'none';
-    document.getElementById('scan-desc').style.display = 'block';
-    document.getElementById('scan-status').textContent = '';
-    document.getElementById('scan-error').textContent = 'Camera not available. Search by name below.';
-  }
-}
-
-function stopCamera() {
-  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-  document.getElementById('scan-camera-wrap').style.display = 'none';
-  document.getElementById('scan-status').textContent = '';
-}
-
-function closeScanModal() {
-  stopCamera();
-  document.getElementById('scan-modal').classList.remove('open');
-}
-
-function onScanInput() { document.getElementById('scan-error').textContent = ''; }
-
-async function handleScannedValue(raw) {
-  document.getElementById('scan-status').textContent = 'Found! Looking up guest...';
-
-  // Try URL token first (QR code fallback)
-  let token = null;
-  try { const url = new URL(raw); token = url.searchParams.get('token'); } catch(e) {}
-
-  if (token) {
-    // QR code path — look up by token
-    try {
-      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-      if (!res.ok) { document.getElementById('scan-error').textContent = 'Guest not found.'; return; }
-      const guest = await res.json();
-      let full = allGuests.find(g => g.id === guest.id);
-      if (!full) { await loadGuests(); full = allGuests.find(g => g.id === guest.id); }
-      if (!full) { document.getElementById('scan-error').textContent = 'Guest not in accepted list.'; return; }
-      closeScanModal();
-      openEditor(full);
-    } catch(e) { document.getElementById('scan-error').textContent = 'Lookup failed — check connection.'; }
-    return;
-  }
-
-  // Barcode path — raw value is "FIRSTNAME LASTNAME" (uppercase from Code128)
-  // Match against guest list by name
-  if (!allGuests.length) await loadGuests();
-  const normalized = raw.trim().toUpperCase();
-  const match = allGuests.find(g =>
-    (g.first_name + ' ' + g.last_name).toUpperCase() === normalized ||
-    (g.first_name).toUpperCase() === normalized ||
-    (g.last_name).toUpperCase() === normalized
-  );
-  if (match) {
-    closeScanModal();
-    openEditor(match);
-    return;
-  }
-
-  // Partial match fallback
-  const partials = allGuests.filter(g =>
-    (g.first_name + ' ' + g.last_name).toUpperCase().includes(normalized)
-  );
-  if (partials.length === 1) {
-    closeScanModal();
-    openEditor(partials[0]);
-    return;
-  }
-  if (partials.length > 1) {
-    // Show them in search
-    closeScanModal();
-    setMode('all');
-    document.getElementById('search-input').value = raw.trim();
-    filterGuests();
-    document.getElementById('search-bar').style.display = 'block';
-    return;
-  }
-
-  document.getElementById('scan-error').textContent = `No guest found matching "${raw.slice(0,30)}". Try searching by name.`;
-}
-
-async function doNameSearch() {
-  const raw = document.getElementById('scan-input').value.trim();
-  if (!raw) return;
-  // If they pasted a URL manually
-  try {
-    const url = new URL(raw);
-    const token = url.searchParams.get('token');
-    if (token) { closeScanModal(); await handleScannedValue(raw); return; }
-  } catch(e) {}
-  // Name search
-  closeScanModal();
-  setMode('all');
-  document.getElementById('search-input').value = raw;
-  filterGuests();
-  document.getElementById('search-bar').style.display = 'block';
-}
-
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 loadGuests();
 setInterval(() => {
   if (document.getElementById('guest-list-view').style.display !== 'none') loadGuests();
-}, 15000);
+}, 10000);
 </script>
 </body>
 </html>
