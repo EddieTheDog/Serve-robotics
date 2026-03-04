@@ -370,6 +370,7 @@ async function loadGuests() {
     const isLocked = g.locked == 1;
     const helpOff = g.help_disabled == 1;
     const accomOn = g.accom_enabled == 1;
+    const actorReqOff = g.actor_request_disabled == 1;
     const accomDisabled = g.accom_disabled == 1;
     // effectiveAccom: eligible if badge-eligible OR manually enabled, shown unless disabled
     const ACCOM_ELIGIBLE_BADGES = ['Eddie +', 'VIP', 'Staff'];
@@ -395,6 +396,7 @@ async function loadGuests() {
           <button class="btn small ${isLocked?'green':'orange'}" onclick="toggleLock('${g.id}',${isLocked})">${isLocked?'🔓 Unlock':'🔒 Lock'}</button>
           <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'🆘 Enable Help':'🚫 Disable Help'}</button>
           <button class="btn small ${accomEffective?'orange':'green'}" onclick="toggleAccomAccess('${g.id}',${accomEffective?1:0},${accomOn?1:0})" title="${accomEffective?'Disable accommodations for this guest':'Enable accommodations for this guest'}">${accomEffective?'🛎️ Disable Accom':'🛎️ Enable Accom'}</button>
+          ${g.is_actor ? `<button class="btn small ${actorReqOff?'green':'orange'}" onclick="toggleActorReq('${g.id}',${actorReqOff})">${actorReqOff?'🎬 Enable Req':'🎬 Disable Req'}</button>` : ''}
           <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
           ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy Link</button>` : ''}
         </div>
@@ -417,6 +419,10 @@ async function loadGuests() {
             🎬 Actor
           </label>
         </div>
+        <div style="margin:8px 0;">
+          <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Passes (comma separated)</label>
+          <input type="text" id="ef-passes-${g.id}" value="${esc(g.passes||'')}" placeholder="e.g. Drink Pass, Photo Pass">
+        </div>
         <div class="edit-btns">
           <button class="btn small" onclick="saveFullEdit('${g.id}')">Save All</button>
           <button class="btn small gray" onclick="toggleEdit('${g.id}')">Cancel</button>
@@ -438,9 +444,12 @@ async function saveFullEdit(id) {
   const seat = document.getElementById(`ef-seat-${id}`).value.trim();
   const badge = document.getElementById(`ef-badge-${id}`).value;
   const is_actor = document.getElementById(`ef-actor-${id}`).checked ? 1 : 0;
+  const passesRaw = document.getElementById(`ef-passes-${id}`).value.trim();
+  // Store passes as JSON array of trimmed non-empty strings
+  const passesArr = passesRaw ? passesRaw.split(',').map(p=>p.trim()).filter(Boolean) : [];
   if (!first || !last) return alert('First and last name required');
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({guestId:id, first_name:first, last_name:last, seat, badge, is_actor})});
+    body:JSON.stringify({guestId:id, first_name:first, last_name:last, seat, badge, is_actor, passes:JSON.stringify(passesArr)})});
   loadGuests();
 }
 
@@ -453,6 +462,10 @@ async function toggleLock(id, isLocked) {
 }
 async function toggleHelp(id, helpOff) {
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,help_disabled:helpOff?0:1})});
+  loadGuests();
+}
+async function toggleActorReq(id, isOff) {
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,actor_request_disabled:isOff?0:1})});
   loadGuests();
 }
 async function toggleAccomAccess(id, isEffective, isManuallyEnabled) {
