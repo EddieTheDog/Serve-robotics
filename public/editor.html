@@ -155,7 +155,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 <!-- Scan Modal -->
 <div id="scan-modal">
   <div class="scan-box">
-    <div class="scan-title">📷 Scan Guest Badge</div>
+    <div class="scan-title">📷 Scan Barcode</div>
     <!-- Camera view -->
     <div id="scan-camera-wrap" style="display:none;position:relative;margin-bottom:14px;">
       <video id="scan-video" autoplay playsinline muted
@@ -166,7 +166,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
     </div>
     <div id="scan-status" style="font-size:13px;color:#aaa;text-align:center;margin-bottom:12px;min-height:18px;"></div>
-    <div class="scan-desc" id="scan-desc">Point the camera at the guest&#39;s QR code or barcode badge. Or type their name below.</div>
+    <div class="scan-desc" id="scan-desc">Point camera at the barcode on their badge. Or type their name to search.</div>
     <input type="text" id="scan-input" class="scan-input" placeholder="Search by name..." oninput="onScanInput()">
     <button class="scan-go-btn" onclick="doNameSearch()">Search by Name</button>
     <button class="scan-cancel-btn" onclick="closeScanModal()">Cancel</button>
@@ -390,11 +390,11 @@ async function openScanModal() {
     video.srcObject = stream;
     document.getElementById('scan-camera-wrap').style.display = 'block';
     document.getElementById('scan-desc').style.display = 'none';
-    document.getElementById('scan-status').textContent = 'Point at QR code on badge...';
+    document.getElementById('scan-status').textContent = 'Point camera at guest\'s barcode...';
 
     // Poll frames for QR using BarcodeDetector if available
     if ('BarcodeDetector' in window) {
-      const detector = new BarcodeDetector({ formats: ['qr_code','code_128','pdf417'] });
+      const detector = new BarcodeDetector({ formats: ['code_128','pdf417','code_39','ean_13','upc_a','qr_code'] });
       scanInterval = setInterval(async () => {
         if (video.readyState < 2) return;
         try {
@@ -408,7 +408,7 @@ async function openScanModal() {
       }, 400);
     } else {
       // BarcodeDetector not available — use canvas sampling fallback hint
-      document.getElementById('scan-status').textContent = 'Camera active — paste URL below if scan fails';
+      document.getElementById('scan-status').textContent = 'Camera active — barcode scanning not supported on this device';
     }
   } catch(e) {
     document.getElementById('scan-camera-wrap').style.display = 'none';
@@ -434,23 +434,61 @@ function onScanInput() { document.getElementById('scan-error').textContent = '';
 
 async function handleScannedValue(raw) {
   document.getElementById('scan-status').textContent = 'Found! Looking up guest...';
+
+  // Try URL token first (QR code fallback)
   let token = null;
   try { const url = new URL(raw); token = url.searchParams.get('token'); } catch(e) {}
 
-  if (!token) {
-    document.getElementById('scan-error').textContent = 'Could not read a guest token from that code.';
+  if (token) {
+    // QR code path — look up by token
+    try {
+      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
+      if (!res.ok) { document.getElementById('scan-error').textContent = 'Guest not found.'; return; }
+      const guest = await res.json();
+      let full = allGuests.find(g => g.id === guest.id);
+      if (!full) { await loadGuests(); full = allGuests.find(g => g.id === guest.id); }
+      if (!full) { document.getElementById('scan-error').textContent = 'Guest not in accepted list.'; return; }
+      closeScanModal();
+      openEditor(full);
+    } catch(e) { document.getElementById('scan-error').textContent = 'Lookup failed — check connection.'; }
     return;
   }
-  try {
-    const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-    if (!res.ok) { document.getElementById('scan-error').textContent = 'Guest not found.'; return; }
-    const guest = await res.json();
-    let full = allGuests.find(g => g.id === guest.id);
-    if (!full) { await loadGuests(); full = allGuests.find(g => g.id === guest.id); }
-    if (!full) { document.getElementById('scan-error').textContent = 'Guest not in accepted list.'; return; }
+
+  // Barcode path — raw value is "FIRSTNAME LASTNAME" (uppercase from Code128)
+  // Match against guest list by name
+  if (!allGuests.length) await loadGuests();
+  const normalized = raw.trim().toUpperCase();
+  const match = allGuests.find(g =>
+    (g.first_name + ' ' + g.last_name).toUpperCase() === normalized ||
+    (g.first_name).toUpperCase() === normalized ||
+    (g.last_name).toUpperCase() === normalized
+  );
+  if (match) {
     closeScanModal();
-    openEditor(full);
-  } catch(e) { document.getElementById('scan-error').textContent = 'Lookup failed — check connection.'; }
+    openEditor(match);
+    return;
+  }
+
+  // Partial match fallback
+  const partials = allGuests.filter(g =>
+    (g.first_name + ' ' + g.last_name).toUpperCase().includes(normalized)
+  );
+  if (partials.length === 1) {
+    closeScanModal();
+    openEditor(partials[0]);
+    return;
+  }
+  if (partials.length > 1) {
+    // Show them in search
+    closeScanModal();
+    setMode('all');
+    document.getElementById('search-input').value = raw.trim();
+    filterGuests();
+    document.getElementById('search-bar').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('scan-error').textContent = `No guest found matching "${raw.slice(0,30)}". Try searching by name.`;
 }
 
 async function doNameSearch() {
