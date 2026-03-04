@@ -2,779 +2,839 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>The Eddie's 2025</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<link rel="manifest" href="/manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="The Eddies">
+<title>Admin — The Eddie's 2025</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; min-height: -webkit-fill-available; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; }
 
-.header { background: #000; color: #fff; padding: 16px 20px 22px; padding-top: calc(env(safe-area-inset-top, 20px) + 16px); }
-.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.event-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; }
-.clock { font-size: 15px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
-.greeting { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 8px; }
-.badge-pill { display: inline-block; background: #fff; color: #000; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 20px; padding: 4px 12px; margin-top: 4px; }
-.badge-pill.eddie-plus { background: #FFD700; color: #000; }
-.badge-pill.vip { background: #9b59b6; color: #fff; }
-.badge-pill.staff { background: #2196F3; color: #fff; }
-.badge-pill.press { background: #ff9500; color: #fff; }
-.badge-pill.actor { background: linear-gradient(135deg, #9b59b6 0%, #c49a1a 100%); color: #fff; }
-.header.actor-header {
-  background: linear-gradient(135deg, #1a0a2e 0%, #3d1a6e 40%, #6b4f00 80%, #1a0a2e 100%);
-  background-size: 200% 200%;
-  animation: actor-shimmer 6s ease infinite;
+.topbar { background: #000; color: #fff; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar h1 { font-size: 20px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.topbar-right { display: flex; gap: 10px; align-items: center; }
+
+/* Refresh All button */
+.refresh-all-btn {
+  background: #007aff; color: #fff; border: none; border-radius: 8px;
+  padding: 9px 16px; font-size: 14px; font-weight: 700; cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.5px;
 }
-@keyframes actor-shimmer {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+.refresh-all-btn:active { opacity: 0.8; }
 
-.content { padding: 20px 16px; padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 40px); max-width: 600px; margin: 0 auto; }
-.section-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 24px 0 10px 4px; }
-.card { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+#help-banner { display: none; background: #ff3b30; color: #fff; padding: 14px 24px; font-size: 16px; font-weight: 700; text-align: center; cursor: pointer; animation: flash 1s ease infinite alternate; }
+@keyframes flash { from{opacity:1;} to{opacity:0.7;} }
+#help-banner.show { display: block; }
 
-.help-btn { background: #000; color: #fff; border: none; border-radius: 16px; padding: 20px; width: 100%; display: flex; align-items: center; gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s; }
-.help-btn:active { opacity: 0.75; }
-.help-btn.sent { background: #34c759; }
-.help-btn.resolved-state { background: #007aff; }
-.accom-btn {
-  background: #6c3d9e; color: #fff; border: none; border-radius: 16px;
-  padding: 20px; width: 100%; display: flex; align-items: center;
-  gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s;
-  margin-top: 10px;
-}
-.accom-btn:active { opacity: 0.75; }
-.accom-btn.sent { background: #34c759; }
-.accom-btn.resolved-state { background: #007aff; }
-.help-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
-.help-text strong { display: block; font-size: 18px; font-weight: 700; }
-.help-text span { font-size: 13px; opacity: 0.7; }
+.tabs { display: flex; background: #fff; border-bottom: 2px solid #e0e0e0; position: sticky; top: 57px; z-index: 99; overflow-x: auto; }
+.tab { flex: 0 0 auto; padding: 14px 18px; text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; color: #aaa; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+.tab.active { color: #000; border-bottom-color: #000; }
 
-.sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
-.sheet-overlay.open { display: flex; }
-.sheet { background: #f2f2f7; border-radius: 20px 20px 0 0; padding: 20px 20px calc(env(safe-area-inset-bottom,20px) + 20px); width: 100%; max-width: 600px; }
-.sheet-title { font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-.reason-btn { width: 100%; display: flex; align-items: center; gap: 14px; background: #fff; border: none; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; font-size: 17px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: left; }
-.reason-btn:active { opacity: 0.7; }
-.reason-emoji { font-size: 24px; flex-shrink: 0; }
-.sheet-cancel { width: 100%; padding: 16px; margin-top: 6px; background: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; color: #ff3b30; cursor: pointer; }
+.tab-content { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+.tab-content.active { display: block; }
 
-.schedule-item { padding: 16px 18px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 14px; }
-.schedule-item:last-child { border-bottom: none; }
-.schedule-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; margin-top: 6px; flex-shrink: 0; }
-.schedule-dot.live { background: #ff3b30; box-shadow: 0 0 0 3px rgba(255,59,48,0.2); animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100%{box-shadow:0 0 0 3px rgba(255,59,48,0.2);} 50%{box-shadow:0 0 0 6px rgba(255,59,48,0.05);} }
-.schedule-info strong { font-size: 16px; font-weight: 600; display: block; margin-bottom: 2px; }
-.schedule-info span { font-size: 14px; color: #888; }
-.live-badge { display: inline-block; background: #ff3b30; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: middle; }
+.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 20px 0 10px; }
 
-.custom-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.custom-action-btn { background: #fff; border: none; border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: opacity 0.15s; }
-.custom-action-btn:active { opacity: 0.7; }
-.custom-action-btn .ca-emoji { font-size: 28px; }
-.custom-action-btn .ca-label { font-size: 14px; font-weight: 700; text-align: center; }
-.custom-action-btn .ca-hint { font-size: 10px; color: #aaa; }
+/* Buttons */
+.btn { display: inline-block; padding: 10px 18px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: none; border-radius: 8px; cursor: pointer; background: #000; color: #fff; }
+.btn:active { opacity: 0.8; }
+.btn.green { background: #34c759; }
+.btn.red { background: #ff3b30; }
+.btn.gray { background: #e0e0e0; color: #333; }
+.btn.orange { background: #ff9500; }
+.btn.blue { background: #007aff; }
+.btn.small { padding: 7px 14px; font-size: 13px; }
+.btn.full { width: 100%; display: block; text-align: center; padding: 14px; }
 
-.info-row { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #f0f0f0; }
-.info-row:last-child { border-bottom: none; }
-.info-icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
-.info-row span { font-size: 16px; font-weight: 500; }
+/* Guest Cards */
+.guest-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.guest-card.help-active { border: 2px solid #ff3b30; }
+.guest-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.guest-name { font-size: 18px; font-weight: 700; }
+.guest-status { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 20px; background: #e0e0e0; color: #555; }
+.guest-status.waiting { background: #fff3cd; color: #856404; }
+.guest-status.accepted { background: #d4edda; color: #155724; }
+.guest-status.declined { background: #f8d7da; color: #721c24; }
+.guest-status.help { background: #ff3b30; color: #fff; animation: flash 1s infinite alternate; }
+.guest-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.qr-box { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #fff; }
+.guest-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
 
-/* Notice modal */
-#notice-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 400; align-items: center; justify-content: center; padding: 32px 24px; }
-#notice-overlay.open { display: flex; }
-.notice-box { background: #fff; border-radius: 24px; padding: 32px 24px; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-.notice-icon { font-size: 48px; margin-bottom: 16px; }
-.notice-message { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 16px; color: #000; }
-.notice-timer { font-size: 13px; color: #aaa; margin-bottom: 20px; min-height: 18px; }
-.notice-ok-btn { width: 100%; padding: 16px; background: #000; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; }
-.notice-ok-btn:active { opacity: 0.8; }
+/* Badge selector in guest card */
+.badge-select { padding: 7px 10px; font-size: 13px; font-weight: 600; border: 2px solid #e0e0e0; border-radius: 8px; background: #fff; outline: none; cursor: pointer; }
+.badge-select:focus { border-color: #000; }
 
-/* Message modal */
-#msg-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 350; align-items: center; justify-content: center; padding: 32px 24px; }
-#msg-overlay.open { display: flex; }
-.msg-box { background: #fff; border-radius: 24px; padding: 28px 24px; max-width: 360px; width: 100%; text-align: center; }
-.msg-emoji { font-size: 40px; margin-bottom: 12px; }
-.msg-title { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
-.msg-body { font-size: 16px; color: #555; line-height: 1.5; margin-bottom: 24px; }
-.msg-close { width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; }
-.msg-close:active { opacity: 0.8; }
+/* Edit form */
+.edit-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f0f0; display: none; }
+.edit-form.open { display: block; }
+.edit-form input { width: 100%; padding: 10px 14px; font-size: 15px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; outline: none; font-family: inherit; }
+.edit-form input:focus { border-color: #000; }
+.edit-btns { display: flex; gap: 8px; }
 
-#toast { position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 20px); left: 50%; transform: translateX(-50%) translateY(100px); background: #000; color: #fff; padding: 14px 24px; border-radius: 30px; font-size: 15px; font-weight: 700; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-#toast.show { transform: translateX(-50%) translateY(0); }
+/* Queue */
+.queue-guest { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.queue-guest h3 { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+.queue-row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.queue-btns { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.queue-btns button { padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; border-radius: 8px; background: #000; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+.queue-btns button:active { opacity: 0.8; }
+.qr-text { margin-top: 8px; font-size: 11px; word-break: break-all; color: #888; text-align: center; }
 
-#loading-screen { min-height: 100vh; background: #000; display: flex; align-items: center; justify-content: center; }
-.spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-#locked-screen { display: none; min-height: 100vh; background: #000; color: #fff; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
-#locked-screen .lock-icon { font-size: 64px; margin-bottom: 24px; }
-#locked-screen h2 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
-#locked-screen p { font-size: 16px; color: #aaa; }
-#error-screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; background: #fff; }
-#error-screen h2 { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
-#error-screen p { font-size: 16px; color: #888; }
-#app { display: none; }
+/* Schedule */
+.schedule-item-row { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; gap: 12px; align-items: flex-start; }
+.schedule-item-row.is-live { border: 2px solid #ff3b30; }
+.schedule-inputs { flex: 1; }
+.schedule-inputs input, .schedule-inputs textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; outline: none; font-family: inherit; resize: none; }
+.schedule-inputs input:focus, .schedule-inputs textarea:focus { border-color: #000; }
+.schedule-item-controls { display: flex; flex-direction: column; gap: 8px; }
+.go-live-btn { padding: 8px 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; border: none; border-radius: 8px; cursor: pointer; background: #e0e0e0; color: #555; letter-spacing: 0.5px; white-space: nowrap; }
+.go-live-btn.live { background: #ff3b30; color: #fff; }
 
-/* My Badge section at bottom */
-.badge-section {
-  margin-top: 8px;
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
-.badge-section-row {
-  display: flex; align-items: center; gap: 14px;
-  padding: 18px 18px; cursor: pointer;
-  transition: background 0.15s;
-}
-.badge-section-row:active { background: #f5f5f5; }
-.badge-section-icon {
-  width: 44px; height: 44px; background: #000; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; overflow: hidden;
-}
-.badge-section-icon canvas { display: block; }
-.badge-section-text strong { display: block; font-size: 16px; font-weight: 700; }
-.badge-section-text span { font-size: 13px; color: #aaa; }
-.badge-section-chevron { margin-left: auto; font-size: 18px; color: #ccc; }
+/* Custom Buttons + Help Reasons list */
+.config-item { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.config-item .ci-emoji { font-size: 22px; }
+.config-item .ci-label { flex: 1; font-size: 16px; font-weight: 600; }
+.add-form { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.add-form input { width: 100%; padding: 10px 14px; font-size: 15px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; outline: none; font-family: inherit; }
+.add-form input:focus { border-color: #000; }
+.add-form-row { display: flex; gap: 8px; }
+.add-form-row input { flex: 1; margin-bottom: 0; }
 
+/* Help log */
+.help-item { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); gap: 12px; }
+.help-item.resolved { opacity: 0.5; }
+.help-info strong { font-size: 15px; font-weight: 700; display: block; }
+.help-info span { font-size: 13px; color: #888; }
+.help-reason-tag { font-size: 12px; font-weight: 700; background: #f0f0f0; color: #555; border-radius: 6px; padding: 3px 8px; margin-top: 4px; display: inline-block; }
 
-/* Badge modal */
-#badge-modal {
-  display: none; position: fixed; inset: 0;
-  background: #0a0a0a; z-index: 450;
-  flex-direction: column; align-items: center; justify-content: center;
-  padding: calc(env(safe-area-inset-top,20px) + 20px) 24px calc(env(safe-area-inset-bottom,20px) + 30px);
-}
-#badge-modal.open { display: flex; }
-.bm-event { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #444; margin-bottom: 32px; }
-.bm-barcode-wrap {
-  background: #fff; border-radius: 12px; padding: 20px 16px 14px;
-  width: 100%; max-width: 340px;
-  display: flex; flex-direction: column; align-items: center;
-  box-shadow: 0 0 60px rgba(255,255,255,0.06);
-}
-.bm-barcode-wrap canvas { width: 100%; height: auto; display: block; }
-.bm-barcode-name {
-  font-size: 13px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 2px; color: #000; margin-top: 10px;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-.bm-barcode-sub { font-size: 10px; color: #aaa; letter-spacing: 1px; margin-top: 3px; font-family: monospace; }
-.bm-name-below {
-  margin-top: 28px; text-align: center;
-}
-.bm-name-below .bm-fullname { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-.bm-name-below .bm-badge-pill {
-  display: inline-block; padding: 4px 14px; border-radius: 20px;
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-  background: #222; color: #aaa;
-}
-.bm-name-below .bm-badge-pill.eddie-plus { background: #FFD700; color: #000; }
-.bm-name-below .bm-badge-pill.vip { background: #9b59b6; color: #fff; }
-.bm-name-below .bm-badge-pill.staff { background: #2196F3; color: #fff; }
-.bm-name-below .bm-badge-pill.press { background: #ff9500; color: #fff; }
-.bm-close {
-  margin-top: 36px; background: #1a1a1a; color: #fff; border: none;
-  border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
-  cursor: pointer; width: 100%; max-width: 340px; letter-spacing: 0.5px;
-}
-.bm-close:active { opacity: 0.7; }
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center; padding: 24px; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 20px; padding: 28px 24px; max-width: 380px; width: 100%; text-align: center; }
+.modal h3 { font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+.modal p { font-size: 15px; color: #555; margin-bottom: 24px; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btns button { flex: 1; padding: 14px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; }
+.modal-confirm { background: #ff3b30; color: #fff; }
+.modal-cancel { background: #e0e0e0; color: #333; }
+
+.empty { text-align: center; color: #aaa; padding: 40px 20px; font-size: 15px; }
 </style>
 </head>
 <body>
 
-<div id="loading-screen"><div class="spinner"></div></div>
-<div id="locked-screen">
-  <div class="lock-icon">🔒</div>
-  <h2>Account Locked</h2>
-  <p>Please see a staff member for assistance.</p>
-</div>
-<div id="error-screen">
-  <h2>Invalid Link</h2>
-  <p>This link is not valid. Please scan your badge QR code again or see a staff member.</p>
+<div class="topbar">
+  <h1>Admin — The Eddie's 2025</h1>
+  <div class="topbar-right">
+    <button class="refresh-all-btn" onclick="refreshAll()">📡 Refresh All</button>
+    <span id="help-count" style="background:#ff3b30;color:#fff;border-radius:20px;padding:4px 12px;font-weight:700;font-size:14px;display:none;">⚠ Help!</span>
+  </div>
 </div>
 
-<div id="app">
-  <div class="header">
-    <div class="header-top">
-      <span class="event-title">The Eddie's 2025</span>
-      <span class="clock" id="clock">—</span>
+<div id="help-banner" onclick="switchTab('help')">⚠️ HELP REQUEST — Tap to view</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('queue')">Queue</div>
+  <div class="tab" onclick="switchTab('guests')">Guests</div>
+  <div class="tab" onclick="switchTab('schedule')">Schedule</div>
+  <div class="tab" onclick="switchTab('help')">🆘 Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+  <div class="tab" onclick="switchTab('accommodations')">🛎️ Accommodations <span id="accom-badge" style="display:none;background:#9b59b6;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+  <div class="tab" onclick="switchTab('buttons')">Buttons</div>
+  <div class="tab" onclick="switchTab('reasons')">Help Reasons</div>
+  <div class="tab" onclick="switchTab('notices')">📢 Notices</div>
+  <div class="tab" onclick="switchTab('fields')">Custom Fields</div>
+</div>
+
+<!-- QUEUE -->
+<div class="tab-content active" id="tab-queue">
+  <div class="section-label">Check-In Queue</div>
+  <div id="queue-list"></div>
+</div>
+
+<!-- GUESTS -->
+<div class="tab-content" id="tab-guests">
+  <div class="section-label">All Attendees</div>
+  <div id="guests-list"></div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="tab-content" id="tab-schedule">
+  <div class="section-label">Event Schedule</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Hit <strong>Go Live</strong> to highlight an item as "Now" in the attendee app. Push <strong>📡 Refresh All</strong> in the top bar to instantly update everyone's screen.</p>
+  <div id="schedule-list"></div>
+  <button class="btn full" style="margin-top:8px;" onclick="addScheduleItem()">+ Add Item</button>
+</div>
+
+<!-- HELP -->
+<div class="tab-content" id="tab-help">
+  <div class="section-label">Help Requests</div>
+  <div id="help-list"></div>
+</div>
+
+<!-- ACCOMMODATIONS -->
+<div class="tab-content" id="tab-accommodations">
+  <div class="section-label">Accommodation Requests</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Requests from Eddie+ and other eligible guests. These are not emergencies — no flashing alert — but they do appear as a badge on this tab.</p>
+  <div id="accom-list"></div>
+</div>
+
+<!-- CUSTOM BUTTONS -->
+<div class="tab-content" id="tab-buttons">
+  <div class="section-label">Custom Buttons in Attendee App</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">These buttons appear in the attendee app under "More". Add them here, then hit <strong>📡 Refresh All</strong> to push to everyone.</p>
+  <div class="add-form">
+    <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-btn-emoji" placeholder="Emoji e.g. 🗳️" style="max-width:90px;">
+      <input type="text" id="new-btn-label" placeholder="Button label e.g. Vote Now">
     </div>
-    <div class="greeting">Hello, <span id="guest-name">—</span> 👋</div>
-    <div id="badge-wrap"></div>
-
+    <select id="new-btn-type" onchange="toggleBtnTypeField()" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;background:#fff;">
+      <option value="none">No action (display only)</option>
+      <option value="link">Open a link</option>
+      <option value="message">Show a message</option>
+    </select>
+    <input type="url" id="new-btn-url" placeholder="https://example.com" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;display:none;">
+    <textarea id="new-btn-msg" placeholder="Message text shown when tapped..." rows="3" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;resize:none;display:none;"></textarea>
+    <button class="btn full" onclick="addButton()">+ Add Button</button>
   </div>
+  <div id="buttons-list"></div>
+</div>
 
-  <div class="content">
-    <div class="section-label">Actions</div>
-    <div id="help-wrap">
-      <button class="help-btn" id="help-btn" onclick="openHelpSheet()">
-        <div class="help-icon">🆘</div>
-        <div class="help-text">
-          <strong id="help-btn-title">Call for Help</strong>
-          <span id="help-btn-sub">A staff member will come to you</span>
-        </div>
-      </button>
+<!-- HELP REASONS -->
+<div class="tab-content" id="tab-reasons">
+  <div class="section-label">🆘 Help Request Reasons</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Shown when a guest taps <strong>Call for Help</strong>. An "Other" option with a text box is always added automatically.</p>
+  <div class="add-form">
+    <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-reason-emoji" placeholder="Emoji" style="max-width:90px;">
+      <input type="text" id="new-reason-label" placeholder="Reason e.g. Microphone needed">
     </div>
-    <div id="accom-wrap" style="display:none;">
-      <button class="accom-btn" id="accom-btn" onclick="openAccomSheet()">
-        <div class="help-icon">🛎️</div>
-        <div class="help-text">
-          <strong id="accom-btn-title">Request Accommodation</strong>
-          <span id="accom-btn-sub">Special requests &amp; assistance</span>
-        </div>
-      </button>
+    <button class="btn full" onclick="addReason('help')">+ Add Help Reason</button>
+  </div>
+  <div id="reasons-list"></div>
+
+  <div class="section-label" style="margin-top:32px;">🛎️ Accommodation Request Reasons</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Shown when a guest taps <strong>Request Accommodation</strong>. Also always includes an "Other" option.</p>
+  <div class="add-form">
+    <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-accom-reason-emoji" placeholder="Emoji" style="max-width:90px;">
+      <input type="text" id="new-accom-reason-label" placeholder="Reason e.g. Dietary request">
     </div>
-    <div id="custom-buttons-wrap"></div>
+    <button class="btn full" onclick="addReason('accommodation')">+ Add Accommodation Reason</button>
+  </div>
+  <div id="accom-reasons-list"></div>
+</div>
 
-    <div class="section-label">What's Happening</div>
-    <div class="card" id="schedule-card">
-      <div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Loading...</span></div></div>
+<!-- NOTICES -->
+<div class="tab-content" id="tab-notices">
+  <div class="section-label">Send a Notice</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Notices pop up on the attendee's screen with an OK button. You can send to one person or everyone.</p>
+  <div class="add-form">
+    <select id="notice-target" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;background:#fff;">
+      <option value="ALL">📣 Everyone</option>
+    </select>
+    <textarea id="notice-message-input" rows="3" placeholder="Type your notice message..." style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;outline:none;font-family:inherit;resize:none;"></textarea>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <label style="font-size:14px;font-weight:600;white-space:nowrap;">Auto-close after:</label>
+      <select id="notice-duration" style="flex:1;padding:10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
+        <option value="0">Requires OK tap</option>
+        <option value="10">10 seconds</option>
+        <option value="30">30 seconds</option>
+        <option value="60">60 seconds</option>
+      </select>
     </div>
+    <button class="btn full" onclick="sendNotice()">📢 Send Notice</button>
+  </div>
+  <div class="section-label">Recent Notices</div>
+  <div id="notices-list"></div>
+</div>
 
-    <div class="section-label">Info</div>
-    <div class="card">
-      <div class="info-row"><div class="info-icon">📅</div><span id="info-date">—</span></div>
-      <div class="info-row"><div class="info-icon">🎟️</div><span id="info-name-badge">—</span></div>
-      <div class="info-row" id="info-seat-row" style="display:none;"><div class="info-icon">📍</div><span id="info-seat">—</span></div>
-      <div class="info-row" id="info-badge-row" style="display:none;"><div class="info-icon">🏅</div><span id="info-badge">—</span></div>
+
+<!-- CUSTOM FIELDS -->
+<div class="tab-content" id="tab-fields">
+  <div class="section-label">Custom Info Fields</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab.</p>
+  <div class="add-form">
+    <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-field-label" placeholder="Field label e.g. Meal Choice" style="flex:1;">
+      <select id="new-field-type" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
+        <option value="text">Text input</option>
+        <option value="checkbox">Checkbox (yes/no)</option>
+      </select>
     </div>
-    <div id="custom-fields-info-wrap"></div>
+    <button class="btn full" onclick="addCustomField()">+ Add Field</button>
+  </div>
+  <div id="custom-fields-list"></div>
+</div>
 
-    <div class="section-label" style="margin-top:24px;">My Badge</div>
-    <div class="badge-section" onclick="showMyBadge()">
-      <div class="badge-section-row">
-        <div class="badge-section-icon">
-          <canvas id="badge-mini-canvas" width="44" height="44"></canvas>
-        </div>
-        <div class="badge-section-text">
-          <strong>Show My Badge</strong>
-          <span>Tap to display your barcode</span>
-        </div>
-        <div class="badge-section-chevron">›</div>
-      </div>
+<!-- Delete Modal -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <h3>Delete Guest?</h3>
+    <p>This permanently removes the guest. Cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>
-
-<!-- Badge Modal -->
-<div id="badge-modal">
-  <div class="bm-event">The Eddie's 2025</div>
-  <div class="bm-barcode-wrap">
-    <canvas id="bm-canvas-barcode"></canvas>
-    <div class="bm-barcode-name" id="bm-barcode-name"></div>
-    <div class="bm-barcode-sub" id="bm-barcode-sub"></div>
-  </div>
-  <div class="bm-name-below">
-    <div class="bm-fullname" id="bm-fullname"></div>
-    <span class="bm-badge-pill" id="bm-badge-pill" style="display:none;"></span>
-  </div>
-  <button class="bm-close" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
-</div>
-
-<!-- Help Sheet -->
-<div class="sheet-overlay" id="help-sheet">
-  <div class="sheet">
-    <div class="sheet-title">What do you need help with?</div>
-    <div id="reason-list"></div>
-    <button class="sheet-cancel" onclick="closeHelpSheet()">Cancel</button>
-  </div>
-</div>
-
-<!-- Accommodations Sheet -->
-<div class="sheet-overlay" id="accom-sheet">
-  <div class="sheet">
-    <div class="sheet-title">What do you need?</div>
-    <div id="accom-reason-list"></div>
-    <button class="sheet-cancel" onclick="document.getElementById('accom-sheet').classList.remove('open')">Cancel</button>
-  </div>
-</div>
-
-<!-- Notice Modal -->
-<div id="notice-overlay">
-  <div class="notice-box">
-    <div class="notice-icon">📢</div>
-    <div class="notice-message" id="notice-message"></div>
-    <div class="notice-timer" id="notice-timer"></div>
-    <button class="notice-ok-btn" onclick="dismissNotice()">OK</button>
-  </div>
-</div>
-
-<!-- Message Button Modal -->
-<div id="msg-overlay">
-  <div class="msg-box">
-    <div class="msg-emoji" id="msg-emoji"></div>
-    <div class="msg-title" id="msg-title"></div>
-    <div class="msg-body" id="msg-body"></div>
-    <button class="msg-close" onclick="document.getElementById('msg-overlay').classList.remove('open')">Close</button>
-  </div>
-</div>
-
-<!-- Toast -->
-<div id="toast"></div>
 
 <script>
-  const params = new URLSearchParams(location.search);
-  const token = params.get('token');
-  let guestData = null;
-  let helpSent = false;
-  let helpPending = false;
-  let lastRefreshSignal = null;
-  let currentNoticeId = null;
+let deleteTargetId = null;
+let prevHelpCount = 0;
+const BASE_URL = location.origin;
+const BADGES = ['', 'Eddie +', 'VIP', 'Staff', 'Press'];
 
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+// ---- Tab switching ----
+const TAB_NAMES = ['queue','guests','schedule','help','accommodations','buttons','reasons','notices','fields'];
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, accommodations: loadAccommodations, buttons: loadButtons, reasons: loadReasons, notices: loadNotices, fields: loadCustomFields };
+  if (loaders[name]) loaders[name]();
+  if (name === 'help') clearHelpAlert();
+}
 
-  // Clock
-  function updateClock() {
-    const now = new Date(), h = now.getHours(), m = now.getMinutes().toString().padStart(2,'0');
-    document.getElementById('clock').textContent = `${(h%12)||12}:${m} ${h>=12?'PM':'AM'}`;
+// ---- Refresh All ----
+async function refreshAll() {
+  const btn = document.querySelector('.refresh-all-btn');
+  btn.textContent = '⏳ Sending...';
+  btn.disabled = true;
+  try {
+    await fetch('/api/refresh', { method: 'POST' });
+    btn.textContent = '✓ Refreshed!';
+    setTimeout(() => { btn.textContent = '📡 Refresh All'; btn.disabled = false; }, 2000);
+  } catch(e) {
+    btn.textContent = '📡 Refresh All'; btn.disabled = false;
   }
-  updateClock(); setInterval(updateClock, 1000);
+}
 
-  // Load guest
-  async function loadGuest() {
-    if (!token) { showError(); return; }
-    try {
-      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-      if (!res.ok) { showError(); return; }
-      const data = await res.json();
-      if (data.locked) { showLocked(); return; }
-      guestData = data;
-      renderGuest();
-      showApp();
-      loadSchedule();
-      loadCustomButtons();
-      loadHelpReasons();
-      pollLoop();
-    } catch(e) { showError(); }
-  }
+// ---- QUEUE ----
+async function loadQueue() {
+  const res = await fetch('/api/queue');
+  const guests = await res.json();
+  const el = document.getElementById('queue-list');
+  el.innerHTML = '';
+  if (!guests.length) { el.innerHTML = '<div class="empty">No guests in queue</div>'; return; }
 
-  function renderGuest() {
-    const g = guestData;
-    document.getElementById('guest-name').textContent = g.first_name;
-    document.getElementById('info-name-badge').textContent = `${g.first_name} ${g.last_name}`;
-    document.getElementById('info-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-    // Header: actor gets gradient background
-    const headerEl = document.querySelector('.header');
-    if (g.is_actor) headerEl.classList.add('actor-header');
-    else headerEl.classList.remove('actor-header');
-    // Badge pill(s) in header
-    const bw = document.getElementById('badge-wrap');
-    let pillsHtml = '';
-    if (g.badge) {
-      const slug = g.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-      pillsHtml += `<span class="badge-pill ${slug}">${esc(g.badge)}</span>`;
-    }
-    if (g.is_actor) {
-      pillsHtml += ` <span class="badge-pill actor">🎬 Actor</span>`;
-    }
-    bw.innerHTML = pillsHtml;
-    // Help button visibility
-    document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
-    // Accommodations visibility:
-    // Show if: (badge is eligible OR manually enabled) AND NOT manually disabled
-    const ACCOM_BADGES = ['Eddie +', 'VIP', 'Staff'];
-    const badgeEligible = g.badge && ACCOM_BADGES.includes(g.badge);
-    const finalShowAccom = (badgeEligible || g.accom_enabled == 1) && !g.accom_disabled;
-    document.getElementById('accom-wrap').style.display = finalShowAccom ? 'block' : 'none';
-    // Seat row
-    const seatRow = document.getElementById('info-seat-row');
-    if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
-    else { seatRow.style.display='none'; }
-    // Badge row in info
-    const badgeRow = document.getElementById('info-badge-row');
-    if (g.badge) { badgeRow.style.display='flex'; document.getElementById('info-badge').textContent = g.badge; }
-    else { badgeRow.style.display='none'; }
-    // Mini badge preview
-    drawMiniBadge();
-    // Custom fields
-    const cfWrap = document.getElementById('custom-fields-info-wrap');
-    const fields = (g.custom_fields || []).filter(f => f.value && f.value !== 'no');
-    if (!fields.length) { cfWrap.innerHTML = ''; }
-    else {
-      cfWrap.innerHTML = `<div class="card">` +
-        fields.map(f => {
-          const display = f.field_type === 'checkbox' ? `✓ ${esc(f.label)}` : esc(f.value);
-          const icon = f.field_type === 'checkbox' ? '☑️' : 'ℹ️';
-          return `<div class="info-row"><div class="info-icon">${icon}</div><span>${display}</span></div>`;
-        }).join('') + `</div>`;
-    }
-  }
-
-  // Schedule
-  async function loadSchedule() {
-    try {
-      const res = await fetch('/api/schedule');
-      const items = await res.json();
-      const card = document.getElementById('schedule-card');
-      const list = Array.isArray(items) ? items : (items.items||[]);
-      if (!list.length) { card.innerHTML = `<div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Nothing scheduled yet.</span></div></div>`; return; }
-      card.innerHTML = list.map(item => `
-        <div class="schedule-item">
-          <div class="schedule-dot ${item.is_live?'live':''}"></div>
-          <div class="schedule-info">
-            <strong>${esc(item.title)}${item.is_live?'<span class="live-badge">Now</span>':''}</strong>
-            ${item.description?`<span>${esc(item.description)}</span>`:''}
-          </div>
-        </div>`).join('');
-    } catch(e) {}
-  }
-
-  // Custom buttons — supports links (starts with http) and messages (starts with msg:)
-  async function loadCustomButtons() {
-    try {
-      const res = await fetch('/api/buttons');
-      const buttons = await res.json();
-      const wrap = document.getElementById('custom-buttons-wrap');
-      if (!buttons.length) { wrap.innerHTML = ''; return; }
-      // Only show section label if there are buttons
-      const hasActions = buttons.length > 0;
-      wrap.innerHTML = (hasActions ? '<div class="section-label">More</div>' : '') + `
-        <div class="custom-btn-grid">
-          ${buttons.map(b => {
-            const isLink = b.action && b.action.startsWith('http');
-            const isMsg = b.action && b.action.startsWith('msg:');
-            const msgContent = isMsg ? b.action.slice(4) : '';
-            return `<button class="custom-action-btn" onclick="${isLink ? `openLink('${esc(b.action)}')` : isMsg ? `showMsgModal('${esc(b.emoji)}','${esc(b.label)}','${esc(msgContent)}')` : ''}">
-              <span class="ca-emoji">${esc(b.emoji)}</span>
-              <span class="ca-label">${esc(b.label)}</span>
-              ${isLink ? '<span class="ca-hint">Tap to open ↗</span>' : ''}
-            </button>`;
-          }).join('')}
-        </div>`;
-    } catch(e) {}
-  }
-
-  function openLink(url) { if (url) window.open(url, '_blank', 'noopener'); }
-
-  function showMsgModal(emoji, title, body) {
-    document.getElementById('msg-emoji').textContent = emoji || '💬';
-    document.getElementById('msg-title').textContent = title;
-    document.getElementById('msg-body').textContent = body;
-    document.getElementById('msg-overlay').classList.add('open');
-  }
-
-  // Help & Accommodation Reasons
-  let helpReasons = [];
-  let accomReasons = [];
-  async function loadHelpReasons() {
-    try {
-      const [hRes, aRes] = await Promise.all([
-        fetch('/api/help-reasons?type=help'),
-        fetch('/api/help-reasons?type=accommodation')
-      ]);
-      helpReasons = await hRes.json();
-      accomReasons = await aRes.json();
-    } catch(e) {}
-  }
-
-  function buildReasonList(reasons, sendFn) {
-    const items = reasons.map(r => `
-      <button class="reason-btn" onclick="${sendFn}('${esc(r.label)}')">
-        <span class="reason-emoji">${r.emoji}</span><span>${esc(r.label)}</span>
-      </button>`).join('');
-    // Always append "Other" with inline text box
-    const otherId = sendFn + '-other-input';
-    const other = `
-      <div style="margin-bottom:10px;">
-        <button class="reason-btn" onclick="toggleOtherInput('${otherId}')">
-          <span class="reason-emoji">✏️</span><span>Other</span>
-        </button>
-        <div id="${otherId}" style="display:none;padding:10px 0 0;">
-          <input type="text" id="${otherId}-text" placeholder="Describe what you need..."
-            style="width:100%;padding:14px;font-size:16px;border:2px solid #e0e0e0;border-radius:12px;font-family:inherit;outline:none;margin-bottom:8px;">
-          <button class="reason-btn" style="background:#000;color:#fff;justify-content:center;"
-            onclick="${sendFn}(document.getElementById('${otherId}-text').value.trim()||'Other')">
-            Send
-          </button>
+  guests.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'queue-guest';
+    div.innerHTML = `
+      <h3>${esc(g.first_name)} ${esc(g.last_name)}</h3>
+      <div class="queue-row">
+        <div class="qr-box" id="qq-${g.id}"></div>
+        <div class="queue-btns">
+          <button onclick="queueAccept('${g.id}')" style="background:#34c759;">✓ Accept</button>
+          <button onclick="queueDecline('${g.id}')" style="background:#ff3b30;">✗ Decline</button>
+          <button onclick="queueNext('${g.id}')" style="background:#555;">Next Guest</button>
         </div>
+      </div>
+      <div class="qr-text" id="qrtext-${g.id}"></div>`;
+    el.appendChild(div);
+
+    if (g.app_token) {
+      const url = `${BASE_URL}/app?token=${g.app_token}`;
+      renderQR(`qq-${g.id}`, url);
+      document.getElementById(`qrtext-${g.id}`).textContent = url;
+    } else if (g.qr_data) {
+      const qv = g.qr_data.startsWith('http') ? g.qr_data : 'https://' + g.qr_data;
+      renderQR(`qq-${g.id}`, qv);
+      document.getElementById(`qrtext-${g.id}`).textContent = g.qr_data;
+    }
+  });
+}
+
+async function queueAccept(id) {
+  await fetch('/api/update', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,status:'accepted'})});
+  await fetch('/api/generate-token', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id})});
+  loadQueue();
+}
+async function queueDecline(id) {
+  await fetch('/api/update', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,status:'declined'})});
+  loadQueue();
+}
+async function queueNext(id) {
+  await fetch('/api/next', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id})});
+  loadQueue();
+}
+
+// ---- GUESTS ----
+async function loadGuests() {
+  const res = await fetch('/api/admin-guests');
+  const guests = await res.json();
+  const el = document.getElementById('guests-list');
+  el.innerHTML = '';
+  if (!guests.length) { el.innerHTML = '<div class="empty">No guests yet</div>'; return; }
+
+  guests.forEach(g => {
+    const isLocked = g.locked == 1;
+    const helpOff = g.help_disabled == 1;
+    const accomOn = g.accom_enabled == 1;
+    const accomDisabled = g.accom_disabled == 1;
+    // effectiveAccom: eligible if badge-eligible OR manually enabled, shown unless disabled
+    const ACCOM_ELIGIBLE_BADGES = ['Eddie +', 'VIP', 'Staff'];
+    const badgeEligible = g.badge && ACCOM_ELIGIBLE_BADGES.includes(g.badge);
+    const accomEffective = (badgeEligible || accomOn) && !accomDisabled;
+    const appUrl = g.app_token ? `${BASE_URL}/app?token=${g.app_token}` : null;
+    const div = document.createElement('div');
+    div.className = 'guest-card';
+    div.id = `gc-${g.id}`;
+    div.innerHTML = `
+      <div class="guest-header">
+        <div>
+          <div class="guest-name">${esc(g.first_name)} ${esc(g.last_name)}${g.is_actor ? ' <span class="badge-pill actor" style="font-size:11px;padding:2px 8px;vertical-align:middle;">🎬 Actor</span>' : ''}</div>
+          ${g.seat ? `<div style="font-size:13px;color:#888;margin-top:2px;">📍 ${esc(g.seat)}</div>` : ''}
+          ${g.badge ? `<div style="font-size:13px;font-weight:700;margin-top:2px;">🏅 ${esc(g.badge)}</div>` : ''}
+        </div>
+        <div class="guest-status ${g.status}${isLocked?' locked':''}">${isLocked?'Locked':g.status}</div>
+      </div>
+      <div class="guest-row">
+        <div class="qr-box" id="gqr-${g.id}"></div>
+        <div class="guest-actions">
+          <button class="btn small" onclick="toggleEdit('${g.id}')">✏️ Edit</button>
+          <button class="btn small ${isLocked?'green':'orange'}" onclick="toggleLock('${g.id}',${isLocked})">${isLocked?'🔓 Unlock':'🔒 Lock'}</button>
+          <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'🆘 Enable Help':'🚫 Disable Help'}</button>
+          <button class="btn small ${accomEffective?'orange':'green'}" onclick="toggleAccomAccess('${g.id}',${accomEffective?1:0},${accomOn?1:0})" title="${accomEffective?'Disable accommodations for this guest':'Enable accommodations for this guest'}">${accomEffective?'🛎️ Disable Accom':'🛎️ Enable Accom'}</button>
+          <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
+          ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy Link</button>` : ''}
+        </div>
+      </div>
+      <div class="edit-form" id="ef-${g.id}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <input type="text" id="ef-first-${g.id}" value="${esc(g.first_name)}" placeholder="First Name">
+          <input type="text" id="ef-last-${g.id}" value="${esc(g.last_name)}" placeholder="Last Name">
+        </div>
+        <input type="text" id="ef-seat-${g.id}" value="${esc(g.seat||'')}" placeholder="Seat (e.g. Table 3, Seat B)">
+        <div style="margin:8px 0;display:flex;align-items:center;gap:10px;">
+          <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Badge:</label>
+          <select id="ef-badge-${g.id}" class="badge-select">
+            ${BADGES.map(b => `<option value="${b}" ${(g.badge||'')===b?'selected':''}>${b||'None'}</option>`).join('')}
+          </select>
+        </div>
+        <div style="margin:8px 0;display:flex;align-items:center;gap:10px;">
+          <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="ef-actor-${g.id}" ${g.is_actor?'checked':''} style="width:18px;height:18px;accent-color:#9b59b6;cursor:pointer;">
+            🎬 Actor
+          </label>
+        </div>
+        <div class="edit-btns">
+          <button class="btn small" onclick="saveFullEdit('${g.id}')">Save All</button>
+          <button class="btn small gray" onclick="toggleEdit('${g.id}')">Cancel</button>
+        </div>
+      </div>
+      ${appUrl ? `<div style="font-size:11px;color:#aaa;margin-top:8px;word-break:break-all;">${appUrl}</div>` : ''}`;
+    el.appendChild(div);
+
+    if (g.app_token) renderQR(`gqr-${g.id}`, `${BASE_URL}/app?token=${g.app_token}`);
+    else if (g.qr_data) renderQR(`gqr-${g.id}`, g.qr_data.startsWith('http') ? g.qr_data : 'https://'+g.qr_data);
+  });
+}
+
+function toggleEdit(id) { document.getElementById(`ef-${id}`).classList.toggle('open'); }
+
+async function saveFullEdit(id) {
+  const first = document.getElementById(`ef-first-${id}`).value.trim();
+  const last = document.getElementById(`ef-last-${id}`).value.trim();
+  const seat = document.getElementById(`ef-seat-${id}`).value.trim();
+  const badge = document.getElementById(`ef-badge-${id}`).value;
+  const is_actor = document.getElementById(`ef-actor-${id}`).checked ? 1 : 0;
+  if (!first || !last) return alert('First and last name required');
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({guestId:id, first_name:first, last_name:last, seat, badge, is_actor})});
+  loadGuests();
+}
+
+async function saveBadge(id, badge) {
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,badge})});
+}
+async function toggleLock(id, isLocked) {
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,locked:isLocked?0:1})});
+  loadGuests();
+}
+async function toggleHelp(id, helpOff) {
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,help_disabled:helpOff?0:1})});
+  loadGuests();
+}
+async function toggleAccomAccess(id, isEffective, isManuallyEnabled) {
+  // If currently showing: disable it (set accom_disabled=1, accom_enabled=0)
+  // If currently hidden: enable it (set accom_enabled=1, accom_disabled=0)
+  const body = isEffective
+    ? { guestId: id, accom_disabled: 1, accom_enabled: 0 }
+    : { guestId: id, accom_disabled: 0, accom_enabled: 1 };
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  loadGuests();
+}
+function openDeleteModal(id) { deleteTargetId = id; document.getElementById('delete-modal').classList.add('open'); }
+function closeModal() { document.getElementById('delete-modal').classList.remove('open'); deleteTargetId = null; }
+async function confirmDelete() {
+  if (!deleteTargetId) return;
+  await fetch('/api/admin-guests', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:deleteTargetId})});
+  closeModal(); loadGuests();
+}
+function copyLink(url) { navigator.clipboard.writeText(url).then(()=>alert('Copied!')).catch(()=>alert(url)); }
+
+// ---- SCHEDULE ----
+let scheduleItems = [];
+async function loadSchedule() {
+  const res = await fetch('/api/schedule');
+  scheduleItems = await res.json();
+  if (!Array.isArray(scheduleItems)) scheduleItems = scheduleItems.items || [];
+  renderScheduleEditor();
+}
+function renderScheduleEditor() {
+  const el = document.getElementById('schedule-list');
+  el.innerHTML = '';
+  scheduleItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = `schedule-item-row ${item.is_live ? 'is-live' : ''}`;
+    div.innerHTML = `
+      <div class="schedule-inputs">
+        <input type="text" value="${esc(item.title)}" placeholder="Title" id="si-title-${item.id}">
+        <textarea rows="2" placeholder="Description (optional)" id="si-desc-${item.id}">${esc(item.description||'')}</textarea>
+        <div style="display:flex;gap:8px;">
+          <button class="btn small" onclick="saveScheduleItem('${item.id}')">Save</button>
+          <button class="btn small red" onclick="deleteScheduleItem('${item.id}')">Remove</button>
+        </div>
+      </div>
+      <div class="schedule-item-controls">
+        <button class="go-live-btn ${item.is_live?'live':''}" onclick="goLive('${item.id}',${item.is_live?0:1})">
+          ${item.is_live ? '🔴 Live' : 'Go Live'}
+        </button>
       </div>`;
-    return items + other;
-  }
+    el.appendChild(div);
+  });
+}
+async function saveScheduleItem(id) {
+  const title = document.getElementById(`si-title-${id}`).value.trim();
+  const description = document.getElementById(`si-desc-${id}`).value.trim();
+  if (!title) return alert('Title required');
+  await fetch('/api/schedule', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,title,description})});
+  loadSchedule();
+}
+async function deleteScheduleItem(id) {
+  if (!confirm('Remove this item?')) return;
+  await fetch('/api/schedule', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadSchedule();
+}
+async function goLive(id, liveVal) {
+  await fetch('/api/schedule', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'go-live',id,is_live:liveVal})});
+  loadSchedule();
+}
+async function addScheduleItem() {
+  await fetch('/api/schedule', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',title:'New Item',description:''})});
+  loadSchedule();
+}
 
-  function toggleOtherInput(id) {
-    const el = document.getElementById(id);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    if (el.style.display === 'block') setTimeout(() => document.getElementById(id+'-text')?.focus(), 50);
-  }
+// ---- HELP ----
+async function loadHelp() {
+  const res = await fetch('/api/help');
+  const items = await res.json();
+  const el = document.getElementById('help-list');
+  if (!items.length) { el.innerHTML = '<div class="empty">No help requests yet</div>'; return; }
+  el.innerHTML = items.map(h => `
+    <div class="help-item ${h.resolved ? 'resolved' : ''}">
+      <div class="help-info">
+        <strong>${esc(h.first_name)} ${esc(h.last_name)}</strong>
+        ${h.seat ? `<span>Seat: ${esc(h.seat)}</span>` : ''}
+        ${h.message ? `<span class="help-reason-tag">${esc(h.message)}</span>` : ''}
+        <div style="margin-top:4px;font-size:12px;color:#aaa;">${timeAgo(h.created_at)}</div>
+      </div>
+      ${!h.resolved ? `<button class="btn small green" onclick="resolveHelp('${h.id}')">Resolve ✓</button>` : '<span style="color:#34c759;font-size:13px;font-weight:700;">✓ Done</span>'}
+    </div>`).join('');
+}
+async function resolveHelp(id) {
+  await fetch('/api/help', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadHelp(); checkHelpAlerts();
+}
 
-  function openHelpSheet() {
-    if (helpSent || guestData?.help_disabled) return;
-    document.getElementById('reason-list').innerHTML = buildReasonList(helpReasons, 'sendHelp');
-    document.getElementById('help-sheet').classList.add('open');
-  }
-  function closeHelpSheet() { document.getElementById('help-sheet').classList.remove('open'); }
-  // ---- Accommodations ----
-  let accomSent = false;
-  let accomPending = false;
+// ---- ACCOMMODATIONS ----
+async function loadAccommodations() {
+  const res = await fetch('/api/help?type=accommodation');
+  const items = await res.json();
+  const el = document.getElementById('accom-list');
+  if (!items.length) { el.innerHTML = '<div class="empty">No accommodation requests yet</div>'; return; }
+  el.innerHTML = items.map(h => `
+    <div class="help-item ${h.resolved ? 'resolved' : ''}">
+      <div class="help-info">
+        <strong>${esc(h.first_name)} ${esc(h.last_name)}</strong>
+        ${h.badge ? `<span style="font-size:12px;font-weight:700;color:#9b59b6;">${esc(h.badge)}</span>` : ''}
+        ${h.seat ? `<span>📍 ${esc(h.seat)}</span>` : ''}
+        ${h.message ? `<span class="help-reason-tag">${esc(h.message)}</span>` : ''}
+        <div style="margin-top:4px;font-size:12px;color:#aaa;">${timeAgo(h.created_at)}</div>
+      </div>
+      ${!h.resolved ? `<button class="btn small green" onclick="resolveAccom('${h.id}')">Resolve ✓</button>` : '<span style="color:#34c759;font-size:13px;font-weight:700;">✓ Done</span>'}
+    </div>`).join('');
+}
+async function resolveAccom(id) {
+  await fetch('/api/help', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadAccommodations();
+  // Clear badge
+  const badge = document.getElementById('accom-badge');
+  badge.style.display = 'none';
+}
 
-  function openAccomSheet() {
-    if (accomSent) return;
-    document.getElementById('accom-reason-list').innerHTML = buildReasonList(accomReasons, 'sendAccom');
-    document.getElementById('accom-sheet').classList.add('open');
+// ---- CUSTOM BUTTONS ----
+let buttonsList = [];
+async function loadButtons() {
+  const res = await fetch('/api/buttons');
+  buttonsList = await res.json();
+  renderButtonsList();
+}
+function renderButtonsList() {
+  const el = document.getElementById('buttons-list');
+  if (!buttonsList.length) { el.innerHTML = '<div class="empty">No custom buttons yet. Add one above.</div>'; return; }
+  el.innerHTML = buttonsList.map((b, i) => {
+    const actionDesc = b.action && b.action !== 'none'
+      ? (b.action.startsWith('msg:') ? '💬 ' + b.action.slice(4) : '🔗 ' + b.action)
+      : '';
+    return `<div class="config-item" id="btn-row-${b.id}">
+      <div style="display:flex;flex-direction:column;gap:2px;margin-right:8px;">
+        <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},1)" ${i===buttonsList.length-1?'disabled':''}>↓</button>
+      </div>
+      <span class="ci-emoji">${esc(b.emoji)}</span>
+      <div style="flex:1;">
+        <div class="ci-label">${esc(b.label)}</div>
+        ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
+      </div>
+      <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
+    </div>`;
+  }).join('');
+}
+async function moveButton(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= buttonsList.length) return;
+  // Swap
+  [buttonsList[index], buttonsList[newIndex]] = [buttonsList[newIndex], buttonsList[index]];
+  // Assign new sort_orders
+  const updates = buttonsList.map((b, i) => ({ id: b.id, sort_order: i }));
+  renderButtonsList();
+  await fetch('/api/buttons', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ reorder: updates })
+  });
+}
+function toggleBtnTypeField() {
+  const type = document.getElementById('new-btn-type').value;
+  document.getElementById('new-btn-url').style.display = type === 'link' ? 'block' : 'none';
+  document.getElementById('new-btn-msg').style.display = type === 'message' ? 'block' : 'none';
+}
+async function addButton() {
+  const label = document.getElementById('new-btn-label').value.trim();
+  const emoji = document.getElementById('new-btn-emoji').value.trim() || '🔘';
+  const type = document.getElementById('new-btn-type').value;
+  if (!label) return alert('Label required');
+  let action = 'none';
+  if (type === 'link') {
+    const url = document.getElementById('new-btn-url').value.trim();
+    if (!url) return alert('URL required for link type');
+    action = url;
+  } else if (type === 'message') {
+    const msg = document.getElementById('new-btn-msg').value.trim();
+    if (!msg) return alert('Message text required');
+    action = 'msg:' + msg;
   }
+  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action})});
+  document.getElementById('new-btn-label').value = '';
+  document.getElementById('new-btn-emoji').value = '';
+  document.getElementById('new-btn-url').value = '';
+  document.getElementById('new-btn-msg').value = '';
+  document.getElementById('new-btn-type').value = 'none';
+  toggleBtnTypeField();
+  loadButtons();
+}
+async function deleteButton(id) {
+  await fetch('/api/buttons', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadButtons();
+}
 
-  async function sendAccom(reason) {
-    document.getElementById('accom-sheet').classList.remove('open');
-    if (accomSent || !guestData) return;
-    accomSent = true; accomPending = true;
-    const btn = document.getElementById('accom-btn');
-    btn.classList.add('sent');
-    document.getElementById('accom-btn-title').textContent = 'Request Received!';
-    document.getElementById('accom-btn-sub').textContent = reason;
-    try {
-      await fetch('/api/help', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ token, guestId: guestData.id, reason, type: 'accommodation' })
-      });
-    } catch(e) {
-      showToast('Could not send — please find a staff member');
-      resetAccomBtn();
-    }
-  }
+// ---- HELP REASONS ----
+async function loadReasons() {
+  // Load help reasons
+  const res = await fetch('/api/help-reasons?type=help');
+  const items = await res.json();
+  const el = document.getElementById('reasons-list');
+  if (!items.length) { el.innerHTML = '<div class="empty">No help reasons yet. The "Other" option is always shown automatically.</div>'; }
+  else { el.innerHTML = items.map(r => `
+    <div class="config-item">
+      <span class="ci-emoji">${esc(r.emoji)}</span>
+      <span class="ci-label">${esc(r.label)}</span>
+      <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
+    </div>`).join(''); }
 
-  function resetAccomBtn() {
-    accomSent = false; accomPending = false;
-    const btn = document.getElementById('accom-btn');
-    btn.classList.remove('sent','resolved-state');
-    document.getElementById('accom-btn-title').textContent = 'Request Accommodation';
-    document.getElementById('accom-btn-sub').textContent = 'Special requests & assistance';
-  }
+  // Load accommodation reasons
+  const aRes = await fetch('/api/help-reasons?type=accommodation');
+  const aItems = await aRes.json();
+  const aEl = document.getElementById('accom-reasons-list');
+  if (!aItems.length) { aEl.innerHTML = '<div class="empty">No accommodation reasons yet. The "Other" option is always shown automatically.</div>'; }
+  else { aEl.innerHTML = aItems.map(r => `
+    <div class="config-item">
+      <span class="ci-emoji">${esc(r.emoji)}</span>
+      <span class="ci-label">${esc(r.label)}</span>
+      <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
+    </div>`).join(''); }
+}
+async function addReason(type) {
+  const isAccom = type === 'accommodation';
+  const label = document.getElementById(isAccom ? 'new-accom-reason-label' : 'new-reason-label').value.trim();
+  const emoji = document.getElementById(isAccom ? 'new-accom-reason-emoji' : 'new-reason-emoji').value.trim() || '🙋';
+  if (!label) return alert('Label required');
+  await fetch('/api/help-reasons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label,emoji,type})});
+  document.getElementById(isAccom ? 'new-accom-reason-label' : 'new-reason-label').value = '';
+  document.getElementById(isAccom ? 'new-accom-reason-emoji' : 'new-reason-emoji').value = '';
+  loadReasons();
+}
+async function deleteReason(id) {
+  await fetch('/api/help-reasons', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadReasons();
+}
 
-  async function sendHelp(reason) {
-    closeHelpSheet();
-    if (helpSent || !guestData) return;
-    helpSent = true; helpPending = true;
-    const btn = document.getElementById('help-btn');
-    btn.classList.add('sent');
-    document.getElementById('help-btn-title').textContent = 'Help is on the way!';
-    document.getElementById('help-btn-sub').textContent = reason;
-    try {
-      await fetch('/api/help', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, guestId:guestData.id, reason})});
-    } catch(e) { showToast('Could not send — please find a staff member'); resetHelpBtn(); }
-  }
-  function resetHelpBtn() {
-    helpSent = false; helpPending = false;
-    const btn = document.getElementById('help-btn');
-    btn.classList.remove('sent','resolved-state');
-    document.getElementById('help-btn-title').textContent = 'Call for Help';
-    document.getElementById('help-btn-sub').textContent = 'A staff member will come to you';
-  }
+// ---- NOTICES ----
+async function loadNotices() {
+  // Populate target dropdown with guests
+  const gRes = await fetch('/api/admin-guests');
+  const guests = await gRes.json();
+  const sel = document.getElementById('notice-target');
+  // Keep 'ALL' option, rebuild rest
+  sel.innerHTML = '<option value="ALL">📣 Everyone</option>' +
+    guests.filter(g => g.app_token).map(g => `<option value="${g.id}">${esc(g.first_name)} ${esc(g.last_name)}</option>`).join('');
 
-  // Notices
-  async function checkNotices() {
-    if (!token) return;
-    try {
-      const res = await fetch(`/api/notices?token=${encodeURIComponent(token)}`);
-      const notices = await res.json();
-      if (notices.length > 0 && notices[0].id !== currentNoticeId) showNotice(notices[0]);
-    } catch(e) {}
-  }
-  function showNotice(notice) {
-    currentNoticeId = notice.id;
-    document.getElementById('notice-message').textContent = notice.message;
-    document.getElementById('notice-overlay').classList.add('open');
-    const timerEl = document.getElementById('notice-timer');
-    if (notice.duration > 0) {
-      let remaining = notice.duration;
-      timerEl.textContent = `Closes in ${remaining}s`;
-      const iv = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) { clearInterval(iv); dismissNotice(); }
-        else timerEl.textContent = `Closes in ${remaining}s`;
-      }, 1000);
-    } else { timerEl.textContent = ''; }
-  }
-  async function dismissNotice() {
-    document.getElementById('notice-overlay').classList.remove('open');
-    if (!currentNoticeId) return;
-    try { await fetch('/api/notices', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentNoticeId, token})}); } catch(e) {}
-    currentNoticeId = null;
-  }
+  // Load recent notices
+  const res = await fetch('/api/notices');
+  const items = await res.json();
+  const el = document.getElementById('notices-list');
+  if (!items.length) { el.innerHTML = '<div class="empty">No notices sent yet</div>'; return; }
+  el.innerHTML = items.map(n => `
+    <div class="help-item ${n.dismissed?'resolved':''}">
+      <div class="help-info">
+        <strong>${esc(n.recipient)}</strong>
+        <span>${esc(n.message)}</span>
+        <div style="font-size:12px;color:#aaa;margin-top:4px;">${timeAgo(n.created_at)}${n.duration?` · Auto-closes ${n.duration}s`:' · Requires OK'}</div>
+      </div>
+      <span style="font-size:13px;color:${n.dismissed?'#34c759':'#aaa'};">${n.dismissed?'✓ Seen':'Pending'}</span>
+    </div>`).join('');
+}
 
-  // Poll loop
-  async function pollLoop() {
-    setInterval(async () => {
-      try {
-        const rf = await (await fetch('/api/refresh')).json();
-        if (lastRefreshSignal === null) { lastRefreshSignal = rf.signal; }
-        else if (rf.signal !== lastRefreshSignal) {
-          lastRefreshSignal = rf.signal;
-          loadSchedule(); loadCustomButtons(); loadHelpReasons();
-          const gRes = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-          if (gRes.ok) { const u = await gRes.json(); if (u.locked){showLocked();return;} guestData=u; renderGuest(); }
-        }
-        if (helpPending) {
-          const hr = await (await fetch(`/api/help?token=${encodeURIComponent(token)}`)).json();
-          if (hr.resolved) {
-            helpPending = false; helpSent = false;
-            const btn = document.getElementById('help-btn');
-            btn.classList.remove('sent'); btn.classList.add('resolved-state');
-            document.getElementById('help-btn-title').textContent = 'Help Completed ✓';
-            document.getElementById('help-btn-sub').textContent = 'Thanks! Tap to request again.';
-            showToast('✓ Your help request was resolved!');
-            setTimeout(() => { btn.classList.remove('resolved-state'); resetHelpBtn(); }, 5000);
-          }
-        }
-        if (accomPending) {
-          const ar = await (await fetch(`/api/help?token=${encodeURIComponent(token)}&type=accommodation`)).json();
-          if (ar.resolved) {
-            accomPending = false; accomSent = false;
-            const btn = document.getElementById('accom-btn');
-            btn.classList.remove('sent'); btn.classList.add('resolved-state');
-            document.getElementById('accom-btn-title').textContent = 'Request Handled ✓';
-            document.getElementById('accom-btn-sub').textContent = 'Tap to make another request';
-            showToast('✓ Your accommodation request was handled!');
-            setTimeout(() => { btn.classList.remove('resolved-state'); resetAccomBtn(); }, 5000);
-          }
-        }
-        checkNotices();
-      } catch(e) {}
-    }, 8000);
-  }
+async function sendNotice() {
+  const message = document.getElementById('notice-message-input').value.trim();
+  const guestId = document.getElementById('notice-target').value;
+  const duration = parseInt(document.getElementById('notice-duration').value);
+  if (!message) return alert('Message required');
+  const btn = event.target;
+  btn.textContent = 'Sending...'; btn.disabled = true;
+  await fetch('/api/notices', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({message, guestId, duration})});
+  document.getElementById('notice-message-input').value = '';
+  btn.textContent = '📢 Send Notice'; btn.disabled = false;
+  loadNotices();
+}
 
-  // Toast
-  let toastTimer;
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-  }
+// ---- CUSTOM FIELDS ----
+async function loadCustomFields() {
+  const res = await fetch('/api/custom-fields');
+  const fields = await res.json();
+  const el = document.getElementById('custom-fields-list');
+  if (!fields.length) { el.innerHTML = '<div class="empty">No custom fields yet. Add one above.</div>'; return; }
+  el.innerHTML = fields.map(f => `
+    <div class="config-item">
+      <span class="ci-emoji">${f.field_type === 'checkbox' ? '☑️' : '📝'}</span>
+      <div style="flex:1;">
+        <div class="ci-label">${esc(f.label)}</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">${f.field_type === 'checkbox' ? 'Checkbox' : 'Text input'}</div>
+      </div>
+      <button class="btn small red" onclick="deleteCustomField('${f.id}')">Remove</button>
+    </div>`).join('');
+}
+async function addCustomField() {
+  const label = document.getElementById('new-field-label').value.trim();
+  const field_type = document.getElementById('new-field-type').value;
+  if (!label) return alert('Label required');
+  await fetch('/api/custom-fields', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',label,field_type})});
+  document.getElementById('new-field-label').value = '';
+  loadCustomFields();
+}
+async function deleteCustomField(id) {
+  if (!confirm('Remove this field? All guest values for it will be deleted.')) return;
+  await fetch('/api/custom-fields', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  loadCustomFields();
+}
 
-  // ---- My Badge Modal ----
-  function drawMiniBadge() {
-    // Draw a tiny decorative barcode preview in the section card
-    const mini = document.getElementById('badge-mini-canvas');
-    if (!mini || !guestData) return;
-    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
-    mini.width = 44; mini.height = 44;
-    const ctx = mini.getContext('2d');
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 44, 44);
-    // Draw fake mini bars from name chars as decoration
-    ctx.fillStyle = '#fff';
-    let x = 3;
-    for (let i = 0; i < name.length && x < 41; i++) {
-      const w = 1 + (name.charCodeAt(i) % 2);
-      ctx.fillRect(x, 4, w, 36);
-      x += w + 1 + (name.charCodeAt(i) % 2);
-    }
-  }
-
-  function showMyBadge() {
-    if (!guestData) return;
-    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
-
-    document.getElementById('bm-barcode-name').textContent = name;
-    const tokenSnip = (guestData.id || '').slice(0,8).toUpperCase();
-    document.getElementById('bm-barcode-sub').textContent = tokenSnip;
-    document.getElementById('bm-fullname').textContent = guestData.first_name + ' ' + guestData.last_name;
-
-    // Badge pill
-    const pill = document.getElementById('bm-badge-pill');
-    if (guestData.badge) {
-      const slug = guestData.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-      pill.textContent = guestData.badge;
-      pill.className = 'bm-badge-pill ' + slug;
-      pill.style.display = 'inline-block';
+// ---- Help alert polling ----
+async function checkHelpAlerts() {
+  try {
+    const res = await fetch('/api/help?unresolved=1');
+    const items = await res.json();
+    const count = items.length;
+    const banner = document.getElementById('help-banner');
+    const badge = document.getElementById('help-badge');
+    const counter = document.getElementById('help-count');
+    if (count > 0) {
+      banner.classList.add('show');
+      badge.style.display = 'inline'; badge.textContent = count;
+      counter.style.display = 'inline';
+      if (count > prevHelpCount) playAlertSound();
     } else {
-      pill.style.display = 'none';
+      banner.classList.remove('show');
+      badge.style.display = 'none';
+      counter.style.display = 'none';
     }
-
-    drawCode128(document.getElementById('bm-canvas-barcode'), name);
-    document.getElementById('badge-modal').classList.add('open');
-  }
-
-  // ---- Code 128 B Barcode (real encoding) ----
-  function drawCode128(canvas, text) {
-    // Code 128 B character patterns [bars,spaces alternating, 6 elements each]
-    const PATTERNS = {
-      START_B: [2,1,1,4,1,2],
-      STOP:    [2,3,3,1,1,1,2],
-      // Code values for ASCII 32-126 in Code B
-      chars: (() => {
-        // Each pattern: 6 widths (bar,space,bar,space,bar,space)
-        const p = [
-          [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,3,2,2],[1,2,1,2,3,1],
-          [1,3,1,2,2,1],[1,2,3,2,1,2],[1,2,3,1,2,2],[1,2,1,2,3,2],[3,1,1,2,2,2],//0-9
-          [3,2,1,1,2,2],[3,2,1,2,2,1],[3,2,1,2,1,2],[2,1,2,3,2,1],[2,1,2,1,3,2],//10-14
-          [2,1,3,2,1,2],[2,3,1,1,2,2],[2,3,1,2,2,1],[2,3,1,2,1,2],[2,1,2,2,3,1],//15-19
-          [2,1,2,3,1,2],[2,1,3,1,2,2],[3,1,2,2,1,2],[3,1,2,1,2,2],[3,2,2,1,1,2],//20-24
-          [3,2,2,2,1,1],[3,2,2,1,2,1],[3,1,1,2,3,1],[3,1,1,3,2,1],[3,1,2,3,1,1],//25-29
-          [3,1,3,2,1,1],[3,2,3,1,1,1],[1,1,2,2,1,3],[1,2,2,1,1,3],[1,2,2,3,1,1],//30-34 (space,!,",#,$)
-          [1,1,3,2,1,2],[1,2,3,1,2,1],[1,2,3,2,1,1],[2,2,3,2,1,1],[2,2,1,1,3,2],//35-39
-          [2,2,1,3,1,2],[2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,2],[1,1,2,3,1,2],//40-44
-          [1,3,2,1,1,2],[1,3,2,3,1,1],[2,1,1,3,2,2],[2,3,3,1,1,1],[2,1,3,3,1,1],//45-49
-          [3,1,1,1,2,3],[3,1,1,3,2,1],[1,1,3,1,2,2],[1,1,3,2,2,1],[2,1,1,2,3,2],//50-54
-          [2,1,1,3,3,1],[2,3,1,1,3,1],[1,1,2,2,3,2],[1,3,2,2,1,2],[1,3,2,2,2,1],//55-59
-          [3,3,2,1,1,1],[2,1,3,2,2,1],[2,1,3,1,3,1],[1,1,1,3,2,3],[1,3,1,1,2,3],//60-64
-          [1,3,1,3,2,1],[1,3,1,2,3,1],[1,3,3,2,1,1],[3,1,3,1,2,1],[2,1,1,3,2,1],//65-69 (A-E)
-          [3,1,1,2,1,3],[3,1,1,1,3,2],[1,2,3,1,1,3],[1,1,3,1,3,2],[1,3,3,1,2,1],//70-74 (F-J)
-          [1,2,1,3,3,1],[3,1,2,1,3,1],[1,1,1,2,3,3],[1,2,1,1,3,3],[1,2,3,3,1,1],//75-79 (K-O)
-          [3,2,1,3,1,1],[2,1,3,1,1,3],[2,3,1,1,1,3],[2,1,1,1,3,3],[3,1,2,1,1,3],//80-84 (P-T)
-          [3,1,1,1,2,3],[2,3,2,1,1,1],[2,3,1,1,2,1],[2,3,2,1,1,1],[1,2,2,2,1,3],//85-89 (U-Y)
-          [1,2,2,1,2,3],[1,2,2,3,2,1],[1,1,3,3,1,2],[1,2,3,1,3,1],[3,2,1,1,2,1],//90-94 (Z,[,\,],^)
-          [3,1,2,2,1,2],[1,2,1,2,2,3],[1,2,1,2,3,2],[1,2,1,3,2,2],[1,3,1,2,2,2],//95-99 (_,`,a,b,c)
-        ];
-        // Extend to full 96 chars (codes 0-95 = ASCII 32-127)
-        return p;
-      })()
-    };
-
-    const safe = text.replace(/[^\x20-\x7E]/g,'').slice(0,28) || ' ';
-    const mw = 2; // module width px
-    const bh = 70; // bar height
-
-    // Calculate checksum
-    let check = 104; // START B value
-    for (let i = 0; i < safe.length; i++) {
-      check += (safe.charCodeAt(i) - 32) * (i + 1);
+    prevHelpCount = count;
+    // Check accommodation requests (silent — just badge on tab)
+    const aRes = await fetch('/api/help?unresolved=1&type=accommodation');
+    const aItems = await aRes.json();
+    const accomBadge = document.getElementById('accom-badge');
+    if (aItems.length > 0) {
+      accomBadge.style.display = 'inline';
+      accomBadge.textContent = aItems.length;
+    } else {
+      accomBadge.style.display = 'none';
     }
-    check = check % 103;
-
-    // Build sequence: START_B + chars + check + STOP
-    const seq = [PATTERNS.START_B];
-    for (const ch of safe) {
-      const idx = ch.charCodeAt(0) - 32;
-      seq.push(PATTERNS.chars[idx] || PATTERNS.chars[0]);
-    }
-    seq.push(PATTERNS.chars[check] || PATTERNS.chars[0]);
-    seq.push(PATTERNS.STOP);
-
-    const totalModules = seq.reduce((s, p) => s + p.reduce((a,b) => a+b, 0), 0);
-    canvas.width = totalModules * mw + 20;
-    canvas.height = bh + 4;
-
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#000';
-
-    let x = 10;
-    seq.forEach(pattern => {
-      pattern.forEach((w, i) => {
-        if (i % 2 === 0) ctx.fillRect(x, 2, w * mw, bh);
-        x += w * mw;
-      });
+  } catch(e) {}
+}
+function clearHelpAlert() {}
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [440,550,660].forEach((freq,i) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i*0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.15 + 0.3);
+      osc.start(ctx.currentTime + i*0.15); osc.stop(ctx.currentTime + i*0.15 + 0.3);
     });
-  }
+  } catch(e) {}
+}
 
-  function showApp() { document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
-  function showLocked() { document.getElementById('loading-screen').style.display='none'; document.getElementById('locked-screen').style.display='flex'; }
-  function showError() { document.getElementById('loading-screen').style.display='none'; document.getElementById('error-screen').style.display='flex'; }
-  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+// ---- Helpers ----
+function renderQR(containerId, value) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  box.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  box.appendChild(canvas);
+  try { new QRious({ element: canvas, value, size: 100 }); } catch(e) {}
+}
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts, mins = Math.floor(diff/60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  return `${Math.floor(mins/60)}h ${mins%60}m ago`;
+}
 
-  loadGuest();
+// ---- Init ----
+loadQueue();
+checkHelpAlerts();
+setInterval(checkHelpAlerts, 5000);
+setInterval(() => {
+  const active = [...document.querySelectorAll('.tab')].findIndex(t => t.classList.contains('active'));
+  if (active === 0) loadQueue();
+  if (active === 1) loadGuests();
+  if (active === 3) loadHelp();
+}, 6000);
 </script>
 </body>
 </html>
