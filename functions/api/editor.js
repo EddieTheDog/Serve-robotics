@@ -3,7 +3,7 @@
 
 export async function onRequestGet({ env }) {
   const { results } = await env.DB.prepare(`
-    SELECT id, first_name, last_name, status, app_token, seat, badge, qr_data
+    SELECT id, first_name, last_name, status, app_token, seat, badge, qr_data, is_actor, accom_enabled, help_disabled, accom_disabled
     FROM guests
     WHERE status = 'accepted'
     ORDER BY updated_at ASC
@@ -19,7 +19,7 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPatch({ request, env }) {
   const body = await request.json();
-  const { guestId, seat, badge, fieldValues } = body;
+  const { guestId, seat, badge, fieldValues, accom_enabled, help_disabled } = body;
   if (!guestId) return new Response('Missing guestId', { status: 400 });
 
   const now = Date.now();
@@ -28,6 +28,9 @@ export async function onRequestPatch({ request, env }) {
 
   if (seat !== undefined) { updates.push('seat = ?'); binds.push(seat); }
   if (badge !== undefined) { updates.push('badge = ?'); binds.push(badge); }
+  if (is_actor !== undefined) { updates.push('is_actor = ?'); binds.push(is_actor); }
+  if (accom_enabled !== undefined) { updates.push('accom_enabled = ?'); binds.push(accom_enabled); }
+  if (help_disabled !== undefined) { updates.push('help_disabled = ?'); binds.push(help_disabled); }
   binds.push(guestId);
 
   await env.DB.prepare(`UPDATE guests SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
