@@ -152,13 +152,23 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   </div>
 </div>
 
-<!-- Scan / Token Lookup Modal -->
+<!-- Scan Modal -->
 <div id="scan-modal">
   <div class="scan-box">
-    <div class="scan-title">📷 Scan or Enter Token</div>
-    <div class="scan-desc">Scan a guest's QR code with your camera app and paste the URL here, or type part of their name to find them.</div>
-    <input type="text" id="scan-input" class="scan-input" placeholder="Paste URL or type guest name..." oninput="onScanInput()">
-    <button class="scan-go-btn" onclick="doScanLookup()">Find Guest</button>
+    <div class="scan-title">📷 Scan Guest Badge</div>
+    <!-- Camera view -->
+    <div id="scan-camera-wrap" style="display:none;position:relative;margin-bottom:14px;">
+      <video id="scan-video" autoplay playsinline muted
+        style="width:100%;border-radius:12px;background:#000;display:block;max-height:240px;object-fit:cover;"></video>
+      <canvas id="scan-canvas" style="display:none;"></canvas>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+        <div style="width:160px;height:160px;border:3px solid rgba(255,255,255,0.6);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
+      </div>
+    </div>
+    <div id="scan-status" style="font-size:13px;color:#aaa;text-align:center;margin-bottom:12px;min-height:18px;"></div>
+    <div class="scan-desc" id="scan-desc">Point the camera at the guest&#39;s QR code or barcode badge. Or type their name below.</div>
+    <input type="text" id="scan-input" class="scan-input" placeholder="Search by name..." oninput="onScanInput()">
+    <button class="scan-go-btn" onclick="doNameSearch()">Search by Name</button>
     <button class="scan-cancel-btn" onclick="closeScanModal()">Cancel</button>
     <div class="scan-error" id="scan-error"></div>
   </div>
@@ -361,61 +371,103 @@ function continueEditing() {
   // Stay on editor view with same guest
 }
 
-// ---- Scan / Token lookup ----
-function openScanModal() {
+// ---- Camera QR Scanner ----
+let scanStream = null;
+let scanInterval = null;
+
+async function openScanModal() {
   document.getElementById('scan-input').value = '';
   document.getElementById('scan-error').textContent = '';
   document.getElementById('scan-modal').classList.add('open');
-  setTimeout(() => document.getElementById('scan-input').focus(), 100);
+  document.getElementById('scan-status').textContent = 'Starting camera...';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    scanStream = stream;
+    const video = document.getElementById('scan-video');
+    video.srcObject = stream;
+    document.getElementById('scan-camera-wrap').style.display = 'block';
+    document.getElementById('scan-desc').style.display = 'none';
+    document.getElementById('scan-status').textContent = 'Point at QR code on badge...';
+
+    // Poll frames for QR using BarcodeDetector if available
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code','code_128','pdf417'] });
+      scanInterval = setInterval(async () => {
+        if (video.readyState < 2) return;
+        try {
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) {
+            const raw = barcodes[0].rawValue;
+            stopCamera();
+            await handleScannedValue(raw);
+          }
+        } catch(e) {}
+      }, 400);
+    } else {
+      // BarcodeDetector not available — use canvas sampling fallback hint
+      document.getElementById('scan-status').textContent = 'Camera active — paste URL below if scan fails';
+    }
+  } catch(e) {
+    document.getElementById('scan-camera-wrap').style.display = 'none';
+    document.getElementById('scan-desc').style.display = 'block';
+    document.getElementById('scan-status').textContent = '';
+    document.getElementById('scan-error').textContent = 'Camera not available. Search by name below.';
+  }
 }
+
+function stopCamera() {
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  document.getElementById('scan-camera-wrap').style.display = 'none';
+  document.getElementById('scan-status').textContent = '';
+}
+
 function closeScanModal() {
+  stopCamera();
   document.getElementById('scan-modal').classList.remove('open');
 }
-function onScanInput() {
-  document.getElementById('scan-error').textContent = '';
+
+function onScanInput() { document.getElementById('scan-error').textContent = ''; }
+
+async function handleScannedValue(raw) {
+  document.getElementById('scan-status').textContent = 'Found! Looking up guest...';
+  let token = null;
+  try { const url = new URL(raw); token = url.searchParams.get('token'); } catch(e) {}
+
+  if (!token) {
+    document.getElementById('scan-error').textContent = 'Could not read a guest token from that code.';
+    return;
+  }
+  try {
+    const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
+    if (!res.ok) { document.getElementById('scan-error').textContent = 'Guest not found.'; return; }
+    const guest = await res.json();
+    let full = allGuests.find(g => g.id === guest.id);
+    if (!full) { await loadGuests(); full = allGuests.find(g => g.id === guest.id); }
+    if (!full) { document.getElementById('scan-error').textContent = 'Guest not in accepted list.'; return; }
+    closeScanModal();
+    openEditor(full);
+  } catch(e) { document.getElementById('scan-error').textContent = 'Lookup failed — check connection.'; }
 }
-async function doScanLookup() {
+
+async function doNameSearch() {
   const raw = document.getElementById('scan-input').value.trim();
   if (!raw) return;
-  document.getElementById('scan-error').textContent = '';
-
-  // Extract token from URL if pasted
-  let token = null;
+  // If they pasted a URL manually
   try {
     const url = new URL(raw);
-    token = url.searchParams.get('token');
-  } catch(e) {
-    // Not a URL — treat as name search
-  }
-
-  if (token) {
-    // Look up by token
-    try {
-      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-      if (!res.ok) { document.getElementById('scan-error').textContent = 'Guest not found for that QR code.'; return; }
-      const guest = await res.json();
-      // Find full guest data (with app_token) from allGuests list
-      let fullGuest = allGuests.find(g => g.id === guest.id);
-      if (!fullGuest) {
-        // Reload list and try again
-        await loadGuests();
-        fullGuest = allGuests.find(g => g.id === guest.id);
-      }
-      if (!fullGuest) {
-        document.getElementById('scan-error').textContent = 'Guest found but not in accepted list.';
-        return;
-      }
-      closeScanModal();
-      openEditor(fullGuest);
-    } catch(e) { document.getElementById('scan-error').textContent = 'Lookup failed — check connection.'; }
-  } else {
-    // Name search — filter list and highlight
-    closeScanModal();
-    setMode('all');
-    document.getElementById('search-input').value = raw;
-    filterGuests();
-    document.getElementById('search-bar').style.display = 'block';
-  }
+    const token = url.searchParams.get('token');
+    if (token) { closeScanModal(); await handleScannedValue(raw); return; }
+  } catch(e) {}
+  // Name search
+  closeScanModal();
+  setMode('all');
+  document.getElementById('search-input').value = raw;
+  filterGuests();
+  document.getElementById('search-bar').style.display = 'block';
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
