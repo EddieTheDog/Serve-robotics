@@ -110,18 +110,56 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 #error-screen p { font-size: 16px; color: #888; }
 #app { display: none; }
 
+/* Hidden badge icon button in header */
+#badge-icon-btn {
+  background: none; border: none; color: rgba(255,255,255,0.25); 
+  font-size: 11px; cursor: pointer; padding: 4px 2px;
+  letter-spacing: 1px; font-family: monospace; line-height: 1;
+  transition: color 0.2s;
+}
+#badge-icon-btn:active { color: rgba(255,255,255,0.7); }
+
 /* Badge modal */
-#badge-modal { display:none; position:fixed; inset:0; background:#000; z-index:400; flex-direction:column; align-items:center; justify-content:flex-start; overflow-y:auto; padding:40px 24px calc(env(safe-area-inset-bottom,20px)+40px); }
-#badge-modal.open { display:flex; }
-.badge-modal-name { color:#fff; font-size:26px; font-weight:800; margin-bottom:4px; text-align:center; }
-.badge-modal-sub { color:#aaa; font-size:14px; margin-bottom:20px; text-align:center; }
-.badge-code-tabs { display:flex; gap:8px; margin-bottom:16px; width:100%; max-width:320px; }
-.badge-code-tab { flex:1; padding:10px; background:#222; color:#aaa; border:none; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; text-transform:uppercase; }
-.badge-code-tab.active { background:#fff; color:#000; }
-.badge-code-wrap { background:#fff; border-radius:16px; padding:16px 12px 10px; width:100%; max-width:320px; display:flex; flex-direction:column; align-items:center; margin-bottom:8px; }
-.badge-code-wrap canvas { max-width:100%; }
-.badge-code-label { font-size:11px; color:#aaa; margin-top:8px; letter-spacing:1px; font-family:monospace; }
-.badge-close-btn { margin-top:20px; background:#fff; color:#000; border:none; border-radius:12px; padding:16px 40px; font-size:17px; font-weight:800; cursor:pointer; text-transform:uppercase; width:100%; max-width:320px; }
+#badge-modal {
+  display: none; position: fixed; inset: 0;
+  background: #0a0a0a; z-index: 450;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top,20px) + 20px) 24px calc(env(safe-area-inset-bottom,20px) + 30px);
+}
+#badge-modal.open { display: flex; }
+.bm-event { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #444; margin-bottom: 32px; }
+.bm-barcode-wrap {
+  background: #fff; border-radius: 12px; padding: 20px 16px 14px;
+  width: 100%; max-width: 340px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 0 60px rgba(255,255,255,0.06);
+}
+.bm-barcode-wrap canvas { width: 100%; height: auto; display: block; }
+.bm-barcode-name {
+  font-size: 13px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 2px; color: #000; margin-top: 10px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.bm-barcode-sub { font-size: 10px; color: #aaa; letter-spacing: 1px; margin-top: 3px; font-family: monospace; }
+.bm-name-below {
+  margin-top: 28px; text-align: center;
+}
+.bm-name-below .bm-fullname { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.bm-name-below .bm-badge-pill {
+  display: inline-block; padding: 4px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  background: #222; color: #aaa;
+}
+.bm-name-below .bm-badge-pill.eddie-plus { background: #FFD700; color: #000; }
+.bm-name-below .bm-badge-pill.vip { background: #9b59b6; color: #fff; }
+.bm-name-below .bm-badge-pill.staff { background: #2196F3; color: #fff; }
+.bm-name-below .bm-badge-pill.press { background: #ff9500; color: #fff; }
+.bm-close {
+  margin-top: 36px; background: #1a1a1a; color: #fff; border: none;
+  border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
+  cursor: pointer; width: 100%; max-width: 340px; letter-spacing: 0.5px;
+}
+.bm-close:active { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -142,10 +180,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="header-top">
       <span class="event-title">The Eddie's 2025</span>
       <span class="clock" id="clock">—</span>
+      <button onclick="showMyBadge()" id="badge-icon-btn" aria-label="My Badge" title="My Badge">▮▯▮▮▯▮▯▮</button>
     </div>
     <div class="greeting">Hello, <span id="guest-name">—</span> 👋</div>
     <div id="badge-wrap"></div>
-    <button id="my-badge-btn" onclick="showMyBadge()" style="margin-top:12px;background:rgba(255,255,255,0.12);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;">🪪 My Badge</button>
+
   </div>
 
   <div class="content">
@@ -188,13 +227,17 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 <!-- Badge Modal -->
 <div id="badge-modal">
-  <div class="badge-modal-name" id="bm-name"></div>
-  <div class="badge-modal-sub" id="bm-sub"></div>
-  <div class="badge-code-wrap" id="bm-wrap-qr">
-    <canvas id="bm-canvas-qr"></canvas>
-    <div class="badge-code-label">Scan to open your app</div>
+  <div class="bm-event">The Eddie's 2025</div>
+  <div class="bm-barcode-wrap">
+    <canvas id="bm-canvas-barcode"></canvas>
+    <div class="bm-barcode-name" id="bm-barcode-name"></div>
+    <div class="bm-barcode-sub" id="bm-barcode-sub"></div>
   </div>
-  <button class="badge-close-btn" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
+  <div class="bm-name-below">
+    <div class="bm-fullname" id="bm-fullname"></div>
+    <span class="bm-badge-pill" id="bm-badge-pill" style="display:none;"></span>
+  </div>
+  <button class="bm-close" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
 </div>
 
 <!-- Help Sheet -->
@@ -560,14 +603,102 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   // ---- My Badge Modal ----
   function showMyBadge() {
     if (!guestData) return;
-    const appUrl = location.href;
-    document.getElementById('bm-name').textContent = guestData.first_name + ' ' + guestData.last_name;
-    const sub = [guestData.seat ? '📍 ' + guestData.seat : '', guestData.badge ? '🏅 ' + guestData.badge : ''].filter(Boolean).join(' · ');
-    document.getElementById('bm-sub').textContent = sub || "The Eddie's 2025";
-    const qc = document.getElementById('bm-canvas-qr');
-    qc.width = 240; qc.height = 240;
-    new QRious({ element: qc, value: appUrl, size: 240, background: '#ffffff', foreground: '#000000' });
+    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
+
+    // Barcode text line: name + token snippet
+    document.getElementById('bm-barcode-name').textContent = name;
+    const tokenSnip = (guestData.id || '').slice(0,8).toUpperCase();
+    document.getElementById('bm-barcode-sub').textContent = tokenSnip;
+    document.getElementById('bm-fullname').textContent = guestData.first_name + ' ' + guestData.last_name;
+
+    // Badge pill
+    const pill = document.getElementById('bm-badge-pill');
+    if (guestData.badge) {
+      const slug = guestData.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+      pill.textContent = guestData.badge;
+      pill.className = 'bm-badge-pill ' + slug;
+      pill.style.display = 'inline-block';
+    } else {
+      pill.style.display = 'none';
+    }
+
+    // Draw barcode
+    drawCode128(document.getElementById('bm-canvas-barcode'), name);
     document.getElementById('badge-modal').classList.add('open');
+  }
+
+  // ---- Code 128 B Barcode (real encoding) ----
+  function drawCode128(canvas, text) {
+    // Code 128 B character patterns [bars,spaces alternating, 6 elements each]
+    const PATTERNS = {
+      START_B: [2,1,1,4,1,2],
+      STOP:    [2,3,3,1,1,1,2],
+      // Code values for ASCII 32-126 in Code B
+      chars: (() => {
+        // Each pattern: 6 widths (bar,space,bar,space,bar,space)
+        const p = [
+          [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,3,2,2],[1,2,1,2,3,1],
+          [1,3,1,2,2,1],[1,2,3,2,1,2],[1,2,3,1,2,2],[1,2,1,2,3,2],[3,1,1,2,2,2],//0-9
+          [3,2,1,1,2,2],[3,2,1,2,2,1],[3,2,1,2,1,2],[2,1,2,3,2,1],[2,1,2,1,3,2],//10-14
+          [2,1,3,2,1,2],[2,3,1,1,2,2],[2,3,1,2,2,1],[2,3,1,2,1,2],[2,1,2,2,3,1],//15-19
+          [2,1,2,3,1,2],[2,1,3,1,2,2],[3,1,2,2,1,2],[3,1,2,1,2,2],[3,2,2,1,1,2],//20-24
+          [3,2,2,2,1,1],[3,2,2,1,2,1],[3,1,1,2,3,1],[3,1,1,3,2,1],[3,1,2,3,1,1],//25-29
+          [3,1,3,2,1,1],[3,2,3,1,1,1],[1,1,2,2,1,3],[1,2,2,1,1,3],[1,2,2,3,1,1],//30-34 (space,!,",#,$)
+          [1,1,3,2,1,2],[1,2,3,1,2,1],[1,2,3,2,1,1],[2,2,3,2,1,1],[2,2,1,1,3,2],//35-39
+          [2,2,1,3,1,2],[2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,2],[1,1,2,3,1,2],//40-44
+          [1,3,2,1,1,2],[1,3,2,3,1,1],[2,1,1,3,2,2],[2,3,3,1,1,1],[2,1,3,3,1,1],//45-49
+          [3,1,1,1,2,3],[3,1,1,3,2,1],[1,1,3,1,2,2],[1,1,3,2,2,1],[2,1,1,2,3,2],//50-54
+          [2,1,1,3,3,1],[2,3,1,1,3,1],[1,1,2,2,3,2],[1,3,2,2,1,2],[1,3,2,2,2,1],//55-59
+          [3,3,2,1,1,1],[2,1,3,2,2,1],[2,1,3,1,3,1],[1,1,1,3,2,3],[1,3,1,1,2,3],//60-64
+          [1,3,1,3,2,1],[1,3,1,2,3,1],[1,3,3,2,1,1],[3,1,3,1,2,1],[2,1,1,3,2,1],//65-69 (A-E)
+          [3,1,1,2,1,3],[3,1,1,1,3,2],[1,2,3,1,1,3],[1,1,3,1,3,2],[1,3,3,1,2,1],//70-74 (F-J)
+          [1,2,1,3,3,1],[3,1,2,1,3,1],[1,1,1,2,3,3],[1,2,1,1,3,3],[1,2,3,3,1,1],//75-79 (K-O)
+          [3,2,1,3,1,1],[2,1,3,1,1,3],[2,3,1,1,1,3],[2,1,1,1,3,3],[3,1,2,1,1,3],//80-84 (P-T)
+          [3,1,1,1,2,3],[2,3,2,1,1,1],[2,3,1,1,2,1],[2,3,2,1,1,1],[1,2,2,2,1,3],//85-89 (U-Y)
+          [1,2,2,1,2,3],[1,2,2,3,2,1],[1,1,3,3,1,2],[1,2,3,1,3,1],[3,2,1,1,2,1],//90-94 (Z,[,\,],^)
+          [3,1,2,2,1,2],[1,2,1,2,2,3],[1,2,1,2,3,2],[1,2,1,3,2,2],[1,3,1,2,2,2],//95-99 (_,`,a,b,c)
+        ];
+        // Extend to full 96 chars (codes 0-95 = ASCII 32-127)
+        return p;
+      })()
+    };
+
+    const safe = text.replace(/[^\x20-\x7E]/g,'').slice(0,28) || ' ';
+    const mw = 2; // module width px
+    const bh = 70; // bar height
+
+    // Calculate checksum
+    let check = 104; // START B value
+    for (let i = 0; i < safe.length; i++) {
+      check += (safe.charCodeAt(i) - 32) * (i + 1);
+    }
+    check = check % 103;
+
+    // Build sequence: START_B + chars + check + STOP
+    const seq = [PATTERNS.START_B];
+    for (const ch of safe) {
+      const idx = ch.charCodeAt(0) - 32;
+      seq.push(PATTERNS.chars[idx] || PATTERNS.chars[0]);
+    }
+    seq.push(PATTERNS.chars[check] || PATTERNS.chars[0]);
+    seq.push(PATTERNS.STOP);
+
+    const totalModules = seq.reduce((s, p) => s + p.reduce((a,b) => a+b, 0), 0);
+    canvas.width = totalModules * mw + 20;
+    canvas.height = bh + 4;
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000';
+
+    let x = 10;
+    seq.forEach(pattern => {
+      pattern.forEach((w, i) => {
+        if (i % 2 === 0) ctx.fillRect(x, 2, w * mw, bh);
+        x += w * mw;
+      });
+    });
   }
 
   function showApp() { document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
