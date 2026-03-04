@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
   if (!token) return new Response('Missing token', { status: 400 });
 
   const guest = await env.DB.prepare(`
-    SELECT id, first_name, last_name, status, locked, badge, seat, help_disabled, accom_enabled, accom_disabled, is_actor
+    SELECT id, first_name, last_name, status, locked, badge, seat, help_disabled, accom_enabled, accom_disabled, is_actor, actor_request_disabled, passes
     FROM guests WHERE app_token = ?
   `).bind(token).first();
 
