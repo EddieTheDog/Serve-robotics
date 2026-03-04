@@ -110,14 +110,30 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 #error-screen p { font-size: 16px; color: #888; }
 #app { display: none; }
 
-/* Hidden badge icon button in header */
-#badge-icon-btn {
-  background: none; border: none; color: rgba(255,255,255,0.25); 
-  font-size: 11px; cursor: pointer; padding: 4px 2px;
-  letter-spacing: 1px; font-family: monospace; line-height: 1;
-  transition: color 0.2s;
+/* My Badge section at bottom */
+.badge-section {
+  margin-top: 8px;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-#badge-icon-btn:active { color: rgba(255,255,255,0.7); }
+.badge-section-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 18px; cursor: pointer;
+  transition: background 0.15s;
+}
+.badge-section-row:active { background: #f5f5f5; }
+.badge-section-icon {
+  width: 44px; height: 44px; background: #000; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}
+.badge-section-icon canvas { display: block; }
+.badge-section-text strong { display: block; font-size: 16px; font-weight: 700; }
+.badge-section-text span { font-size: 13px; color: #aaa; }
+.badge-section-chevron { margin-left: auto; font-size: 18px; color: #ccc; }
+
 
 /* Badge modal */
 #badge-modal {
@@ -180,7 +196,6 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="header-top">
       <span class="event-title">The Eddie's 2025</span>
       <span class="clock" id="clock">—</span>
-      <button onclick="showMyBadge()" id="badge-icon-btn" aria-label="My Badge" title="My Badge">▮▯▮▮▯▮▯▮</button>
     </div>
     <div class="greeting">Hello, <span id="guest-name">—</span> 👋</div>
     <div id="badge-wrap"></div>
@@ -222,6 +237,20 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <div class="info-row" id="info-badge-row" style="display:none;"><div class="info-icon">🏅</div><span id="info-badge">—</span></div>
     </div>
     <div id="custom-fields-info-wrap"></div>
+
+    <div class="section-label" style="margin-top:24px;">My Badge</div>
+    <div class="badge-section" onclick="showMyBadge()">
+      <div class="badge-section-row">
+        <div class="badge-section-icon">
+          <canvas id="badge-mini-canvas" width="44" height="44"></canvas>
+        </div>
+        <div class="badge-section-text">
+          <strong>Show My Badge</strong>
+          <span>Tap to display your barcode</span>
+        </div>
+        <div class="badge-section-chevron">›</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -344,6 +373,8 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     const badgeRow = document.getElementById('info-badge-row');
     if (g.badge) { badgeRow.style.display='flex'; document.getElementById('info-badge').textContent = g.badge; }
     else { badgeRow.style.display='none'; }
+    // Mini badge preview
+    drawMiniBadge();
     // Custom fields
     const cfWrap = document.getElementById('custom-fields-info-wrap');
     const fields = (g.custom_fields || []).filter(f => f.value && f.value !== 'no');
@@ -601,11 +632,29 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
 
   // ---- My Badge Modal ----
+  function drawMiniBadge() {
+    // Draw a tiny decorative barcode preview in the section card
+    const mini = document.getElementById('badge-mini-canvas');
+    if (!mini || !guestData) return;
+    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
+    mini.width = 44; mini.height = 44;
+    const ctx = mini.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 44, 44);
+    // Draw fake mini bars from name chars as decoration
+    ctx.fillStyle = '#fff';
+    let x = 3;
+    for (let i = 0; i < name.length && x < 41; i++) {
+      const w = 1 + (name.charCodeAt(i) % 2);
+      ctx.fillRect(x, 4, w, 36);
+      x += w + 1 + (name.charCodeAt(i) % 2);
+    }
+  }
+
   function showMyBadge() {
     if (!guestData) return;
     const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
 
-    // Barcode text line: name + token snippet
     document.getElementById('bm-barcode-name').textContent = name;
     const tokenSnip = (guestData.id || '').slice(0,8).toUpperCase();
     document.getElementById('bm-barcode-sub').textContent = tokenSnip;
@@ -622,7 +671,6 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       pill.style.display = 'none';
     }
 
-    // Draw barcode
     drawCode128(document.getElementById('bm-canvas-barcode'), name);
     document.getElementById('badge-modal').classList.add('open');
   }
