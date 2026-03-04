@@ -23,7 +23,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .badge-pill.vip { background: #9b59b6; color: #fff; }
 .badge-pill.staff { background: #2196F3; color: #fff; }
 .badge-pill.press { background: #ff9500; color: #fff; }
-.badge-pill.actor { background: #9b59b6; color: #fff; }
+.badge-pill.actor { background: #fff; color: #000; }
 .header.actor-header { background: #ff6b00; }
 .header.actor-header .event-title { color: #fff; }
 
@@ -44,6 +44,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .accom-btn:active { opacity: 0.75; }
 .accom-btn.sent { background: #34c759; }
 .accom-btn.resolved-state { background: #007aff; }
+.actor-req-btn {
+  background: #ff6b00; color: #fff; border: none; border-radius: 16px;
+  padding: 20px; width: 100%; display: flex; align-items: center;
+  gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s;
+  margin-top: 10px;
+}
+.actor-req-btn:active { opacity: 0.75; }
+.actor-req-btn.sent { background: #34c759; }
+.actor-req-btn.resolved-state { background: #007aff; }
 .help-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
 .help-text strong { display: block; font-size: 18px; font-weight: 700; }
 .help-text span { font-size: 13px; opacity: 0.7; }
@@ -55,6 +64,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .reason-btn { width: 100%; display: flex; align-items: center; gap: 14px; background: #fff; border: none; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; font-size: 17px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: left; }
 .reason-btn:active { opacity: 0.7; }
 .reason-emoji { font-size: 24px; flex-shrink: 0; }
+.actor-req-textarea {
+  width: 100%; padding: 14px; font-size: 16px; font-family: inherit;
+  border: 2px solid #e0e0e0; border-radius: 12px; outline: none;
+  resize: none; margin-bottom: 12px; min-height: 100px;
+}
+.actor-req-textarea:focus { border-color: #ff6b00; }
+.actor-req-send-btn {
+  width: 100%; padding: 16px; background: #ff6b00; color: #fff;
+  border: none; border-radius: 14px; font-size: 17px; font-weight: 700;
+  cursor: pointer; margin-bottom: 8px;
+}
+.actor-req-send-btn:active { opacity: 0.8; }
 .sheet-cancel { width: 100%; padding: 16px; margin-top: 6px; background: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; color: #ff3b30; cursor: pointer; }
 
 .schedule-item { padding: 16px 18px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 14px; }
@@ -274,6 +295,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         </div>
       </button>
     </div>
+    <div id="actor-req-wrap" style="display:none;">
+      <button class="actor-req-btn" id="actor-req-btn" onclick="openActorReqSheet()">
+        <div class="help-icon">🎬</div>
+        <div class="help-text">
+          <strong id="actor-req-title">Special Request</strong>
+          <span id="actor-req-sub">Send a request to staff</span>
+        </div>
+      </button>
+    </div>
     <div id="custom-buttons-wrap"></div>
 
     <div class="section-label">What's Happening</div>
@@ -289,22 +319,6 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <div class="info-row" id="info-badge-row" style="display:none;"><div class="info-icon">🏅</div><span id="info-badge">—</span></div>
     </div>
     <div id="custom-fields-info-wrap"></div>
-
-    <div id="afterpass-section-wrap" style="display:none;">
-      <div class="section-label" style="margin-top:24px;">After Pass</div>
-      <div class="after-pass-section" onclick="showAfterPass()">
-        <div class="after-pass-row">
-          <div class="after-pass-icon">
-            <canvas id="afterpass-mini-canvas" width="44" height="44"></canvas>
-          </div>
-          <div class="after-pass-text">
-            <strong>After Party Pass</strong>
-            <span>Tap to show your pass</span>
-          </div>
-          <div class="after-pass-chevron">›</div>
-        </div>
-      </div>
-    </div>
 
     <div class="section-label" style="margin-top:24px;">My Badge</div>
     <div class="badge-section" onclick="showMyBadge()">
@@ -334,23 +348,28 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="bm-fullname" id="bm-fullname"></div>
     <span class="bm-badge-pill" id="bm-badge-pill" style="display:none;"></span>
   </div>
+  <!-- Actor Pass — shown only for actors -->
+  <div id="bm-actor-pass-wrap" style="display:none;margin-top:24px;width:100%;max-width:340px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#ff6b00;margin-bottom:8px;text-align:center;">🎬 Actor Pass</div>
+    <div class="bm-barcode-wrap">
+      <canvas id="bm-actor-canvas"></canvas>
+      <div class="bm-barcode-name" id="bm-actor-name"></div>
+      <div class="bm-barcode-sub" id="bm-actor-sub"></div>
+    </div>
+  </div>
+  <!-- Assignable passes — shown per guest -->
+  <div id="bm-passes-wrap" style="width:100%;max-width:340px;"></div>
   <button class="bm-close" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
 </div>
 
-<!-- After Pass Modal -->
-<div id="afterpass-modal">
-  <div class="ap-label">The Eddie's 2025</div>
-  <div class="ap-title">After Party Pass</div>
-  <div class="ap-barcode-wrap">
-    <canvas id="ap-canvas-barcode"></canvas>
-    <div class="ap-barcode-name" id="ap-barcode-name"></div>
-    <div class="ap-barcode-sub" id="ap-barcode-sub"></div>
+<!-- Actor Request Sheet -->
+<div class="sheet-overlay" id="actor-req-sheet">
+  <div class="sheet">
+    <div class="sheet-title">Special Request</div>
+    <textarea class="actor-req-textarea" id="actor-req-text" placeholder="What do you need? We'll take care of it." rows="4"></textarea>
+    <button class="actor-req-send-btn" onclick="sendActorRequest()">Send Request</button>
+    <button class="sheet-cancel" onclick="document.getElementById('actor-req-sheet').classList.remove('open')">Cancel</button>
   </div>
-  <div class="ap-name-below">
-    <div class="ap-fullname" id="ap-fullname"></div>
-    <div class="ap-sub">After Party Access</div>
-  </div>
-  <button class="ap-close" onclick="document.getElementById('afterpass-modal').classList.remove('open')">Close</button>
 </div>
 
 <!-- Help Sheet -->
@@ -452,17 +471,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     bw.innerHTML = pillsHtml;
     // Help button visibility
     document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
-    // Accommodations visibility:
-    // Show if: (badge is eligible OR manually enabled) AND NOT manually disabled
+    // Accommodations: Eddie+ always gets it automatically
     const ACCOM_BADGES = ['Eddie +', 'VIP', 'Staff'];
     const badgeEligible = g.badge && ACCOM_BADGES.includes(g.badge);
     const finalShowAccom = (badgeEligible || g.accom_enabled == 1) && !g.accom_disabled;
     document.getElementById('accom-wrap').style.display = finalShowAccom ? 'block' : 'none';
-    // After Pass — show for Eddie+ and Actors
-    const AFTERPASS_BADGES = ['Eddie +'];
-    const showAfterPassSection = (g.badge && AFTERPASS_BADGES.includes(g.badge)) || g.is_actor;
-    document.getElementById('afterpass-section-wrap').style.display = showAfterPassSection ? 'block' : 'none';
-    if (showAfterPassSection) drawAfterPassMini();
+    // Actor request button — actors only, unless disabled
+    const showActorReq = g.is_actor && !g.actor_request_disabled;
+    document.getElementById('actor-req-wrap').style.display = showActorReq ? 'block' : 'none';
     // Seat row
     const seatRow = document.getElementById('info-seat-row');
     if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
@@ -473,7 +489,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     else { badgeRow.style.display='none'; }
     // Mini badge preview
     drawMiniBadge();
-    if (showAfterPassSection) drawAfterPassMini();
+
     // Custom fields
     const cfWrap = document.getElementById('custom-fields-info-wrap');
     const fields = (g.custom_fields || []).filter(f => f.value && f.value !== 'no');
@@ -716,6 +732,13 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
             setTimeout(() => { btn.classList.remove('resolved-state'); resetAccomBtn(); }, 5000);
           }
         }
+        if (actorReqPending) {
+          // Actor requests also go through accommodation queue — check same endpoint
+          // Only reset if accomPending resolved it — share the resolved check
+          if (!accomPending && accomSent === false && actorReqSent) {
+            // Will self-resolve on next accommodation resolved check
+          }
+        }
         checkNotices();
       } catch(e) {}
     }, 8000);
@@ -750,33 +773,44 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     }
   }
 
-  function drawAfterPassMini() {
-    const mini = document.getElementById('afterpass-mini-canvas');
-    if (!mini || !guestData) return;
-    // Different pattern — use reversed name for visual distinction
-    const name = (guestData.last_name + ' ' + guestData.first_name + ' AFTER').toUpperCase();
-    mini.width = 44; mini.height = 44;
-    const ctx = mini.getContext('2d');
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, 44, 44);
-    ctx.fillStyle = '#fff';
-    let x = 2;
-    for (let i = 0; i < name.length && x < 42; i++) {
-      const w = 1 + (name.charCodeAt(i) % 3);
-      ctx.fillRect(x, 3, w, 38);
-      x += w + 1 + (name.charCodeAt(i) % 2);
+  // ---- Actor Request ----
+  let actorReqSent = false;
+  let actorReqPending = false;
+
+  function openActorReqSheet() {
+    if (actorReqSent) return;
+    document.getElementById('actor-req-text').value = '';
+    document.getElementById('actor-req-sheet').classList.add('open');
+  }
+
+  async function sendActorRequest() {
+    const text = document.getElementById('actor-req-text').value.trim();
+    if (!text) return;
+    document.getElementById('actor-req-sheet').classList.remove('open');
+    if (actorReqSent || !guestData) return;
+    actorReqSent = true; actorReqPending = true;
+    const btn = document.getElementById('actor-req-btn');
+    btn.classList.add('sent');
+    document.getElementById('actor-req-title').textContent = 'Request Sent!';
+    document.getElementById('actor-req-sub').textContent = text;
+    try {
+      await fetch('/api/help', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token, guestId: guestData.id, reason: text, type: 'accommodation' })
+      });
+    } catch(e) {
+      showToast('Could not send — please find a staff member');
+      resetActorReqBtn();
     }
   }
 
-  function showAfterPass() {
-    if (!guestData) return;
-    // Use a different encoding string so barcode looks distinct from regular badge
-    const name = (guestData.last_name + ' ' + guestData.first_name + ' AP25').toUpperCase();
-    document.getElementById('ap-barcode-name').textContent = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
-    document.getElementById('ap-barcode-sub').textContent = (guestData.id || '').slice(-8).toUpperCase();
-    document.getElementById('ap-fullname').textContent = guestData.first_name + ' ' + guestData.last_name;
-    drawCode128(document.getElementById('ap-canvas-barcode'), name);
-    document.getElementById('afterpass-modal').classList.add('open');
+  function resetActorReqBtn() {
+    actorReqSent = false; actorReqPending = false;
+    const btn = document.getElementById('actor-req-btn');
+    btn.classList.remove('sent','resolved-state');
+    document.getElementById('actor-req-title').textContent = 'Special Request';
+    document.getElementById('actor-req-sub').textContent = 'Send a request to staff';
   }
 
   function showMyBadge() {
@@ -800,6 +834,41 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     }
 
     drawCode128(document.getElementById('bm-canvas-barcode'), name);
+
+    // Actor Pass — show inside modal for actors
+    const actorWrap = document.getElementById('bm-actor-pass-wrap');
+    if (guestData.is_actor && !guestData.actor_request_disabled) {
+      actorWrap.style.display = 'block';
+      const actorCode = (guestData.last_name + ' ' + guestData.first_name + ' ACTORPASS').toUpperCase();
+      document.getElementById('bm-actor-name').textContent = name;
+      document.getElementById('bm-actor-sub').textContent = 'ACT-' + (guestData.id||'').slice(-6).toUpperCase();
+      drawCode128(document.getElementById('bm-actor-canvas'), actorCode);
+    } else {
+      actorWrap.style.display = 'none';
+    }
+
+    // Assignable passes (drink, photo, etc.)
+    const passesWrap = document.getElementById('bm-passes-wrap');
+    let passesHtml = '';
+    try {
+      const passes = guestData.passes ? JSON.parse(guestData.passes) : [];
+      passes.forEach(p => {
+        passesHtml += `<div style="margin-top:24px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#888;margin-bottom:8px;text-align:center;">${esc(p)}</div>
+          <div class="bm-barcode-wrap">
+            <canvas id="bm-pass-${p.replace(/\s+/g,'-')}" width="300" height="74"></canvas>
+            <div class="bm-barcode-name">${esc((guestData.first_name + ' ' + guestData.last_name).toUpperCase())}</div>
+            <div class="bm-barcode-sub">${esc(p.toUpperCase().slice(0,3))}-${(guestData.id||'').slice(-6).toUpperCase()}</div>
+          </div>
+        </div>`;
+      });
+      passesWrap.innerHTML = passesHtml;
+      passes.forEach(p => {
+        const el = document.getElementById('bm-pass-' + p.replace(/\s+/g,'-'));
+        if (el) drawCode128(el, (p + ' ' + guestData.first_name + ' ' + guestData.last_name).toUpperCase());
+      });
+    } catch(e) { passesWrap.innerHTML = ''; }
+
     document.getElementById('badge-modal').classList.add('open');
   }
 
