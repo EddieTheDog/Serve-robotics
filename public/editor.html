@@ -13,21 +13,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .topbar-btn { background: #333; color: #fff; border: none; border-radius: 8px; padding: 8px 13px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .topbar-btn.active { background: #007aff; }
 
-/* Search bar */
-#search-bar { background: #fff; padding: 12px 16px; border-bottom: 1px solid #e0e0e0; display: none; }
-#search-input { width: 100%; padding: 12px 14px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; }
-#search-input:focus { border-color: #000; }
-
-/* Scan banner */
-#scan-banner { background: #007aff; color: #fff; text-align: center; padding: 12px 16px; font-size: 14px; font-weight: 700; display: none; cursor: pointer; }
-
 #guest-list-view { padding: 16px; }
 .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 4px 0 10px 4px; }
-.guest-card { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; }
-.guest-card-info { flex: 1; cursor: pointer; }
+.guest-card { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.guest-card:active { opacity: 0.7; }
+.guest-card-info { flex: 1; }
 .guest-card-info .name { font-size: 17px; font-weight: 700; }
 .guest-card-info .meta { font-size: 13px; color: #888; margin-top: 2px; }
-.guest-card-arrow { font-size: 20px; color: #ccc; cursor: pointer; }
+.guest-card-arrow { font-size: 20px; color: #ccc; }
 .empty { text-align: center; color: #aaa; padding: 60px 20px; font-size: 16px; }
 
 /* Editor view */
@@ -36,17 +29,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .hello-card { background: #000; color: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
 .hello-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
 .guest-big-name { font-size: 26px; font-weight: 800; }
+
 .field-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .field-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
 .field-card input[type="text"] { width: 100%; font-size: 17px; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; color: #000; }
-.field-card input:focus { border-color: #000; }
+.field-card input[type="text"]:focus { border-color: #000; }
 
 .badge-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .badge-option { padding: 8px 16px; border-radius: 20px; border: 2px solid #e0e0e0; font-size: 14px; font-weight: 700; cursor: pointer; background: #f8f8f8; color: #555; }
 .badge-option.selected { background: #000; color: #fff; border-color: #000; }
 .badge-option.none.selected { background: #777; border-color: #777; }
 
-/* Grant toggles — only things you can turn ON */
+/* Access grants */
 .grant-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
 .grant-row:last-child { border-bottom: none; }
 .grant-info { flex: 1; }
@@ -65,64 +59,29 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 .checkbox-field input[type="checkbox"] { width: 24px; height: 24px; flex-shrink: 0; accent-color: #000; cursor: pointer; }
 .checkbox-field-label { font-size: 16px; font-weight: 500; }
 
+/* Actor toggle */
+.actor-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; cursor: pointer; }
+.actor-toggle-label { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.actor-toggle-switch { width: 51px; height: 31px; background: #e0e0e0; border-radius: 20px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.actor-toggle-switch.on { background: linear-gradient(135deg, #9b59b6, #FFD700); }
+.actor-toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 25px; height: 25px; background: #fff; border-radius: 50%; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.actor-toggle-switch.on::after { left: 23px; }
+
 .done-btn { width: 100%; padding: 17px; font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #000; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
 .done-btn:active { opacity: 0.8; }
 
-/* Actor toggle */
-.actor-toggle {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 0;
-  cursor: pointer;
-}
-.actor-toggle-label { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-.actor-toggle-switch {
-  width: 51px; height: 31px; background: #e0e0e0; border-radius: 20px;
-  position: relative; transition: background 0.2s; flex-shrink: 0;
-}
-.actor-toggle-switch.on { background: linear-gradient(135deg, #9b59b6, #FFD700); }
-.actor-toggle-switch::after {
-  content: ''; position: absolute; top: 3px; left: 3px;
-  width: 25px; height: 25px; background: #fff; border-radius: 50%;
-  transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
-.actor-toggle-switch.on::after { left: 23px; }
-.save-btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 700; background: #555; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
-
-/* QR modal */
-#qr-modal { display: none; position: fixed; inset: 0; background: #000; z-index: 500; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
-#qr-modal.open { display: flex; }
-.qr-name { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-.qr-sub { color: #aaa; font-size: 14px; margin-bottom: 20px; }
-.qr-wrap { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 24px; }
-.qr-btns { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 10px; }
-.qr-close-btn { background: #fff; color: #000; border: none; border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer; }
-.qr-edit-btn { background: #333; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
-
-/* Scan modal */
-#scan-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 600; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; }
-#scan-modal.open { display: flex; }
-.scan-box { background: #fff; border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px; text-align: center; }
-.scan-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-.scan-desc { font-size: 14px; color: #888; margin-bottom: 20px; line-height: 1.5; }
-.scan-input { width: 100%; padding: 14px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; margin-bottom: 12px; }
-.scan-input:focus { border-color: #000; }
-.scan-go-btn { width: 100%; padding: 15px; background: #000; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-.scan-cancel-btn { width: 100%; padding: 13px; background: #f0f0f0; color: #555; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
-.scan-error { color: #ff3b30; font-size: 14px; font-weight: 600; margin-top: 8px; min-height: 20px; }
+/* Toast */
+#toast { position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 20px); left: 50%; transform: translateX(-50%) translateY(100px); background: #000; color: #fff; padding: 14px 24px; border-radius: 30px; font-size: 15px; font-weight: 700; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+#toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <h1>Staff Editor</h1>
-  <button class="topbar-btn" id="btn-scan" onclick="openScanModal()">📷 Scan</button>
   <button class="topbar-btn active" id="btn-all" onclick="setMode('all')">All</button>
-  <button class="topbar-btn" id="btn-setup" onclick="setMode('setup')">New</button>
-  <button class="topbar-btn" onclick="loadGuests()">↻</button>
-</div>
-
-<div id="search-bar">
-  <input type="text" id="search-input" placeholder="Search guests..." oninput="filterGuests()">
+  <button class="topbar-btn" id="btn-new" onclick="setMode('new')">New</button>
+  <button class="topbar-btn" onclick="loadGuests()">↻ Refresh</button>
 </div>
 
 <div id="guest-list-view">
@@ -147,53 +106,26 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
     <div class="badge-options" id="badge-options"></div>
   </div>
 
-  <!-- Access grants — only show toggles that can be turned ON -->
   <div class="field-card" id="access-card">
     <div class="field-label">Extra Access</div>
     <div id="access-rows"></div>
   </div>
 
-  <!-- Custom fields -->
+  <div class="field-card">
+    <div class="field-label">Actor Status</div>
+    <label class="actor-toggle" onclick="toggleActor()">
+      <span class="actor-toggle-label">🎬 Mark as Actor</span>
+      <div class="actor-toggle-switch" id="actor-switch"></div>
+    </label>
+  </div>
+
   <div id="custom-fields-wrap"></div>
 
-  <button class="done-btn" id="done-btn" onclick="saveDone()">Done — Show QR</button>
-  <button class="save-btn" onclick="saveOnly()">Save Only</button>
+  <button class="done-btn" id="done-btn" onclick="saveDone()">Save</button>
 </div>
 
-<!-- QR Modal -->
-<div id="qr-modal">
-  <div class="qr-name" id="qr-name"></div>
-  <div class="qr-sub" id="qr-sub"></div>
-  <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
-  <div class="qr-btns">
-    <button class="qr-edit-btn" onclick="continueEditing()">✏️ Keep Editing</button>
-    <button class="qr-close-btn" onclick="closeQR()">Done</button>
-  </div>
-</div>
+<div id="toast"></div>
 
-<!-- Scan Modal -->
-<div id="scan-modal">
-  <div class="scan-box">
-    <div class="scan-title">📷 Scan Barcode</div>
-    <!-- Camera view -->
-    <div id="scan-camera-wrap" style="display:none;position:relative;margin-bottom:14px;">
-      <video id="scan-video" autoplay playsinline muted
-        style="width:100%;border-radius:12px;background:#000;display:block;max-height:240px;object-fit:cover;"></video>
-      <canvas id="scan-canvas" style="display:none;"></canvas>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-        <div style="width:160px;height:160px;border:3px solid rgba(255,255,255,0.6);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
-      </div>
-    </div>
-    <div id="scan-status" style="font-size:13px;color:#aaa;text-align:center;margin-bottom:12px;min-height:18px;"></div>
-    <div class="scan-desc" id="scan-desc">Point camera at the barcode on their badge. Or type their name to search.</div>
-    <input type="text" id="scan-input" class="scan-input" placeholder="Search by name..." oninput="onScanInput()">
-    <button class="scan-go-btn" onclick="doNameSearch()">Search by Name</button>
-    <button class="scan-cancel-btn" onclick="closeScanModal()">Cancel</button>
-    <div class="scan-error" id="scan-error"></div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <script>
 let currentGuest = null;
 let selectedBadge = '';
@@ -202,19 +134,19 @@ let isActor = false;
 let allGuests = [];
 let currentMode = 'all';
 const BADGE_OPTIONS = ['None', 'Eddie +', 'VIP', 'Staff', 'Press'];
-// Badges that automatically get accommodation access
 const AUTO_ACCOM_BADGES = ['Eddie +', 'VIP', 'Staff'];
 
 function setMode(mode) {
   currentMode = mode;
   document.getElementById('btn-all').classList.toggle('active', mode === 'all');
-  document.getElementById('btn-setup').classList.toggle('active', mode === 'setup');
-  document.getElementById('search-bar').style.display = mode === 'all' ? 'block' : 'none';
-  document.getElementById('list-label').textContent = mode === 'setup' ? 'New — Awaiting Setup' : 'All Accepted Guests';
+  document.getElementById('btn-new').classList.toggle('active', mode === 'new');
+  document.getElementById('list-label').textContent = mode === 'new' ? 'New — Awaiting Setup' : 'All Accepted Guests';
   renderGuestList(allGuests);
 }
 
 async function loadGuests() {
+  const el = document.getElementById('guest-list');
+  el.innerHTML = '<div class="empty">Loading...</div>';
   try {
     const res = await fetch('/api/editor');
     const data = await res.json();
@@ -222,39 +154,33 @@ async function loadGuests() {
     allGuests = data.guests || [];
     renderGuestList(allGuests);
   } catch(e) {
-    document.getElementById('guest-list').innerHTML = '<div class="empty">Could not load. Check connection.</div>';
+    el.innerHTML = '<div class="empty">Could not load. Check connection.</div>';
   }
 }
 
-function filterGuests() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const filtered = q ? allGuests.filter(g =>
-    (g.first_name + ' ' + g.last_name).toLowerCase().includes(q)
-  ) : allGuests;
-  renderGuestList(filtered);
-}
-
 function renderGuestList(guests) {
-  let list = guests;
-  if (currentMode === 'setup') list = guests.filter(g => !g.seat && !g.badge);
+  const list = currentMode === 'new'
+    ? guests.filter(g => !g.seat && !g.badge)
+    : guests;
   const el = document.getElementById('guest-list');
   if (!list.length) {
-    el.innerHTML = `<div class="empty">${currentMode === 'setup' ? 'All guests are set up.' : 'No guests found.'}</div>`;
+    el.innerHTML = `<div class="empty">${currentMode === 'new' ? 'All guests are set up.' : 'No guests yet.'}</div>`;
     return;
   }
   el.innerHTML = list.map(g => {
     const hasAccom = g.accom_enabled || AUTO_ACCOM_BADGES.includes(g.badge);
-    const meta = [
+    const tags = [
       g.seat ? '📍 ' + esc(g.seat) : 'No seat',
-      g.badge ? esc(g.badge) : '',
+      g.badge || '',
+      g.is_actor ? '🎬' : '',
       hasAccom ? '🛎️' : ''
     ].filter(Boolean).join(' · ');
-    return `<div class="guest-card">
-      <div class="guest-card-info" onclick='openEditor(${JSON.stringify(g)})'>
+    return `<div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
+      <div class="guest-card-info">
         <div class="name">${esc(g.first_name)} ${esc(g.last_name)}</div>
-        <div class="meta">${meta}</div>
+        <div class="meta">${tags}</div>
       </div>
-      <div class="guest-card-arrow" onclick='openEditor(${JSON.stringify(g)})'>›</div>
+      <div class="guest-card-arrow">›</div>
     </div>`;
   }).join('');
 }
@@ -269,16 +195,12 @@ function openEditor(guest) {
   document.getElementById('actor-switch').classList.toggle('on', isActor);
   document.getElementById('editor-mode-label').textContent = guest.seat || guest.badge ? 'Editing' : 'Setting up';
 
-  // Badge options
   document.getElementById('badge-options').innerHTML = BADGE_OPTIONS.map(b => `
     <div class="badge-option ${b==='None'?'none':''} ${(selectedBadge===b||(b==='None'&&!selectedBadge))?'selected':''}"
       onclick="selectBadge('${b}')">${b}</div>`).join('');
 
-  // Access grants — only show things that can be turned ON
-  // Don't show accom if their badge already gives it automatically
   renderAccessToggles(guest);
 
-  // Custom fields
   const wrap = document.getElementById('custom-fields-wrap');
   wrap.innerHTML = customFields.map(f => `
     <div class="field-card">
@@ -295,9 +217,7 @@ function openEditor(guest) {
 function renderAccessToggles(guest) {
   const autoAccom = AUTO_ACCOM_BADGES.includes(selectedBadge || guest.badge || '');
   const rows = [];
-
   if (!autoAccom) {
-    // Only show manual accom toggle if badge doesn't already grant it
     rows.push(`
       <div class="grant-row">
         <div class="grant-info">
@@ -312,10 +232,7 @@ function renderAccessToggles(guest) {
   } else {
     rows.push(`<div class="grant-note">🛎️ Accommodations auto-granted via ${esc(selectedBadge || guest.badge)} badge</div>`);
   }
-
   document.getElementById('access-rows').innerHTML = rows.join('');
-  // Hide card if nothing to show for badge guests (it's handled automatically)
-  document.getElementById('access-card').style.display = 'block';
 }
 
 function selectBadge(b) {
@@ -323,17 +240,24 @@ function selectBadge(b) {
   document.querySelectorAll('.badge-option').forEach(el =>
     el.classList.toggle('selected', el.textContent === (selectedBadge || 'None'))
   );
-  // Re-render access toggles since badge changed
   if (currentGuest) renderAccessToggles(currentGuest);
+}
+
+function toggleActor() {
+  isActor = !isActor;
+  document.getElementById('actor-switch').classList.toggle('on', isActor);
 }
 
 function showList() {
   document.getElementById('editor-view').style.display = 'none';
   document.getElementById('guest-list-view').style.display = 'block';
-  loadGuests();
 }
 
-async function doSave() {
+async function saveDone() {
+  if (!currentGuest) return;
+  const btn = document.getElementById('done-btn');
+  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
+
   const seat = document.getElementById('ev-seat').value.trim();
   const badge = selectedBadge;
   const autoAccom = AUTO_ACCOM_BADGES.includes(badge);
@@ -349,193 +273,36 @@ async function doSave() {
 
   try {
     await fetch('/api/editor', {
-      method: 'PATCH', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, fieldValues, accom_enabled })
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, is_actor: isActor ? 1 : 0, accom_enabled, fieldValues })
     });
-    return { seat, badge, fieldValues };
-  } catch(e) { alert('Save failed — check connection'); return null; }
-}
 
-async function saveOnly() {
-  const btn = document.querySelector('.save-btn');
-  btn.textContent = 'Saving...';
-  const result = await doSave();
-  btn.textContent = result ? 'Saved ✓' : 'Save Only';
-  if (result) setTimeout(() => { btn.textContent = 'Save Only'; }, 2000);
-}
+    // Update local guest data so list reflects changes immediately
+    const idx = allGuests.findIndex(g => g.id === currentGuest.id);
+    if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor: isActor ? 1 : 0, accom_enabled };
 
-async function saveDone() {
-  const btn = document.getElementById('done-btn');
-  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
-  const result = await doSave();
-  btn.textContent = 'Done — Show QR'; btn.style.opacity = '1';
-  if (result) showQR(currentGuest, result.seat, result.badge, result.fieldValues);
-}
-
-function showQR(guest, seat, badge, fieldValues) {
-  const appUrl = `${location.origin}/app?token=${guest.app_token}`;
-  document.getElementById('qr-name').textContent = guest.first_name + ' ' + guest.last_name;
-  const sub = [seat ? '📍 ' + seat : '', badge || ''].filter(Boolean).join(' · ');
-  document.getElementById('qr-sub').textContent = sub || "Ready to go";
-  const canvas = document.getElementById('qr-canvas');
-  canvas.width = 240; canvas.height = 240;
-  new QRious({ element: canvas, value: appUrl, size: 240 });
-  document.getElementById('qr-modal').classList.add('open');
-}
-
-function closeQR() {
-  document.getElementById('qr-modal').classList.remove('open');
-  showList();
-}
-
-function continueEditing() {
-  document.getElementById('qr-modal').classList.remove('open');
-  // Stay on editor view with same guest
-}
-
-// ---- Camera QR Scanner ----
-let scanStream = null;
-let scanInterval = null;
-
-async function openScanModal() {
-  document.getElementById('scan-input').value = '';
-  document.getElementById('scan-error').textContent = '';
-  document.getElementById('scan-modal').classList.add('open');
-  document.getElementById('scan-status').textContent = 'Starting camera...';
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
-    scanStream = stream;
-    const video = document.getElementById('scan-video');
-    video.srcObject = stream;
-    document.getElementById('scan-camera-wrap').style.display = 'block';
-    document.getElementById('scan-desc').style.display = 'none';
-    document.getElementById('scan-status').textContent = 'Point camera at guest\'s barcode...';
-
-    // Poll frames for QR using BarcodeDetector if available
-    if ('BarcodeDetector' in window) {
-      const detector = new BarcodeDetector({ formats: ['code_128','pdf417','code_39','ean_13','upc_a','qr_code'] });
-      scanInterval = setInterval(async () => {
-        if (video.readyState < 2) return;
-        try {
-          const barcodes = await detector.detect(video);
-          if (barcodes.length > 0) {
-            const raw = barcodes[0].rawValue;
-            stopCamera();
-            await handleScannedValue(raw);
-          }
-        } catch(e) {}
-      }, 400);
-    } else {
-      // BarcodeDetector not available — use canvas sampling fallback hint
-      document.getElementById('scan-status').textContent = 'Camera active — barcode scanning not supported on this device';
-    }
+    showToast('✓ Saved — ' + currentGuest.first_name + ' ' + currentGuest.last_name);
+    showList();
+    renderGuestList(allGuests);
   } catch(e) {
-    document.getElementById('scan-camera-wrap').style.display = 'none';
-    document.getElementById('scan-desc').style.display = 'block';
-    document.getElementById('scan-status').textContent = '';
-    document.getElementById('scan-error').textContent = 'Camera not available. Search by name below.';
+    showToast('Save failed — check connection');
+  } finally {
+    btn.textContent = 'Save'; btn.style.opacity = '1';
   }
 }
 
-function stopCamera() {
-  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-  document.getElementById('scan-camera-wrap').style.display = 'none';
-  document.getElementById('scan-status').textContent = '';
-}
-
-function closeScanModal() {
-  stopCamera();
-  document.getElementById('scan-modal').classList.remove('open');
-}
-
-function onScanInput() { document.getElementById('scan-error').textContent = ''; }
-
-async function handleScannedValue(raw) {
-  document.getElementById('scan-status').textContent = 'Found! Looking up guest...';
-
-  // Try URL token first (QR code fallback)
-  let token = null;
-  try { const url = new URL(raw); token = url.searchParams.get('token'); } catch(e) {}
-
-  if (token) {
-    // QR code path — look up by token
-    try {
-      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-      if (!res.ok) { document.getElementById('scan-error').textContent = 'Guest not found.'; return; }
-      const guest = await res.json();
-      let full = allGuests.find(g => g.id === guest.id);
-      if (!full) { await loadGuests(); full = allGuests.find(g => g.id === guest.id); }
-      if (!full) { document.getElementById('scan-error').textContent = 'Guest not in accepted list.'; return; }
-      closeScanModal();
-      openEditor(full);
-    } catch(e) { document.getElementById('scan-error').textContent = 'Lookup failed — check connection.'; }
-    return;
-  }
-
-  // Barcode path — raw value is "FIRSTNAME LASTNAME" (uppercase from Code128)
-  // Match against guest list by name
-  if (!allGuests.length) await loadGuests();
-  const normalized = raw.trim().toUpperCase();
-  const match = allGuests.find(g =>
-    (g.first_name + ' ' + g.last_name).toUpperCase() === normalized ||
-    (g.first_name).toUpperCase() === normalized ||
-    (g.last_name).toUpperCase() === normalized
-  );
-  if (match) {
-    closeScanModal();
-    openEditor(match);
-    return;
-  }
-
-  // Partial match fallback
-  const partials = allGuests.filter(g =>
-    (g.first_name + ' ' + g.last_name).toUpperCase().includes(normalized)
-  );
-  if (partials.length === 1) {
-    closeScanModal();
-    openEditor(partials[0]);
-    return;
-  }
-  if (partials.length > 1) {
-    // Show them in search
-    closeScanModal();
-    setMode('all');
-    document.getElementById('search-input').value = raw.trim();
-    filterGuests();
-    document.getElementById('search-bar').style.display = 'block';
-    return;
-  }
-
-  document.getElementById('scan-error').textContent = `No guest found matching "${raw.slice(0,30)}". Try searching by name.`;
-}
-
-async function doNameSearch() {
-  const raw = document.getElementById('scan-input').value.trim();
-  if (!raw) return;
-  // If they pasted a URL manually
-  try {
-    const url = new URL(raw);
-    const token = url.searchParams.get('token');
-    if (token) { closeScanModal(); await handleScannedValue(raw); return; }
-  } catch(e) {}
-  // Name search
-  closeScanModal();
-  setMode('all');
-  document.getElementById('search-input').value = raw;
-  filterGuests();
-  document.getElementById('search-bar').style.display = 'block';
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 loadGuests();
-setInterval(() => {
-  if (document.getElementById('guest-list-view').style.display !== 'none') loadGuests();
-}, 15000);
 </script>
 </body>
 </html>
