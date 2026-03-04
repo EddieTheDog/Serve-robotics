@@ -190,14 +190,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <div id="badge-modal">
   <div class="badge-modal-name" id="bm-name"></div>
   <div class="badge-modal-sub" id="bm-sub"></div>
-  <div class="badge-code-tabs">
-    <button class="badge-code-tab active" id="bm-tab-barcode" onclick="switchBadgeTab('barcode')">Barcode</button>
-    <button class="badge-code-tab" id="bm-tab-pdf417" onclick="switchBadgeTab('pdf417')">PDF417</button>
-    <button class="badge-code-tab" id="bm-tab-qr" onclick="switchBadgeTab('qr')">QR</button>
+  <div class="badge-code-wrap" id="bm-wrap-qr">
+    <canvas id="bm-canvas-qr"></canvas>
+    <div class="badge-code-label">Scan to open your app</div>
   </div>
-  <div class="badge-code-wrap" id="bm-wrap-barcode"><canvas id="bm-canvas-barcode"></canvas><div class="badge-code-label" id="bm-barcode-label"></div></div>
-  <div class="badge-code-wrap" id="bm-wrap-pdf417" style="display:none;"><canvas id="bm-canvas-pdf417"></canvas><div class="badge-code-label">PDF417 — Visual</div></div>
-  <div class="badge-code-wrap" id="bm-wrap-qr" style="display:none;"><canvas id="bm-canvas-qr"></canvas><div class="badge-code-label">App QR Code</div></div>
   <button class="badge-close-btn" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
 </div>
 
@@ -564,65 +560,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   // ---- My Badge Modal ----
   function showMyBadge() {
     if (!guestData) return;
-    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
     const appUrl = location.href;
     document.getElementById('bm-name').textContent = guestData.first_name + ' ' + guestData.last_name;
     const sub = [guestData.seat ? '📍 ' + guestData.seat : '', guestData.badge ? '🏅 ' + guestData.badge : ''].filter(Boolean).join(' · ');
-    document.getElementById('bm-sub').textContent = sub || 'The Eddie's 2025';
-    drawCode128(document.getElementById('bm-canvas-barcode'), name);
-    document.getElementById('bm-barcode-label').textContent = name;
-    drawPDF417(document.getElementById('bm-canvas-pdf417'), guestData.id || name);
+    document.getElementById('bm-sub').textContent = sub || "The Eddie's 2025";
     const qc = document.getElementById('bm-canvas-qr');
-    qc.width = 200; qc.height = 200;
-    new QRious({ element: qc, value: appUrl, size: 200 });
-    switchBadgeTab('barcode');
+    qc.width = 240; qc.height = 240;
+    new QRious({ element: qc, value: appUrl, size: 240, background: '#ffffff', foreground: '#000000' });
     document.getElementById('badge-modal').classList.add('open');
-  }
-  function switchBadgeTab(tab) {
-    ['barcode','pdf417','qr'].forEach(t => {
-      document.getElementById('bm-wrap-'+t).style.display = t===tab?'flex':'none';
-      document.getElementById('bm-tab-'+t).classList.toggle('active', t===tab);
-    });
-  }
-
-  // ---- Code 128 Barcode ----
-  function drawCode128(canvas, text) {
-    const chars = text.replace(/[^ -~]/g,'').slice(0,30);
-    const h=80, mw=2;
-    canvas.width = chars.length*22*mw + 60;
-    canvas.height = h+24;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    let x=10;
-    const bar=(w,on)=>{ if(on){ctx.fillStyle='#000';ctx.fillRect(x,4,w*mw,h);} x+=w*mw; };
-    // Start B
-    [2,1,1,4,1,2].forEach((w,i)=>bar(w,i%2===0));
-    for(const ch of chars){
-      const c=ch.charCodeAt(0)-32;
-      const v=c%64;
-      [1+(v>>5&1)+(v>>4&1),1+(v>>3&1),1+(v>>2&1)+(v>>1&1),1+(v&1),1+((c*7)%3),1+((c*11)%2)].forEach((w,i)=>bar(w,i%2===0));
-    }
-    [2,3,3,1,1,1,2].forEach((w,i)=>bar(w,i%2===0));
-  }
-
-  // ---- PDF417 Decorative ----
-  function drawPDF417(canvas, data) {
-    const cols=17,rows=10,cw=3,ch=7,pad=8;
-    canvas.width=cols*cw*2+pad*2+20; canvas.height=rows*ch+pad*2;
-    const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    let seed=0;
-    for(let i=0;i<data.length;i++) seed=(seed*31+data.charCodeAt(i))>>>0;
-    const rng=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/0xffffffff; };
-    ctx.fillStyle='#000';
-    for(let r=0;r<rows;r++){
-      ctx.fillRect(pad,pad+r*ch,cw,ch-1);
-      ctx.fillRect(pad+(cols*cw*2)+10,pad+r*ch,cw,ch-1);
-      for(let c=0;c<cols;c++){
-        const bw=1+Math.floor(rng()*3);
-        ctx.fillRect(pad+10+c*cw*2,pad+r*ch,bw,ch-1);
-      }
-    }
   }
 
   function showApp() { document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
