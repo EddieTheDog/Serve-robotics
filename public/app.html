@@ -23,6 +23,17 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .badge-pill.vip { background: #9b59b6; color: #fff; }
 .badge-pill.staff { background: #2196F3; color: #fff; }
 .badge-pill.press { background: #ff9500; color: #fff; }
+.badge-pill.actor { background: linear-gradient(135deg, #9b59b6 0%, #c49a1a 100%); color: #fff; }
+.header.actor-header {
+  background: linear-gradient(135deg, #1a0a2e 0%, #3d1a6e 40%, #6b4f00 80%, #1a0a2e 100%);
+  background-size: 200% 200%;
+  animation: actor-shimmer 6s ease infinite;
+}
+@keyframes actor-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 
 .content { padding: 20px 16px; padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 40px); max-width: 600px; margin: 0 auto; }
 .section-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 24px 0 10px 4px; }
@@ -351,12 +362,21 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('guest-name').textContent = g.first_name;
     document.getElementById('info-name-badge').textContent = `${g.first_name} ${g.last_name}`;
     document.getElementById('info-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-    // Badge pill in header
+    // Header: actor gets gradient background
+    const headerEl = document.querySelector('.header');
+    if (g.is_actor) headerEl.classList.add('actor-header');
+    else headerEl.classList.remove('actor-header');
+    // Badge pill(s) in header
     const bw = document.getElementById('badge-wrap');
+    let pillsHtml = '';
     if (g.badge) {
       const slug = g.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-      bw.innerHTML = `<span class="badge-pill ${slug}">${esc(g.badge)}</span>`;
-    } else { bw.innerHTML = ''; }
+      pillsHtml += `<span class="badge-pill ${slug}">${esc(g.badge)}</span>`;
+    }
+    if (g.is_actor) {
+      pillsHtml += ` <span class="badge-pill actor">🎬 Actor</span>`;
+    }
+    bw.innerHTML = pillsHtml;
     // Help button visibility
     document.getElementById('help-wrap').style.display = g.help_disabled ? 'none' : 'block';
     // Accommodations visibility:
