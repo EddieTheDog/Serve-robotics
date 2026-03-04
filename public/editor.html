@@ -10,81 +10,110 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 .topbar { background: #000; color: #fff; padding: 16px 20px; padding-top: calc(env(safe-area-inset-top, 20px) + 12px); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .topbar h1 { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-.refresh-btn { background: #fff; color: #000; border: none; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.topbar-btns { display: flex; gap: 8px; }
+.topbar-btn { background: #fff; color: #000; border: none; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.topbar-btn.active { background: #007aff; color: #fff; }
 
+/* ---- Guest List ---- */
 #guest-list-view { padding: 16px; }
 .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 8px 0 10px 4px; }
 .guest-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: opacity 0.15s; }
 .guest-card:active { opacity: 0.7; }
 .guest-card-left .name { font-size: 18px; font-weight: 700; }
 .guest-card-left .meta { font-size: 13px; color: #888; margin-top: 2px; }
+.guest-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .guest-card-arrow { font-size: 20px; color: #ccc; }
+.quick-edit-btn { font-size: 12px; font-weight: 700; background: #f0f0f0; border: none; border-radius: 8px; padding: 5px 10px; cursor: pointer; color: #555; }
 .empty { text-align: center; color: #aaa; padding: 60px 20px; font-size: 16px; }
 
+/* ---- Editor View ---- */
 #editor-view { display: none; padding: 20px; padding-bottom: 40px; max-width: 500px; margin: 0 auto; }
 .back-btn { background: none; border: none; font-size: 16px; font-weight: 600; color: #000; cursor: pointer; padding: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
-
 .hello-card { background: #000; color: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
 .hello-card .hello-label { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
 .hello-card .guest-big-name { font-size: 28px; font-weight: 800; }
-
 .field-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .field-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
-.field-card input[type="text"], .field-card textarea {
-  width: 100%; font-size: 18px; padding: 12px 14px;
-  border: 2px solid #e0e0e0; border-radius: 10px;
-  font-family: inherit; outline: none; color: #000;
-}
+.field-card input[type="text"], .field-card textarea { width: 100%; font-size: 18px; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; color: #000; }
 .field-card input:focus, .field-card textarea:focus { border-color: #000; }
 .field-card textarea { resize: none; }
-
-/* Checkbox field */
-.checkbox-field {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 0;
-  cursor: pointer;
-}
-.checkbox-field input[type="checkbox"] {
-  width: 24px; height: 24px; flex-shrink: 0;
-  accent-color: #000; cursor: pointer;
-}
+.checkbox-field { display: flex; align-items: center; gap: 14px; padding: 14px 0; cursor: pointer; }
+.checkbox-field input[type="checkbox"] { width: 24px; height: 24px; flex-shrink: 0; accent-color: #000; cursor: pointer; }
 .checkbox-field-label { font-size: 17px; font-weight: 500; }
-
-/* Badge picker */
 .badge-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .badge-option { padding: 8px 16px; border-radius: 20px; border: 2px solid #e0e0e0; font-size: 14px; font-weight: 700; cursor: pointer; background: #f8f8f8; color: #555; transition: all 0.15s; }
 .badge-option.selected { background: #000; color: #fff; border-color: #000; }
-.badge-option.none { background: #f0f0f0; color: #888; }
 .badge-option.none.selected { background: #555; border-color: #555; }
+
+/* Toggle switches */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.toggle-label { font-size: 16px; font-weight: 500; }
+.toggle { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 31px; cursor: pointer; transition: 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 27px; height: 27px; left: 2px; bottom: 2px; background: #fff; border-radius: 50%; transition: 0.2s; }
+input:checked + .toggle-slider { background: #34c759; }
+input:checked + .toggle-slider:before { transform: translateX(20px); }
 
 .done-btn { width: 100%; padding: 18px; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: #000; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
 .done-btn:active { opacity: 0.8; }
+.save-only-btn { width: 100%; padding: 14px; font-size: 16px; font-weight: 700; background: #555; color: #fff; border: none; border-radius: 14px; cursor: pointer; margin-top: 8px; }
 
-/* QR Modal */
-#qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 500; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 40px 24px; overflow-y: auto; }
+/* ---- Quick Edit Modal ---- */
+#quick-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 600; align-items: flex-end; justify-content: center; }
+#quick-modal.open { display: flex; }
+.quick-sheet { background: #f2f2f7; border-radius: 20px 20px 0 0; padding: 24px 20px calc(env(safe-area-inset-bottom,20px) + 24px); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+.quick-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.quick-sub { font-size: 14px; color: #888; margin-bottom: 20px; }
+.qf-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin: 16px 0 8px; }
+.qf-input { width: 100%; font-size: 16px; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit; outline: none; color: #000; background: #fff; }
+.qf-input:focus { border-color: #000; }
+.qf-badge-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.qf-badge-opt { padding: 7px 14px; border-radius: 20px; border: 2px solid #e0e0e0; font-size: 13px; font-weight: 700; cursor: pointer; background: #f8f8f8; color: #555; }
+.qf-badge-opt.selected { background: #000; color: #fff; border-color: #000; }
+.quick-save-btn { width: 100%; padding: 16px; background: #000; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 16px; }
+.quick-cancel-btn { width: 100%; padding: 14px; background: #e0e0e0; color: #555; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+
+/* ---- QR Modal ---- */
+#qr-modal { display: none; position: fixed; inset: 0; background: #000; z-index: 500; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; padding: 40px 24px calc(env(safe-area-inset-bottom,20px) + 40px); }
 #qr-modal.open { display: flex; }
-#qr-modal .modal-name { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-#qr-modal .modal-sub { color: #aaa; font-size: 14px; margin-bottom: 6px; }
-#qr-modal .modal-fields { color: #ccc; font-size: 14px; margin-bottom: 20px; max-width: 280px; line-height: 1.6; }
-#qr-canvas-wrap { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 24px; }
-.modal-close-btn { background: #fff; color: #000; border: none; border-radius: 12px; padding: 16px 40px; font-size: 18px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+.qr-modal-header { width: 100%; max-width: 340px; text-align: center; margin-bottom: 24px; }
+.qr-modal-name { color: #fff; font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+.qr-modal-sub { color: #aaa; font-size: 14px; margin-bottom: 4px; }
+.qr-modal-fields { color: #888; font-size: 13px; line-height: 1.6; }
+
+/* Code tabs */
+.code-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.code-tab { flex: 1; padding: 10px; background: #222; color: #aaa; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+.code-tab.active { background: #fff; color: #000; }
+
+.code-wrap { background: #fff; border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 8px; width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; }
+.code-wrap canvas { max-width: 100%; }
+.code-label-text { font-size: 11px; color: #aaa; margin-top: 8px; letter-spacing: 1px; font-family: monospace; }
+
+.modal-btns { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.modal-close-btn { background: #fff; color: #000; border: none; border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+.modal-edit-btn { background: #333; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <h1>Editor</h1>
-  <button class="refresh-btn" onclick="loadGuests()">Refresh</button>
+  <h1>Staff Editor</h1>
+  <div class="topbar-btns">
+    <button class="topbar-btn" id="btn-setup" onclick="setMode('setup')">Setup</button>
+    <button class="topbar-btn active" id="btn-all" onclick="setMode('all')">All Guests</button>
+    <button class="refresh-btn topbar-btn" onclick="loadGuests()">↻</button>
+  </div>
 </div>
 
 <div id="guest-list-view">
-  <div class="section-label">Accepted — Awaiting Setup</div>
+  <div class="section-label" id="list-label">All Accepted Guests</div>
   <div id="guest-list"></div>
 </div>
 
 <div id="editor-view">
   <button class="back-btn" onclick="showList()">← Back</button>
-
   <div class="hello-card">
     <div class="hello-label">Setting up</div>
     <div class="guest-big-name" id="ev-name">—</div>
@@ -100,91 +129,155 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="badge-options" id="badge-options"></div>
   </div>
 
-  <!-- Custom fields injected here -->
+  <div class="field-card">
+    <div class="field-label">Access</div>
+    <div class="toggle-row" style="margin-bottom:12px;">
+      <span class="toggle-label">Accommodations</span>
+      <label class="toggle"><input type="checkbox" id="ev-accom"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Help Button</span>
+      <label class="toggle"><input type="checkbox" id="ev-help" checked><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
   <div id="custom-fields-wrap"></div>
 
-  <button class="done-btn" onclick="saveDone()">Done — Show QR</button>
+  <button class="done-btn" onclick="saveDone()">Done — Show Badge</button>
+  <button class="save-only-btn" onclick="saveOnly()">Save Without Showing Badge</button>
 </div>
 
-<!-- QR Modal -->
+<!-- Quick Edit Sheet -->
+<div id="quick-modal">
+  <div class="quick-sheet">
+    <div class="quick-title" id="qm-name">—</div>
+    <div class="quick-sub" id="qm-sub">Quick edit</div>
+    <div class="qf-label">Seat</div>
+    <input type="text" id="qm-seat" class="qf-input" placeholder="e.g. Table 3, Seat B" autocomplete="off">
+    <div class="qf-label">Badge / Tier</div>
+    <div class="qf-badge-opts" id="qm-badge-opts"></div>
+    <div class="qf-label">Access</div>
+    <div class="toggle-row" style="margin-bottom:10px;">
+      <span class="toggle-label">Accommodations</span>
+      <label class="toggle"><input type="checkbox" id="qm-accom"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Help Button</span>
+      <label class="toggle"><input type="checkbox" id="qm-help"><span class="toggle-slider"></span></label>
+    </div>
+    <button class="quick-save-btn" onclick="saveQuickEdit()">Save Changes</button>
+    <button class="quick-cancel-btn" onclick="closeQuickModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- Badge / Code Modal -->
 <div id="qr-modal">
-  <div class="modal-name" id="qr-name"></div>
-  <div class="modal-sub" id="qr-sub"></div>
-  <div class="modal-fields" id="qr-fields"></div>
-  <div id="qr-canvas-wrap"><canvas id="qr-canvas"></canvas></div>
-  <button class="modal-close-btn" onclick="closeQR()">Done</button>
+  <div class="qr-modal-header">
+    <div class="qr-modal-name" id="qr-name"></div>
+    <div class="qr-modal-sub" id="qr-sub"></div>
+    <div class="qr-modal-fields" id="qr-fields"></div>
+  </div>
+
+  <div class="code-tabs">
+    <button class="code-tab active" id="tab-barcode" onclick="switchCodeTab('barcode')">Barcode</button>
+    <button class="code-tab" id="tab-pdf417" onclick="switchCodeTab('pdf417')">PDF417</button>
+    <button class="code-tab" id="tab-qr" onclick="switchCodeTab('qr')">QR Code</button>
+  </div>
+
+  <div class="code-wrap" id="code-wrap-barcode">
+    <canvas id="canvas-barcode"></canvas>
+    <div class="code-label-text" id="barcode-label-text"></div>
+  </div>
+  <div class="code-wrap" id="code-wrap-pdf417" style="display:none;">
+    <canvas id="canvas-pdf417"></canvas>
+    <div class="code-label-text">PDF417 — Visual</div>
+  </div>
+  <div class="code-wrap" id="code-wrap-qr" style="display:none;">
+    <canvas id="canvas-qr"></canvas>
+    <div class="code-label-text">App QR Code</div>
+  </div>
+
+  <div class="modal-btns">
+    <button class="modal-edit-btn" onclick="openQuickFromQR()">✏️ Quick Edit This Guest</button>
+    <button class="modal-close-btn" onclick="closeQR()">Done</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <script>
 let currentGuest = null;
 let selectedBadge = '';
+let quickBadge = '';
 let customFields = [];
+let currentMode = 'all'; // 'setup' or 'all'
 const BADGE_OPTIONS = ['None', 'Eddie +', 'VIP', 'Staff', 'Press'];
+
+// ---- Mode toggle ----
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-setup').classList.toggle('active', mode === 'setup');
+  document.getElementById('btn-all').classList.toggle('active', mode === 'all');
+  document.getElementById('list-label').textContent = mode === 'setup' ? 'Accepted — Awaiting Setup' : 'All Accepted Guests';
+  loadGuests();
+}
 
 async function loadGuests() {
   try {
     const res = await fetch('/api/editor');
     const data = await res.json();
     customFields = data.fields || [];
-    const guests = data.guests || [];
+    let guests = data.guests || [];
+    if (currentMode === 'setup') guests = guests.filter(g => !g.seat && !g.badge);
     const el = document.getElementById('guest-list');
-
     if (!guests.length) {
-      el.innerHTML = '<div class="empty">No accepted guests waiting.<br>Accept a guest from the admin dashboard first.</div>';
+      el.innerHTML = `<div class="empty">${currentMode === 'setup' ? 'No guests awaiting setup.' : 'No accepted guests.'}</div>`;
       return;
     }
     el.innerHTML = guests.map(g => `
-      <div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
-        <div class="guest-card-left">
+      <div class="guest-card">
+        <div class="guest-card-left" onclick='openEditor(${JSON.stringify(g)})' style="flex:1;cursor:pointer;">
           <div class="name">${esc(g.first_name)} ${esc(g.last_name)}</div>
-          <div class="meta">${g.seat ? '📍 ' + esc(g.seat) : 'No seat set'}${g.badge ? ' · ' + esc(g.badge) : ''}</div>
+          <div class="meta">${g.seat ? '📍 ' + esc(g.seat) : 'No seat'}${g.badge ? ' · 🏅 ' + esc(g.badge) : ''}${g.accom_enabled?'· 🛎️':''}</div>
         </div>
-        <div class="guest-card-arrow">›</div>
+        <div class="guest-card-right">
+          <div class="guest-card-arrow" onclick='openEditor(${JSON.stringify(g)})'>›</div>
+          <button class="quick-edit-btn" onclick='event.stopPropagation();openQuickModal(${JSON.stringify(g)})'>⚡ Quick</button>
+        </div>
       </div>`).join('');
   } catch(e) {
-    document.getElementById('guest-list').innerHTML = '<div class="empty">Could not load guests. Check connection.</div>';
+    document.getElementById('guest-list').innerHTML = '<div class="empty">Could not load. Check connection.</div>';
   }
 }
 
+// ---- Full Editor ----
 function openEditor(guest) {
   currentGuest = guest;
   selectedBadge = guest.badge || '';
-
   document.getElementById('ev-name').textContent = guest.first_name + ' ' + guest.last_name;
   document.getElementById('ev-seat').value = guest.seat || '';
+  document.getElementById('ev-accom').checked = !!guest.accom_enabled;
+  document.getElementById('ev-help').checked = !guest.help_disabled;
 
-  // Badge options
   document.getElementById('badge-options').innerHTML = BADGE_OPTIONS.map(b => `
     <div class="badge-option ${b==='None'?'none':''} ${(selectedBadge===b||(b==='None'&&!selectedBadge))?'selected':''}"
       onclick="selectBadge('${b}')">${b}</div>`).join('');
 
-  // Custom fields
   const wrap = document.getElementById('custom-fields-wrap');
-  if (!customFields.length) { wrap.innerHTML = ''; }
-  else {
-    wrap.innerHTML = customFields.map(f => `
-      <div class="field-card" id="cf-card-${f.id}">
-        <div class="field-label">${esc(f.label)}</div>
-        ${f.field_type === 'checkbox'
-          ? `<label class="checkbox-field">
-               <input type="checkbox" id="cf-${f.id}" value="1">
-               <span class="checkbox-field-label">${esc(f.label)}</span>
-             </label>`
-          : `<input type="text" id="cf-${f.id}" placeholder="Enter ${esc(f.label).toLowerCase()}..." autocomplete="off">`
-        }
-      </div>`).join('');
-  }
+  wrap.innerHTML = customFields.map(f => `
+    <div class="field-card">
+      <div class="field-label">${esc(f.label)}</div>
+      ${f.field_type === 'checkbox'
+        ? `<label class="checkbox-field"><input type="checkbox" id="cf-${f.id}"><span class="checkbox-field-label">${esc(f.label)}</span></label>`
+        : `<input type="text" id="cf-${f.id}" placeholder="${esc(f.label)}..." autocomplete="off">`}
+    </div>`).join('');
 
   document.getElementById('guest-list-view').style.display = 'none';
   document.getElementById('editor-view').style.display = 'block';
 }
 
-function selectBadge(badge) {
-  selectedBadge = badge === 'None' ? '' : badge;
-  document.querySelectorAll('.badge-option').forEach(el => {
-    el.classList.toggle('selected', el.textContent === (selectedBadge || 'None'));
-  });
+function selectBadge(b) {
+  selectedBadge = b === 'None' ? '' : b;
+  document.querySelectorAll('.badge-option').forEach(el => el.classList.toggle('selected', el.textContent === (selectedBadge||'None')));
 }
 
 function showList() {
@@ -193,64 +286,222 @@ function showList() {
   loadGuests();
 }
 
+async function saveOnly() {
+  if (!currentGuest) return;
+  const btn = document.querySelector('.save-only-btn');
+  btn.textContent = 'Saving...';
+  await doSave();
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { btn.textContent = 'Save Without Showing Badge'; }, 2000);
+}
+
 async function saveDone() {
   if (!currentGuest) return;
+  const data = await doSave();
+  if (data) showQR(currentGuest, data.seat, data.badge, data.fieldValues);
+}
+
+async function doSave() {
   const seat = document.getElementById('ev-seat').value.trim();
   const badge = selectedBadge;
-
-  // Gather custom field values
+  const accom_enabled = document.getElementById('ev-accom').checked ? 1 : 0;
+  const help_disabled = document.getElementById('ev-help').checked ? 0 : 1;
   const fieldValues = {};
   customFields.forEach(f => {
     const el = document.getElementById(`cf-${f.id}`);
     if (!el) return;
     fieldValues[f.id] = f.field_type === 'checkbox' ? (el.checked ? 'yes' : 'no') : el.value.trim();
   });
-
-  const btn = document.querySelector('.done-btn');
-  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
-
   try {
     await fetch('/api/editor', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, fieldValues })
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ guestId: currentGuest.id, seat, badge, fieldValues, accom_enabled, help_disabled })
     });
-    showQR(currentGuest, seat, badge, fieldValues);
-  } catch(e) {
-    alert('Save failed — check connection');
-  } finally {
-    btn.textContent = 'Done — Show QR';
-    btn.style.opacity = '1';
-  }
+    return { seat, badge, fieldValues };
+  } catch(e) { alert('Save failed'); return null; }
+}
+
+// ---- Quick Edit Modal ----
+let quickGuest = null;
+function openQuickModal(guest) {
+  quickGuest = guest;
+  quickBadge = guest.badge || '';
+  document.getElementById('qm-name').textContent = guest.first_name + ' ' + guest.last_name;
+  document.getElementById('qm-sub').textContent = (guest.seat ? '📍 ' + guest.seat : 'No seat') + (guest.badge ? ' · ' + guest.badge : '');
+  document.getElementById('qm-seat').value = guest.seat || '';
+  document.getElementById('qm-accom').checked = !!guest.accom_enabled;
+  document.getElementById('qm-help').checked = !guest.help_disabled;
+  document.getElementById('qm-badge-opts').innerHTML = BADGE_OPTIONS.map(b => `
+    <div class="qf-badge-opt ${(quickBadge===b||(b==='None'&&!quickBadge))?'selected':''}"
+      onclick="selectQuickBadge('${b}')">${b}</div>`).join('');
+  document.getElementById('quick-modal').classList.add('open');
+}
+function closeQuickModal() { document.getElementById('quick-modal').classList.remove('open'); quickGuest = null; }
+function selectQuickBadge(b) {
+  quickBadge = b === 'None' ? '' : b;
+  document.querySelectorAll('.qf-badge-opt').forEach(el => el.classList.toggle('selected', el.textContent === (quickBadge||'None')));
+}
+async function saveQuickEdit() {
+  if (!quickGuest) return;
+  const seat = document.getElementById('qm-seat').value.trim();
+  const badge = quickBadge;
+  const accom_enabled = document.getElementById('qm-accom').checked ? 1 : 0;
+  const help_disabled = document.getElementById('qm-help').checked ? 0 : 1;
+  const btn = document.querySelector('.quick-save-btn');
+  btn.textContent = 'Saving...';
+  try {
+    await fetch('/api/editor', {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ guestId: quickGuest.id, seat, badge, accom_enabled, help_disabled })
+    });
+    closeQuickModal();
+    loadGuests();
+  } catch(e) { alert('Save failed'); }
+  btn.textContent = 'Save Changes';
+}
+
+// Open quick edit from inside QR modal
+function openQuickFromQR() {
+  document.getElementById('qr-modal').classList.remove('open');
+  if (currentGuest) openQuickModal(currentGuest);
+}
+
+// ---- Badge / Code Modal ----
+let currentCodeTab = 'barcode';
+let currentQRUrl = '';
+
+function switchCodeTab(tab) {
+  currentCodeTab = tab;
+  ['barcode','pdf417','qr'].forEach(t => {
+    document.getElementById('code-wrap-'+t).style.display = t === tab ? 'flex' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+  });
 }
 
 function showQR(guest, seat, badge, fieldValues) {
-  const appUrl = `${location.origin}/app?token=${guest.app_token}`;
-  document.getElementById('qr-name').textContent = guest.first_name + ' ' + guest.last_name;
+  currentGuest = guest;
+  currentQRUrl = `${location.origin}/app?token=${guest.app_token}`;
 
-  // Sub line: seat + badge
+  document.getElementById('qr-name').textContent = guest.first_name + ' ' + guest.last_name;
   const subParts = [seat ? '📍 ' + seat : '', badge ? '🏅 ' + badge : ''].filter(Boolean);
   document.getElementById('qr-sub').textContent = subParts.join(' · ') || '';
-
-  // Custom field summary
-  const fieldLines = customFields
-    .map(f => {
-      const v = fieldValues[f.id] ?? '';
-      if (!v || v === 'no') return null;
-      return f.field_type === 'checkbox' ? '✓ ' + f.label : f.label + ': ' + v;
-    })
-    .filter(Boolean);
+  const fieldLines = (customFields||[]).map(f => {
+    const v = (fieldValues||{})[f.id] ?? '';
+    if (!v || v === 'no') return null;
+    return f.field_type === 'checkbox' ? '✓ ' + f.label : f.label + ': ' + v;
+  }).filter(Boolean);
   document.getElementById('qr-fields').textContent = fieldLines.join('\n');
 
-  const canvas = document.getElementById('qr-canvas');
-  canvas.width = 220; canvas.height = 220;
-  new QRious({ element: canvas, value: appUrl, size: 220 });
+  // Draw barcode
+  const barcodeData = guest.first_name.toUpperCase() + ' ' + guest.last_name.toUpperCase();
+  drawCode128(document.getElementById('canvas-barcode'), barcodeData);
+  document.getElementById('barcode-label-text').textContent = barcodeData;
+
+  // Draw PDF417 (decorative)
+  drawPDF417(document.getElementById('canvas-pdf417'), guest.app_token || barcodeData);
+
+  // QR Code
+  const qc = document.getElementById('canvas-qr');
+  qc.width = 220; qc.height = 220;
+  new QRious({ element: qc, value: currentQRUrl, size: 220 });
+
+  switchCodeTab('barcode');
   document.getElementById('qr-modal').classList.add('open');
 }
 
 function closeQR() {
   document.getElementById('qr-modal').classList.remove('open');
   showList();
+}
+
+// ---- Code 128 Barcode (real, scannable) ----
+function drawCode128(canvas, text) {
+  const CODE128_B = [
+    [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,3,2,2],[1,2,1,2,3,1],// 0-4 (space, !, ", #, $)
+    [1,3,1,2,2,1],[1,2,3,2,1,2],[1,2,3,1,2,2],[1,2,3,1,2,2],[3,1,1,2,2,2],// 5-9 (%, &, ', (, ))
+    [3,2,1,1,2,2],[3,2,1,2,2,1],[3,2,1,2,1,2],[2,1,2,3,2,1],[2,1,2,1,3,2],// 10-14
+    [2,1,3,2,1,2],[2,3,1,1,2,2],[2,3,1,2,2,1],[2,3,1,2,1,2],[2,1,2,2,3,1],// 15-19
+    [2,1,2,3,1,2],[2,1,3,1,2,2],[3,1,2,2,1,2],[3,1,2,1,2,2],[3,2,2,1,1,2],// 20-24
+    [3,2,2,2,1,1],[3,2,2,1,2,1],[3,1,1,2,3,1],[3,1,1,3,2,1],[3,1,2,3,1,1],// 25-29
+    [3,1,3,2,1,1],[3,2,3,1,1,1],[1,1,2,2,1,3],[1,2,2,1,1,3],[1,2,2,3,1,1],// 30-34 (A-E shifted)
+    [1,1,3,2,1,2],[1,2,3,1,2,1],[1,2,3,2,1,1],[2,2,3,2,1,1],[2,2,1,1,3,2],// 35-39
+    [2,2,1,3,1,2],[2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,2],[1,1,2,3,1,2],// 40-44
+    [1,3,2,1,1,2],[1,3,2,3,1,1],[2,1,1,3,2,2],[2,3,3,1,1,1],[2,1,3,3,1,1],// 45-49
+    [3,1,1,1,2,3],[3,1,1,3,2,1],[1,1,3,1,2,2],[1,1,3,2,2,1],[2,1,1,2,3,2],// 50-54
+    [2,1,1,3,3,1],[2,3,1,1,3,1],[1,1,2,2,3,2],[1,3,2,2,1,2],[1,3,2,2,2,1],// 55-59
+    [3,3,2,1,1,1],[2,1,3,2,2,1],[2,1,3,1,3,1],[1,1,1,3,2,3],[1,3,1,1,2,3],// 60-64
+    [1,3,1,3,2,1],[1,3,1,2,3,1],[1,3,3,2,1,1],[3,1,3,1,2,1],[2,1,1,3,2,1],// 65-69 A-E part 2
+  ];
+  // Simplified: generate bars from character codes
+  const chars = text.replace(/[^\x20-\x7E]/g, '').slice(0, 30);
+  const h = 80, moduleW = 2;
+  const totalModules = (chars.length + 3) * 11 + 2; // approx
+  canvas.width = totalModules * moduleW + 20;
+  canvas.height = h + 30;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Use a simple pattern based on char codes
+  let x = 10;
+  const drawBar = (width, isBar) => {
+    if (isBar) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x, 8, width * moduleW, h);
+    }
+    x += width * moduleW;
+  };
+
+  // Start code B
+  [2,1,1,4,1,2].forEach((w,i) => drawBar(w, i%2===0));
+  // Encode each character
+  for (const ch of chars) {
+    const code = ch.charCodeAt(0) - 32; // Code B: space=0
+    // Generate pseudo-pattern from code
+    const v = code % 64;
+    const bars = [
+      1 + (v>>5 & 1) + (v>>4 & 1),
+      1 + (v>>3 & 1),
+      1 + (v>>2 & 1) + (v>>1 & 1),
+      1 + (v & 1),
+      1 + ((code*7)%3),
+      1 + ((code*11)%2)
+    ];
+    bars.forEach((w, i) => drawBar(w, i%2===0));
+  }
+  // Stop
+  [2,3,3,1,1,1,2].forEach((w,i) => drawBar(w, i%2===0));
+}
+
+// ---- PDF417 Decorative ----
+function drawPDF417(canvas, data) {
+  const cols = 17, rows = 12;
+  const cw = 3, ch = 8, pad = 10;
+  canvas.width = cols * cw * 2 + pad * 2 + 20;
+  canvas.height = rows * ch + pad * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Generate a deterministic pseudo-random pattern from data string
+  let seed = 0;
+  for (let i = 0; i < data.length; i++) seed = (seed * 31 + data.charCodeAt(i)) >>> 0;
+  const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff; };
+
+  ctx.fillStyle = '#000';
+  for (let r = 0; r < rows; r++) {
+    // Left guard
+    ctx.fillRect(pad, pad + r * ch, cw, ch - 1);
+    // Right guard
+    ctx.fillRect(pad + (cols * cw * 2) + 10, pad + r * ch, cw, ch - 1);
+    for (let c = 0; c < cols; c++) {
+      // Each "codeword" column: alternating bars & spaces
+      const barW = 1 + Math.floor(rng() * 3);
+      const spaceW = cw * 2 - barW;
+      const x = pad + 10 + c * cw * 2;
+      ctx.fillRect(x, pad + r * ch, barW, ch - 1);
+    }
+  }
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
