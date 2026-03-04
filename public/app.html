@@ -24,7 +24,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .badge-pill.staff { background: #2196F3; color: #fff; }
 .badge-pill.press { background: #ff9500; color: #fff; }
 .badge-pill.actor { background: #9b59b6; color: #fff; }
-.header.actor-header { background: #b388e8; }
+.header.actor-header { background: #ff6b00; }
 .header.actor-header .event-title { color: #fff; }
 
 .content { padding: 20px 16px; padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 40px); max-width: 600px; margin: 0 auto; }
@@ -179,6 +179,55 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   cursor: pointer; width: 100%; max-width: 340px; letter-spacing: 0.5px;
 }
 .bm-close:active { opacity: 0.7; }
+
+/* After Pass section */
+.after-pass-section {
+  background: #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 12px;
+}
+.after-pass-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px; cursor: pointer; transition: background 0.15s;
+}
+.after-pass-row:active { background: #f5f5f5; }
+.after-pass-icon {
+  width: 44px; height: 44px; background: #111; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}
+.after-pass-icon canvas { display: block; }
+.after-pass-text strong { display: block; font-size: 16px; font-weight: 700; }
+.after-pass-text span { font-size: 13px; color: #aaa; }
+.after-pass-chevron { margin-left: auto; font-size: 18px; color: #ccc; }
+
+/* After Pass Modal */
+#afterpass-modal {
+  display: none; position: fixed; inset: 0;
+  background: #0a0a0a; z-index: 450;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top,20px) + 20px) 24px calc(env(safe-area-inset-bottom,20px) + 30px);
+}
+#afterpass-modal.open { display: flex; }
+.ap-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #444; margin-bottom: 12px; }
+.ap-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 28px; letter-spacing: 1px; text-transform: uppercase; }
+.ap-barcode-wrap {
+  background: #fff; border-radius: 12px; padding: 20px 16px 14px;
+  width: 100%; max-width: 340px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 0 60px rgba(255,255,255,0.06);
+}
+.ap-barcode-wrap canvas { width: 100%; height: auto; display: block; }
+.ap-barcode-name { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #000; margin-top: 10px; }
+.ap-barcode-sub { font-size: 10px; color: #aaa; letter-spacing: 1px; margin-top: 3px; font-family: monospace; }
+.ap-name-below { margin-top: 28px; text-align: center; }
+.ap-name-below .ap-fullname { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+.ap-name-below .ap-sub { font-size: 13px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+.ap-close {
+  margin-top: 36px; background: #1a1a1a; color: #fff; border: none;
+  border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
+  cursor: pointer; width: 100%; max-width: 340px; letter-spacing: 0.5px;
+}
+.ap-close:active { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -241,6 +290,22 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <div id="custom-fields-info-wrap"></div>
 
+    <div id="afterpass-section-wrap" style="display:none;">
+      <div class="section-label" style="margin-top:24px;">After Pass</div>
+      <div class="after-pass-section" onclick="showAfterPass()">
+        <div class="after-pass-row">
+          <div class="after-pass-icon">
+            <canvas id="afterpass-mini-canvas" width="44" height="44"></canvas>
+          </div>
+          <div class="after-pass-text">
+            <strong>After Party Pass</strong>
+            <span>Tap to show your pass</span>
+          </div>
+          <div class="after-pass-chevron">›</div>
+        </div>
+      </div>
+    </div>
+
     <div class="section-label" style="margin-top:24px;">My Badge</div>
     <div class="badge-section" onclick="showMyBadge()">
       <div class="badge-section-row">
@@ -270,6 +335,22 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <span class="bm-badge-pill" id="bm-badge-pill" style="display:none;"></span>
   </div>
   <button class="bm-close" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
+</div>
+
+<!-- After Pass Modal -->
+<div id="afterpass-modal">
+  <div class="ap-label">The Eddie's 2025</div>
+  <div class="ap-title">After Party Pass</div>
+  <div class="ap-barcode-wrap">
+    <canvas id="ap-canvas-barcode"></canvas>
+    <div class="ap-barcode-name" id="ap-barcode-name"></div>
+    <div class="ap-barcode-sub" id="ap-barcode-sub"></div>
+  </div>
+  <div class="ap-name-below">
+    <div class="ap-fullname" id="ap-fullname"></div>
+    <div class="ap-sub">After Party Access</div>
+  </div>
+  <button class="ap-close" onclick="document.getElementById('afterpass-modal').classList.remove('open')">Close</button>
 </div>
 
 <!-- Help Sheet -->
@@ -377,6 +458,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     const badgeEligible = g.badge && ACCOM_BADGES.includes(g.badge);
     const finalShowAccom = (badgeEligible || g.accom_enabled == 1) && !g.accom_disabled;
     document.getElementById('accom-wrap').style.display = finalShowAccom ? 'block' : 'none';
+    // After Pass — show for Eddie+ and Actors
+    const AFTERPASS_BADGES = ['Eddie +'];
+    const showAfterPassSection = (g.badge && AFTERPASS_BADGES.includes(g.badge)) || g.is_actor;
+    document.getElementById('afterpass-section-wrap').style.display = showAfterPassSection ? 'block' : 'none';
+    if (showAfterPassSection) drawAfterPassMini();
     // Seat row
     const seatRow = document.getElementById('info-seat-row');
     if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
@@ -387,6 +473,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     else { badgeRow.style.display='none'; }
     // Mini badge preview
     drawMiniBadge();
+    if (showAfterPassSection) drawAfterPassMini();
     // Custom fields
     const cfWrap = document.getElementById('custom-fields-info-wrap');
     const fields = (g.custom_fields || []).filter(f => f.value && f.value !== 'no');
@@ -661,6 +748,35 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       ctx.fillRect(x, 4, w, 36);
       x += w + 1 + (name.charCodeAt(i) % 2);
     }
+  }
+
+  function drawAfterPassMini() {
+    const mini = document.getElementById('afterpass-mini-canvas');
+    if (!mini || !guestData) return;
+    // Different pattern — use reversed name for visual distinction
+    const name = (guestData.last_name + ' ' + guestData.first_name + ' AFTER').toUpperCase();
+    mini.width = 44; mini.height = 44;
+    const ctx = mini.getContext('2d');
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, 44, 44);
+    ctx.fillStyle = '#fff';
+    let x = 2;
+    for (let i = 0; i < name.length && x < 42; i++) {
+      const w = 1 + (name.charCodeAt(i) % 3);
+      ctx.fillRect(x, 3, w, 38);
+      x += w + 1 + (name.charCodeAt(i) % 2);
+    }
+  }
+
+  function showAfterPass() {
+    if (!guestData) return;
+    // Use a different encoding string so barcode looks distinct from regular badge
+    const name = (guestData.last_name + ' ' + guestData.first_name + ' AP25').toUpperCase();
+    document.getElementById('ap-barcode-name').textContent = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
+    document.getElementById('ap-barcode-sub').textContent = (guestData.id || '').slice(-8).toUpperCase();
+    document.getElementById('ap-fullname').textContent = guestData.first_name + ' ' + guestData.last_name;
+    drawCode128(document.getElementById('ap-canvas-barcode'), name);
+    document.getElementById('afterpass-modal').classList.add('open');
   }
 
   function showMyBadge() {
