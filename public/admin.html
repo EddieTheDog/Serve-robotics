@@ -671,6 +671,7 @@ async function loadReasons() {
   if (!items.length) { el.innerHTML = '<div class="empty">No help reasons yet. The "Other" option is always shown automatically.</div>'; }
   else { el.innerHTML = items.map(r => `
     <div class="config-item">
+      <span class="ci-emoji">${esc(r.emoji)}</span>
       <span class="ci-label">${esc(r.label)}</span>
       <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
     </div>`).join(''); }
@@ -682,6 +683,7 @@ async function loadReasons() {
   if (!aItems.length) { aEl.innerHTML = '<div class="empty">No accommodation reasons yet. The "Other" option is always shown automatically.</div>'; }
   else { aEl.innerHTML = aItems.map(r => `
     <div class="config-item">
+      <span class="ci-emoji">${esc(r.emoji)}</span>
       <span class="ci-label">${esc(r.label)}</span>
       <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
     </div>`).join(''); }
