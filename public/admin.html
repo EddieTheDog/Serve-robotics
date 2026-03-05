@@ -136,11 +136,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div class="tab active" onclick="switchTab('queue')">Queue</div>
   <div class="tab" onclick="switchTab('guests')">Guests</div>
   <div class="tab" onclick="switchTab('schedule')">Schedule</div>
-  <div class="tab" onclick="switchTab('help')">🆘 Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
-  <div class="tab" onclick="switchTab('accommodations')">🛎️ Accommodations <span id="accom-badge" style="display:none;background:#9b59b6;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+  <div class="tab" onclick="switchTab('help')">Help <span id="help-badge" style="display:none;background:#ff3b30;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
+  <div class="tab" onclick="switchTab('accommodations')">Accommodations <span id="accom-badge" style="display:none;background:#9b59b6;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px;"></span></div>
   <div class="tab" onclick="switchTab('buttons')">Buttons</div>
   <div class="tab" onclick="switchTab('reasons')">Help Reasons</div>
-  <div class="tab" onclick="switchTab('notices')">📢 Notices</div>
+  <div class="tab" onclick="switchTab('notices')">Notices</div>
   <div class="tab" onclick="switchTab('fields')">Custom Fields</div>
 </div>
 
@@ -200,7 +200,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 <!-- HELP REASONS -->
 <div class="tab-content" id="tab-reasons">
-  <div class="section-label">🆘 Help Request Reasons</div>
+  <div class="section-label">Help Request Reasons</div>
   <p style="font-size:14px;color:#888;margin-bottom:16px;">Shown when a guest taps <strong>Call for Help</strong>. An "Other" option with a text box is always added automatically.</p>
   <div class="add-form">
     <div class="add-form-row" style="margin-bottom:8px;">
@@ -211,7 +211,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   </div>
   <div id="reasons-list"></div>
 
-  <div class="section-label" style="margin-top:32px;">🛎️ Accommodation Request Reasons</div>
+  <div class="section-label" style="margin-top:32px;">Accommodation Reasons</div>
   <p style="font-size:14px;color:#888;margin-bottom:16px;">Shown when a guest taps <strong>Request Accommodation</strong>. Also always includes an "Other" option.</p>
   <div class="add-form">
     <div class="add-form-row" style="margin-bottom:8px;">
@@ -241,7 +241,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <option value="60">60 seconds</option>
       </select>
     </div>
-    <button class="btn full" onclick="sendNotice()">📢 Send Notice</button>
+    <button class="btn full" onclick="sendNotice()">Send Notice</button>
   </div>
   <div class="section-label">Recent Notices</div>
   <div id="notices-list"></div>
@@ -392,11 +392,11 @@ async function loadGuests() {
       <div class="guest-row">
         <div class="qr-box" id="gqr-${g.id}"></div>
         <div class="guest-actions">
-          <button class="btn small" onclick="toggleEdit('${g.id}')">✏️ Edit</button>
+          <button class="btn small" onclick="toggleEdit('${g.id}')">Edit</button>
           <button class="btn small ${isLocked?'green':'orange'}" onclick="toggleLock('${g.id}',${isLocked})">${isLocked?'🔓 Unlock':'🔒 Lock'}</button>
-          <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'🆘 Enable Help':'🚫 Disable Help'}</button>
-          <button class="btn small ${accomEffective?'orange':'green'}" onclick="toggleAccomAccess('${g.id}',${accomEffective?1:0},${accomOn?1:0})" title="${accomEffective?'Disable accommodations for this guest':'Enable accommodations for this guest'}">${accomEffective?'🛎️ Disable Accom':'🛎️ Enable Accom'}</button>
-          ${g.is_actor ? `<button class="btn small ${actorReqOff?'green':'orange'}" onclick="toggleActorReq('${g.id}',${actorReqOff})">${actorReqOff?'🎬 Enable Req':'🎬 Disable Req'}</button>` : ''}
+          <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'Enable Help':'Disable Help'}</button>
+          <button class="btn small ${accomEffective?'orange':'green'}" onclick="toggleAccomAccess('${g.id}',${accomEffective?1:0},${accomOn?1:0})" title="${accomEffective?'Disable accommodations for this guest':'Enable accommodations for this guest'}">${accomEffective?'Disable Accom':'Enable Accom'}</button>
+          ${g.is_actor ? `<button class="btn small ${actorReqOff?'green':'orange'}" onclick="toggleActorReq('${g.id}',${actorReqOff})">${actorReqOff?'Enable Actor Req':'Disable Actor Req'}</button>` : ''}
           <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
           ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy Link</button>` : ''}
         </div>
@@ -671,7 +671,6 @@ async function loadReasons() {
   if (!items.length) { el.innerHTML = '<div class="empty">No help reasons yet. The "Other" option is always shown automatically.</div>'; }
   else { el.innerHTML = items.map(r => `
     <div class="config-item">
-      <span class="ci-emoji">${esc(r.emoji)}</span>
       <span class="ci-label">${esc(r.label)}</span>
       <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
     </div>`).join(''); }
@@ -683,7 +682,6 @@ async function loadReasons() {
   if (!aItems.length) { aEl.innerHTML = '<div class="empty">No accommodation reasons yet. The "Other" option is always shown automatically.</div>'; }
   else { aEl.innerHTML = aItems.map(r => `
     <div class="config-item">
-      <span class="ci-emoji">${esc(r.emoji)}</span>
       <span class="ci-label">${esc(r.label)}</span>
       <button class="btn small red" onclick="deleteReason('${r.id}')">Remove</button>
     </div>`).join(''); }
@@ -739,7 +737,7 @@ async function sendNotice() {
   await fetch('/api/notices', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({message, guestId, duration})});
   document.getElementById('notice-message-input').value = '';
-  btn.textContent = '📢 Send Notice'; btn.disabled = false;
+  btn.textContent = 'Send Notice'; btn.disabled = false;
   loadNotices();
 }
 
@@ -751,7 +749,7 @@ async function loadCustomFields() {
   if (!fields.length) { el.innerHTML = '<div class="empty">No custom fields yet. Add one above.</div>'; return; }
   el.innerHTML = fields.map(f => `
     <div class="config-item">
-      <span class="ci-emoji">${f.field_type === 'checkbox' ? '☑️' : '📝'}</span>
+      <span class="ci-emoji">${f.field_type === 'checkbox' ? '' : ''}</span>
       <div style="flex:1;">
         <div class="ci-label">${esc(f.label)}</div>
         <div style="font-size:12px;color:#aaa;margin-top:2px;">${f.field_type === 'checkbox' ? 'Checkbox' : 'Text input'}</div>
