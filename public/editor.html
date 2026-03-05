@@ -5,337 +5,290 @@
 <title>Staff Editor — The Eddie's 2025</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;700;800&display=swap');
-
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-:root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --surface2: #1e1e1e;
-  --border: rgba(255,255,255,0.08);
-  --text: #ffffff;
-  --muted: rgba(255,255,255,0.4);
-  --accent: #ffffff;
-  --gold: #d4a843;
-  --orange: #ff6b00;
-}
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f2f2f7; color: #000; min-height: 100vh; }
 
-body {
-  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-}
-
-/* ── TOPBAR ── */
+/* ── TOPBAR (matches app) ── */
 .topbar {
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  background: #000; color: #fff;
   padding: 14px 20px;
   padding-top: calc(env(safe-area-inset-top, 16px) + 14px);
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
   position: sticky; top: 0; z-index: 100;
-  backdrop-filter: blur(20px);
 }
-.topbar-title {
-  font-size: 12px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 3px; color: var(--muted);
-}
-.topbar-right { display: flex; gap: 8px; }
+.topbar-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; flex: 1; }
 .topbar-btn {
-  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
-  border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700;
-  font-family: inherit; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
-  transition: all 0.15s;
+  background: #222; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
+  cursor: pointer; white-space: nowrap;
 }
-.topbar-btn:active { opacity: 0.6; }
-.topbar-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.topbar-btn.active { background: #fff; color: #000; }
+.topbar-btn:active { opacity: 0.7; }
 
 /* ── GUEST LIST ── */
-#guest-list-view { padding: 20px 16px; }
+#guest-list-view { padding: 16px; }
+.section-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 4px 0 12px 4px; }
 
-.list-header {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; padding: 0 4px;
+.guest-card {
+  background: #fff; border-radius: 16px; padding: 16px 18px;
+  margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
 }
-
-.guest-row {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 14px;
-  margin-bottom: 8px; cursor: pointer; transition: all 0.15s;
-}
-.guest-row:active { opacity: 0.7; transform: scale(0.99); }
-.guest-row:hover { border-color: rgba(255,255,255,0.18); }
+.guest-card:active { opacity: 0.7; }
 .guest-avatar {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: var(--surface2); border: 1px solid var(--border);
+  width: 42px; height: 42px; border-radius: 12px; background: #f0f0f0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 800; color: var(--muted); flex-shrink: 0;
+  font-size: 15px; font-weight: 800; color: #888; flex-shrink: 0;
 }
-.guest-info { flex: 1; min-width: 0; }
-.guest-name { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.guest-meta { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
-.guest-tag {
-  display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.5px; padding: 2px 7px; border-radius: 6px;
-  background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
+.guest-card-info { flex: 1; min-width: 0; }
+.guest-card-name { font-size: 17px; font-weight: 700; }
+.guest-card-meta { font-size: 13px; color: #888; margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  padding: 2px 8px; border-radius: 6px; background: #f0f0f0; color: #666;
 }
-.guest-tag.eddie { background: rgba(212,168,67,0.15); color: var(--gold); border-color: rgba(212,168,67,0.3); }
-.guest-tag.actor { background: rgba(255,107,0,0.15); color: var(--orange); border-color: rgba(255,107,0,0.3); }
-.guest-tag.vip { background: rgba(155,89,182,0.15); color: #c084f5; border-color: rgba(155,89,182,0.3); }
-.guest-tag.staff { background: rgba(33,150,243,0.15); color: #60b4ff; border-color: rgba(33,150,243,0.3); }
-.guest-chevron { color: var(--muted); font-size: 18px; flex-shrink: 0; }
-.empty { text-align: center; color: var(--muted); padding: 80px 20px; font-size: 15px; }
+.tag.eddie { background: #FFF3CC; color: #9a6c00; }
+.tag.actor { background: #ffe8d6; color: #b84a00; }
+.tag.vip   { background: #f0e6ff; color: #6b2fa0; }
+.tag.staff { background: #e3f0ff; color: #0054a8; }
+.guest-chevron { font-size: 20px; color: #ccc; flex-shrink: 0; }
+.empty { text-align: center; color: #aaa; padding: 70px 20px; font-size: 16px; }
 
 /* ── EDITOR VIEW ── */
 #editor-view { display: none; }
 
-/* Hero / name card */
+/* Name hero — black card like the app header */
 .editor-hero {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 32px 24px 28px;
+  background: #000; color: #fff;
+  padding: 28px 20px 24px;
   text-align: center;
-  position: relative;
 }
-.hero-label {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 3px; color: var(--muted); margin-bottom: 12px;
+.hero-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #aaa; margin-bottom: 10px; }
+.hero-name { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 6px; }
+.hero-tags { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.hero-pill {
+  display: inline-block; font-size: 12px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.5px; border-radius: 20px; padding: 4px 12px;
+  background: #fff; color: #000;
 }
-.hero-name {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 38px; line-height: 1.1; color: var(--text);
-  margin-bottom: 6px;
-}
-.hero-status {
-  font-size: 12px; color: var(--muted); text-transform: uppercase;
-  letter-spacing: 1.5px;
-}
+.hero-pill.eddie { background: #FFD700; color: #000; }
+.hero-pill.vip   { background: #9b59b6; color: #fff; }
+.hero-pill.staff { background: #2196F3; color: #fff; }
+.hero-pill.press { background: #ff9500; color: #fff; }
+.hero-pill.actor { background: #fff; color: #000; }
 
 /* Editor body */
-.editor-body { padding: 24px 16px 60px; max-width: 540px; margin: 0 auto; }
-
-.field-group { margin-bottom: 10px; }
-.field-label {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; padding: 0 2px;
+.editor-body { padding: 20px 16px 60px; max-width: 540px; margin: 0 auto; }
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; font-size: 16px; font-weight: 600;
+  font-family: inherit; color: #000; cursor: pointer; padding: 0; margin-bottom: 20px;
 }
+
+.field-card { background: #fff; border-radius: 16px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.field-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
 .field-input {
-  width: 100%; background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); font-family: inherit; font-size: 16px; font-weight: 500;
-  padding: 14px 16px; border-radius: 12px; outline: none; transition: border-color 0.15s;
+  width: 100%; font-size: 17px; padding: 12px 14px;
+  border: 2px solid #e0e0e0; border-radius: 10px; font-family: inherit;
+  outline: none; color: #000; background: #fff;
 }
-.field-input:focus { border-color: rgba(255,255,255,0.3); }
-.field-input::placeholder { color: rgba(255,255,255,0.2); }
+.field-input:focus { border-color: #000; }
+.field-input::placeholder { color: #ccc; }
 
-/* Badge selector */
+/* Badge chips */
 .badge-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .badge-chip {
-  padding: 10px 16px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--surface);
-  font-size: 13px; font-weight: 700; color: var(--muted);
-  cursor: pointer; transition: all 0.15s; font-family: inherit;
+  padding: 9px 16px; border-radius: 20px; border: 2px solid #e0e0e0;
+  font-size: 14px; font-weight: 700; font-family: inherit;
+  background: #f8f8f8; color: #999; cursor: pointer;
 }
-.badge-chip:active { transform: scale(0.96); }
-.badge-chip.sel { border-color: rgba(255,255,255,0.5); color: var(--text); background: var(--surface2); }
-.badge-chip.sel.eddie { border-color: var(--gold); color: var(--gold); background: rgba(212,168,67,0.1); }
-.badge-chip.sel.vip { border-color: #9b59b6; color: #c084f5; background: rgba(155,89,182,0.1); }
-.badge-chip.sel.staff { border-color: #2196F3; color: #60b4ff; background: rgba(33,150,243,0.1); }
-.badge-chip.sel.press { border-color: #ff9500; color: #ffb340; background: rgba(255,149,0,0.1); }
+.badge-chip.sel { background: #000; color: #fff; border-color: #000; }
+.badge-chip.none.sel { background: #777; border-color: #777; }
+.badge-chip.eddie.sel { background: #FFD700; color: #000; border-color: #FFD700; }
+.badge-chip.vip.sel   { background: #9b59b6; color: #fff; border-color: #9b59b6; }
+.badge-chip.staff.sel { background: #2196F3; color: #fff; border-color: #2196F3; }
+.badge-chip.press.sel { background: #ff9500; color: #fff; border-color: #ff9500; }
 
-/* Actor toggle */
-.actor-row {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px;
-  cursor: pointer; transition: border-color 0.15s;
+/* Actor toggle row */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between; padding: 4px 0;
 }
-.actor-row.on { border-color: var(--orange); }
-.actor-row-left { display: flex; align-items: center; gap: 12px; }
-.actor-icon {
-  width: 36px; height: 36px; border-radius: 8px;
-  background: rgba(255,107,0,0.1); border: 1px solid rgba(255,107,0,0.2);
-  display: flex; align-items: center; justify-content: center; font-size: 18px;
-}
-.actor-row-label { font-size: 15px; font-weight: 700; }
-.actor-row-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
-.actor-switch {
-  width: 48px; height: 28px; border-radius: 14px; background: var(--surface2);
-  border: 1px solid var(--border); position: relative; transition: all 0.2s; flex-shrink: 0;
-}
-.actor-switch.on { background: var(--orange); border-color: var(--orange); }
-.actor-switch::after {
-  content: ''; position: absolute; top: 3px; left: 3px;
-  width: 20px; height: 20px; background: var(--muted);
-  border-radius: 50%; transition: left 0.2s;
-}
-.actor-switch.on::after { left: 23px; background: #fff; }
+.toggle-row-info { flex: 1; }
+.toggle-row-name { font-size: 16px; font-weight: 600; }
+.toggle-row-sub  { font-size: 12px; color: #aaa; margin-top: 2px; }
+.toggle { position: relative; width: 51px; height: 31px; flex-shrink: 0; cursor: pointer; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 31px; transition: 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 27px; height: 27px; left: 2px; bottom: 2px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+input:checked + .toggle-slider { background: #34c759; }
+input:checked + .toggle-slider.orange { background: #ff6b00; }
+input:checked + .toggle-slider:before { transform: translateX(20px); }
+.grant-note { font-size: 12px; color: #007aff; padding: 8px 12px; background: #e8f0ff; border-radius: 8px; margin-top: 4px; }
 
-/* Divider */
-.divider { height: 1px; background: var(--border); margin: 6px 0; }
+/* Checkbox fields */
+.checkbox-row { display: flex; align-items: center; gap: 14px; padding: 8px 0; cursor: pointer; }
+.checkbox-row input[type="checkbox"] { width: 24px; height: 24px; accent-color: #000; cursor: pointer; flex-shrink: 0; }
+.checkbox-row-label { font-size: 16px; font-weight: 500; }
 
 /* Save button */
 .save-btn {
-  width: 100%; padding: 17px; background: var(--text); color: var(--bg);
-  border: none; border-radius: 14px; font-size: 16px; font-weight: 800;
-  font-family: inherit; text-transform: uppercase; letter-spacing: 1px;
-  cursor: pointer; transition: opacity 0.15s; margin-top: 16px;
+  width: 100%; padding: 17px; background: #000; color: #fff; border: none;
+  border-radius: 14px; font-size: 17px; font-weight: 800; font-family: inherit;
+  text-transform: uppercase; letter-spacing: 1px; cursor: pointer; margin-top: 8px;
 }
 .save-btn:active { opacity: 0.8; }
 
-/* ── SAVE CHOICE POPUP ── */
+/* ── SAVE POPUP (bottom sheet) ── */
 #save-popup {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7); z-index: 500;
+  background: rgba(0,0,0,0.5); z-index: 500;
   align-items: flex-end; justify-content: center;
-  backdrop-filter: blur(8px);
 }
 #save-popup.open { display: flex; }
-.save-popup-sheet {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 24px 24px 0 0; padding: 28px 20px;
-  padding-bottom: calc(env(safe-area-inset-bottom,20px) + 20px);
+.popup-sheet {
+  background: #f2f2f7; border-radius: 20px 20px 0 0;
+  padding: 20px 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 16px);
   width: 100%; max-width: 540px;
 }
-.popup-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 24px; }
-.popup-title { font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 6px; }
-.popup-sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+.popup-name { font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+.popup-sub  { font-size: 14px; color: #888; text-align: center; margin-bottom: 20px; }
 .popup-btn {
-  width: 100%; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700;
-  font-family: inherit; cursor: pointer; transition: opacity 0.15s; margin-bottom: 10px;
-  border: none; text-align: left; display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 17px; border: none; border-radius: 14px;
+  font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 14px; text-align: left;
 }
-.popup-btn:active { opacity: 0.7; }
-.popup-btn.primary { background: var(--text); color: var(--bg); }
-.popup-btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.popup-btn-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-.popup-btn.primary .popup-btn-icon { background: rgba(0,0,0,0.15); }
-.popup-btn.secondary .popup-btn-icon { background: var(--surface); }
-.popup-btn-text strong { display: block; font-size: 15px; }
-.popup-btn-text span { font-size: 12px; opacity: 0.6; }
-.popup-cancel { width: 100%; padding: 14px; background: none; border: none; color: var(--muted); font-size: 15px; font-family: inherit; cursor: pointer; margin-top: 4px; }
+.popup-btn:active { opacity: 0.8; }
+.popup-btn.primary { background: #000; color: #fff; }
+.popup-btn.secondary { background: #fff; color: #000; }
+.popup-btn-icon { font-size: 22px; flex-shrink: 0; }
+.popup-btn-text strong { display: block; font-size: 16px; }
+.popup-btn-text span { font-size: 12px; opacity: 0.5; }
+.popup-cancel { width: 100%; padding: 14px; background: none; border: none; color: #888; font-size: 16px; font-family: inherit; cursor: pointer; }
 
 /* ── QR MODAL ── */
 #qr-modal {
   display: none; position: fixed; inset: 0;
-  background: var(--bg); z-index: 600;
+  background: #000; z-index: 600;
   flex-direction: column; align-items: center; justify-content: center;
-  padding: calc(env(safe-area-inset-top,20px) + 20px) 32px calc(env(safe-area-inset-bottom,20px) + 32px);
+  padding: calc(env(safe-area-inset-top,20px) + 24px) 24px calc(env(safe-area-inset-bottom,20px) + 32px);
 }
 #qr-modal.open { display: flex; }
-.qr-event { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: var(--muted); margin-bottom: 32px; }
-.qr-card {
-  background: #fff; border-radius: 20px; padding: 28px 24px 20px;
-  width: 100%; max-width: 320px; text-align: center; margin-bottom: 28px;
+.qr-event-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #444; margin-bottom: 28px; }
+.qr-white-card {
+  background: #fff; border-radius: 20px; padding: 24px 20px 18px;
+  width: 100%; max-width: 300px; text-align: center; margin-bottom: 24px;
 }
-.qr-name-on-card { font-family: 'DM Serif Display', Georgia, serif; font-size: 22px; color: #000; margin-bottom: 4px; }
-.qr-badge-on-card { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 20px; }
-.qr-code-wrap { display: flex; justify-content: center; margin-bottom: 4px; }
-.qr-guest-below { font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
-.qr-guest-tag-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.qr-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 8px; }
-.qr-tag.eddie { background: rgba(212,168,67,0.15); color: var(--gold); }
-.qr-tag.actor { background: rgba(255,107,0,0.15); color: var(--orange); }
-.qr-tag.vip { background: rgba(155,89,182,0.15); color: #c084f5; }
-.qr-close-btn {
-  width: 100%; max-width: 320px; padding: 17px; background: var(--surface);
-  color: var(--text); border: 1px solid var(--border); border-radius: 14px;
-  font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 8px;
+.qr-card-name { font-size: 20px; font-weight: 800; color: #000; margin-bottom: 2px; }
+.qr-card-sub  { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
+.qr-guest-name { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+.qr-pill-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px; }
+.qr-pill {
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+  border-radius: 20px; padding: 4px 12px; background: #222; color: #fff;
 }
-.qr-another-btn {
-  width: 100%; max-width: 320px; padding: 14px; background: none;
-  color: var(--muted); border: none;
-  font-size: 14px; font-family: inherit; cursor: pointer; margin-top: 8px;
+.qr-pill.eddie { background: #FFD700; color: #000; }
+.qr-pill.vip   { background: #9b59b6; color: #fff; }
+.qr-pill.staff { background: #2196F3; color: #fff; }
+.qr-pill.press { background: #ff9500; color: #fff; }
+.qr-pill.actor { background: #fff; color: #000; }
+.qr-done-btn {
+  width: 100%; max-width: 300px; padding: 17px; background: #fff; color: #000;
+  border: none; border-radius: 14px; font-size: 17px; font-weight: 800;
+  font-family: inherit; cursor: pointer; margin-bottom: 10px;
+}
+.qr-edit-btn {
+  width: 100%; max-width: 300px; padding: 14px; background: #1a1a1a; color: #888;
+  border: none; border-radius: 14px; font-size: 15px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
 }
 </style>
 </head>
 <body>
 
-<!-- Topbar -->
 <div class="topbar">
-  <div class="topbar-title">Staff Editor</div>
-  <div class="topbar-right">
+  <span class="topbar-title">Staff Editor</span>
+  <div style="display:flex;gap:8px;">
     <button class="topbar-btn active" id="btn-all" onclick="setMode('all')">All</button>
     <button class="topbar-btn" id="btn-new" onclick="setMode('new')">New</button>
-    <button class="topbar-btn" onclick="loadGuests()">Refresh</button>
+    <button class="topbar-btn" onclick="loadGuests()">↻</button>
   </div>
 </div>
 
 <!-- Guest List -->
 <div id="guest-list-view">
-  <div id="guest-list"></div>
+  <div style="padding:16px 16px 0;">
+    <div class="section-label" id="list-label">All Guests</div>
+  </div>
+  <div style="padding:0 16px 32px;">
+    <div id="guest-list"></div>
+  </div>
 </div>
 
-<!-- Editor View -->
+<!-- Editor -->
 <div id="editor-view">
   <div class="editor-hero">
     <div class="hero-label" id="hero-label">Setting Up</div>
     <div class="hero-name" id="hero-name">—</div>
-    <div class="hero-status" id="hero-status">Guest</div>
+    <div class="hero-tags" id="hero-tags"></div>
   </div>
 
   <div class="editor-body">
-    <button class="topbar-btn" onclick="showList()" style="margin-bottom:20px;font-size:12px;">← Back to list</button>
+    <button class="back-btn" onclick="showList()">← Back</button>
 
-    <div class="field-group">
-      <div class="field-label">Seat Assignment</div>
+    <div class="field-card">
+      <div class="field-label">Seat</div>
       <input type="text" class="field-input" id="ev-seat" placeholder="e.g. Table 3, Seat B" autocomplete="off">
     </div>
 
-    <div class="divider" style="margin:16px 0;"></div>
-
-    <div class="field-group">
-      <div class="field-label">Badge Tier</div>
+    <div class="field-card">
+      <div class="field-label">Badge</div>
       <div class="badge-grid" id="badge-options"></div>
     </div>
 
-    <div class="divider" style="margin:16px 0;"></div>
-
-    <div class="field-group">
-      <div class="field-label">Actor Status</div>
-      <div class="actor-row" id="actor-row" onclick="toggleActor()">
-        <div class="actor-row-left">
-          <div class="actor-icon">🎬</div>
-          <div>
-            <div class="actor-row-label">Mark as Actor</div>
-            <div class="actor-row-sub">Enables actor pass &amp; special requests</div>
-          </div>
-        </div>
-        <div class="actor-switch" id="actor-switch"></div>
-      </div>
+    <div class="field-card" id="access-card">
+      <div class="field-label">Access</div>
+      <div id="access-rows"></div>
     </div>
 
-    <div id="access-card" style="margin-top:10px;display:none;">
-      <div class="field-label" style="margin-bottom:8px;">Extra Access</div>
-      <div id="access-rows"></div>
+    <div class="field-card">
+      <div class="field-label">Actor</div>
+      <div class="toggle-row">
+        <div class="toggle-row-info">
+          <div class="toggle-row-name">Mark as Actor</div>
+          <div class="toggle-row-sub">Enables actor pass &amp; special requests</div>
+        </div>
+        <label class="toggle" onclick="">
+          <input type="checkbox" id="ev-actor" onchange="onActorChange()">
+          <span class="toggle-slider orange"></span>
+        </label>
+      </div>
     </div>
 
     <div id="custom-fields-wrap"></div>
 
-    <button class="save-btn" id="save-btn" onclick="openSavePopup()">Save Guest</button>
+    <button class="save-btn" onclick="openSavePopup()">Save Guest</button>
   </div>
 </div>
 
-<!-- Save Choice Popup -->
+<!-- Save Popup -->
 <div id="save-popup">
-  <div class="save-popup-sheet">
-    <div class="popup-handle"></div>
-    <div class="popup-title" id="popup-guest-name">Save Guest</div>
+  <div class="popup-sheet">
+    <div class="popup-name" id="popup-name">—</div>
     <div class="popup-sub">What would you like to do?</div>
     <button class="popup-btn primary" onclick="saveThenQR()">
-      <div class="popup-btn-icon">⬜</div>
-      <div class="popup-btn-text">
-        <strong>Save &amp; Show QR Code</strong>
-        <span>Show the guest their check-in QR</span>
-      </div>
+      <span class="popup-btn-icon">⬜</span>
+      <span class="popup-btn-text">
+        <strong>Save &amp; Show QR</strong>
+        <span>Show the guest their check-in code</span>
+      </span>
     </button>
     <button class="popup-btn secondary" onclick="saveThenBack()">
-      <div class="popup-btn-icon" style="font-size:16px;">✓</div>
-      <div class="popup-btn-text">
+      <span class="popup-btn-icon">✓</span>
+      <span class="popup-btn-text">
         <strong>Save Only</strong>
-        <span>Go back to the guest list</span>
-      </div>
+        <span>Return to the guest list</span>
+      </span>
     </button>
     <button class="popup-cancel" onclick="closeSavePopup()">Cancel</button>
   </div>
@@ -343,16 +296,18 @@ body {
 
 <!-- QR Modal -->
 <div id="qr-modal">
-  <div class="qr-event">The Eddie's 2025</div>
-  <div class="qr-card">
-    <div class="qr-name-on-card" id="qr-card-name"></div>
-    <div class="qr-badge-on-card" id="qr-card-badge"></div>
-    <div class="qr-code-wrap"><canvas id="qr-canvas" width="220" height="220"></canvas></div>
+  <div class="qr-event-label">The Eddie's 2025</div>
+  <div class="qr-white-card">
+    <div class="qr-card-name" id="qr-card-name"></div>
+    <div class="qr-card-sub" id="qr-card-sub"></div>
+    <div style="display:flex;justify-content:center;">
+      <canvas id="qr-canvas" width="220" height="220"></canvas>
+    </div>
   </div>
-  <div class="qr-guest-below" id="qr-guest-name"></div>
-  <div class="qr-guest-tag-row" id="qr-guest-tags"></div>
-  <button class="qr-close-btn" onclick="closeQR()">Done</button>
-  <button class="qr-another-btn" onclick="closeQRKeepEditing()">← Keep Editing</button>
+  <div class="qr-guest-name" id="qr-guest-name"></div>
+  <div class="qr-pill-row" id="qr-pills"></div>
+  <button class="qr-done-btn" onclick="closeQR()">Done</button>
+  <button class="qr-edit-btn" onclick="closeQRKeepEditing()">Keep Editing</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
@@ -360,17 +315,21 @@ body {
 let currentGuest = null;
 let selectedBadge = '';
 let customFields = [];
-let isActor = false;
 let allGuests = [];
 let currentMode = 'all';
 const BADGE_OPTIONS = ['None','Eddie +','VIP','Staff','Press'];
 const AUTO_ACCOM_BADGES = ['Eddie +','VIP','Staff'];
+
+// ── Helpers ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function badgeSlug(b) { return (b||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').replace('eddie-+','eddie').replace('eddie--','eddie'); }
 
 // ── Mode ──
 function setMode(mode) {
   currentMode = mode;
   document.getElementById('btn-all').classList.toggle('active', mode === 'all');
   document.getElementById('btn-new').classList.toggle('active', mode === 'new');
+  document.getElementById('list-label').textContent = mode === 'new' ? 'New — Awaiting Setup' : 'All Guests';
   renderGuestList(allGuests);
 }
 
@@ -393,137 +352,116 @@ function renderGuestList(guests) {
   const list = currentMode === 'new' ? guests.filter(g => !g.seat && !g.badge) : guests;
   const el = document.getElementById('guest-list');
   if (!list.length) {
-    el.innerHTML = `<div class="empty">${currentMode === 'new' ? 'All guests are set up' : 'No guests yet'}</div>`;
+    el.innerHTML = `<div class="empty">${currentMode === 'new' ? 'All guests are set up.' : 'No guests yet.'}</div>`;
     return;
   }
-  el.innerHTML = '<div style="padding:16px 16px 4px;"><div class="list-header">' +
-    (currentMode === 'new' ? 'Awaiting Setup' : 'All Guests') + ' — ' + list.length + '</div></div>' +
-    '<div style="padding:0 16px 24px;">' +
-    list.map(g => {
-      const initials = (g.first_name[0]||'') + (g.last_name[0]||'');
-      const tags = [];
-      if (g.badge === 'Eddie +') tags.push('<span class="guest-tag eddie">Eddie+</span>');
-      else if (g.badge === 'VIP') tags.push('<span class="guest-tag vip">VIP</span>');
-      else if (g.badge === 'Staff') tags.push('<span class="guest-tag staff">Staff</span>');
-      else if (g.badge) tags.push(`<span class="guest-tag">${esc(g.badge)}</span>`);
-      if (g.is_actor) tags.push('<span class="guest-tag actor">Actor</span>');
-      return `<div class="guest-row" onclick='openEditor(${JSON.stringify(g)})'>
-        <div class="guest-avatar">${esc(initials)}</div>
-        <div class="guest-info">
-          <div class="guest-name">${esc(g.first_name)} ${esc(g.last_name)}</div>
-          <div class="guest-meta">${tags.length ? tags.join('') : '<span class="guest-tag">No setup yet</span>'}</div>
-        </div>
-        <div class="guest-chevron">›</div>
-      </div>`;
-    }).join('') + '</div>';
+  el.innerHTML = list.map(g => {
+    const initials = ((g.first_name||'')[0]||'') + ((g.last_name||'')[0]||'');
+    const tags = [];
+    if (g.badge) {
+      const sl = badgeSlug(g.badge);
+      tags.push(`<span class="tag ${sl === 'eddie-' ? 'eddie' : sl}">${esc(g.badge)}</span>`);
+    }
+    if (g.is_actor) tags.push('<span class="tag actor">Actor</span>');
+    if (!g.badge && !g.is_actor) tags.push('<span class="tag">No setup</span>');
+    return `<div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
+      <div class="guest-avatar">${esc(initials)}</div>
+      <div class="guest-card-info">
+        <div class="guest-card-name">${esc(g.first_name)} ${esc(g.last_name)}</div>
+        <div class="guest-card-meta">${tags.join('')}${g.seat ? `<span style="font-size:12px;color:#aaa;">📍 ${esc(g.seat)}</span>` : ''}</div>
+      </div>
+      <div class="guest-chevron">›</div>
+    </div>`;
+  }).join('');
 }
 
 // ── Open Editor ──
 function openEditor(guest) {
   currentGuest = guest;
   selectedBadge = guest.badge || '';
-  isActor = !!(guest.is_actor);
-
   document.getElementById('hero-name').textContent = guest.first_name + ' ' + guest.last_name;
-  document.getElementById('hero-label').textContent = guest.seat || guest.badge ? 'Editing Guest' : 'Setting Up';
-  updateHeroStatus();
-
+  document.getElementById('hero-label').textContent = guest.seat || guest.badge ? 'Editing' : 'Setting Up';
   document.getElementById('ev-seat').value = guest.seat || '';
-  document.getElementById('actor-switch').classList.toggle('on', isActor);
-  document.getElementById('actor-row').classList.toggle('on', isActor);
+  document.getElementById('ev-actor').checked = !!(guest.is_actor);
 
-  // Badge chips
-  document.getElementById('badge-options').innerHTML = BADGE_OPTIONS.map(b => {
-    const slug = b === 'Eddie +' ? 'eddie' : b === 'None' ? '' : b.toLowerCase();
-    const isSel = (b === 'None' && !selectedBadge) || selectedBadge === b;
-    return `<button class="badge-chip ${slug} ${isSel ? 'sel' : ''}" onclick="selectBadge('${b}')">${b}</button>`;
-  }).join('');
-
+  renderHeroTags();
+  renderBadgeOptions();
   renderAccessCard(guest);
 
   // Custom fields
   const wrap = document.getElementById('custom-fields-wrap');
-  wrap.innerHTML = customFields.length ? '<div class="divider" style="margin:16px 0;"></div>' + customFields.map(f => `
-    <div class="field-group" style="margin-bottom:10px;">
+  wrap.innerHTML = customFields.map(f => `
+    <div class="field-card">
       <div class="field-label">${esc(f.label)}</div>
       ${f.field_type === 'checkbox'
-        ? `<div class="actor-row" style="padding:12px 16px;cursor:default;">
-            <span style="font-size:14px;font-weight:600;">${esc(f.label)}</span>
-            <input type="checkbox" id="cf-${f.id}" style="width:20px;height:20px;accent-color:var(--text);cursor:pointer;">
-           </div>`
+        ? `<label class="checkbox-row"><input type="checkbox" id="cf-${f.id}"><span class="checkbox-row-label">${esc(f.label)}</span></label>`
         : `<input type="text" class="field-input" id="cf-${f.id}" placeholder="${esc(f.label)}..." autocomplete="off">`}
-    </div>`).join('') : '';
+    </div>`).join('');
 
   document.getElementById('guest-list-view').style.display = 'none';
   document.getElementById('editor-view').style.display = 'block';
   window.scrollTo(0,0);
 }
 
-function updateHeroStatus() {
-  const parts = [];
-  if (selectedBadge) parts.push(selectedBadge);
-  if (isActor) parts.push('Actor');
-  document.getElementById('hero-status').textContent = parts.length ? parts.join(' · ') : 'Guest';
+function renderHeroTags() {
+  const tags = [];
+  if (selectedBadge) {
+    const sl = badgeSlug(selectedBadge);
+    tags.push(`<span class="hero-pill ${sl}">${esc(selectedBadge)}</span>`);
+  }
+  if (document.getElementById('ev-actor')?.checked) {
+    tags.push('<span class="hero-pill actor">Actor</span>');
+  }
+  document.getElementById('hero-tags').innerHTML = tags.join('');
+}
+
+function renderBadgeOptions() {
+  document.getElementById('badge-options').innerHTML = BADGE_OPTIONS.map(b => {
+    const sl = b === 'Eddie +' ? 'eddie' : b === 'None' ? 'none' : b.toLowerCase();
+    const sel = (b === 'None' && !selectedBadge) || selectedBadge === b;
+    return `<button class="badge-chip ${sl} ${sel?'sel':''}" onclick="selectBadge('${b}')">${b}</button>`;
+  }).join('');
 }
 
 function renderAccessCard(guest) {
-  const autoAccom = AUTO_ACCOM_BADGES.includes(selectedBadge || guest.badge || '');
-  const card = document.getElementById('access-card');
+  const autoAccom = AUTO_ACCOM_BADGES.includes(selectedBadge || '');
   if (autoAccom) {
     document.getElementById('access-rows').innerHTML =
-      `<div style="font-size:13px;color:rgba(255,255,255,0.4);padding:10px 0;">Accommodations auto-granted via ${esc(selectedBadge || guest.badge)} badge</div>`;
-    card.style.display = 'block';
+      `<div class="grant-note">Accommodations auto-granted via ${esc(selectedBadge)} badge</div>`;
   } else {
     document.getElementById('access-rows').innerHTML = `
-      <div class="actor-row" style="margin-bottom:0;">
-        <div class="actor-row-left">
-          <div style="font-size:14px;font-weight:600;">Accommodations</div>
+      <div class="toggle-row">
+        <div class="toggle-row-info">
+          <div class="toggle-row-name">Accommodations</div>
+          <div class="toggle-row-sub">Enable accommodation requests</div>
         </div>
-        <label class="actor-switch" style="cursor:pointer;">
-          <input type="checkbox" id="ev-accom" ${guest.accom_enabled ? 'checked' : ''} style="display:none;" onchange="this.parentElement.classList.toggle('on',this.checked)">
+        <label class="toggle">
+          <input type="checkbox" id="ev-accom" ${guest.accom_enabled ? 'checked' : ''}>
+          <span class="toggle-slider"></span>
         </label>
       </div>`;
-    const sw = document.querySelector('#access-rows .actor-switch');
-    if (sw) sw.classList.toggle('on', !!guest.accom_enabled);
-    card.style.display = 'block';
   }
 }
 
 function selectBadge(b) {
   selectedBadge = b === 'None' ? '' : b;
-  document.querySelectorAll('.badge-chip').forEach(el => {
-    const slug = el.classList[1];
-    const matches = (el.textContent === (selectedBadge || 'None'));
-    el.classList.toggle('sel', matches);
-  });
+  renderBadgeOptions();
   if (currentGuest) renderAccessCard(currentGuest);
-  updateHeroStatus();
+  renderHeroTags();
 }
 
-function toggleActor() {
-  isActor = !isActor;
-  document.getElementById('actor-switch').classList.toggle('on', isActor);
-  document.getElementById('actor-row').classList.toggle('on', isActor);
-  updateHeroStatus();
-}
+function onActorChange() { renderHeroTags(); }
 
 function showList() {
   document.getElementById('editor-view').style.display = 'none';
   document.getElementById('guest-list-view').style.display = 'block';
 }
 
-// ── Save Popup ──
-function openSavePopup() {
-  if (!currentGuest) return;
-  document.getElementById('popup-guest-name').textContent =
-    currentGuest.first_name + ' ' + currentGuest.last_name;
-  document.getElementById('save-popup').classList.add('open');
-}
-function closeSavePopup() { document.getElementById('save-popup').classList.remove('open'); }
-
-async function doSave() {
+// ── Collect form data ──
+function collectFormData() {
   const seat = document.getElementById('ev-seat').value.trim();
   const badge = selectedBadge;
+  const is_actor = document.getElementById('ev-actor').checked ? 1 : 0;
   const autoAccom = AUTO_ACCOM_BADGES.includes(badge);
   const accomEl = document.getElementById('ev-accom');
   const accom_enabled = autoAccom ? 1 : (accomEl ? (accomEl.checked ? 1 : 0) : 0);
@@ -533,52 +471,64 @@ async function doSave() {
     if (!el) return;
     fieldValues[f.id] = f.field_type === 'checkbox' ? (el.checked ? 'yes' : 'no') : el.value.trim();
   });
-  await fetch('/api/editor', {
-    method: 'PATCH', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ guestId: currentGuest.id, seat, badge, is_actor: isActor ? 1 : 0, accom_enabled, fieldValues })
-  });
-  // Update local copy
-  const idx = allGuests.findIndex(g => g.id === currentGuest.id);
-  if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor: isActor ? 1 : 0, accom_enabled };
-  return { seat, badge };
+  return { seat, badge, is_actor, accom_enabled, fieldValues };
 }
+
+// ── Save ──
+async function doSave() {
+  const { seat, badge, is_actor, accom_enabled, fieldValues } = collectFormData();
+  const res = await fetch('/api/editor', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ guestId: currentGuest.id, seat, badge, is_actor, accom_enabled, fieldValues })
+  });
+  if (!res.ok) throw new Error('Save failed');
+  // Update local list
+  const idx = allGuests.findIndex(g => g.id === currentGuest.id);
+  if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor, accom_enabled };
+}
+
+// ── Save Popup ──
+function openSavePopup() {
+  if (!currentGuest) return;
+  document.getElementById('popup-name').textContent = currentGuest.first_name + ' ' + currentGuest.last_name;
+  document.getElementById('save-popup').classList.add('open');
+}
+function closeSavePopup() { document.getElementById('save-popup').classList.remove('open'); }
 
 async function saveThenBack() {
   closeSavePopup();
-  const btn = document.getElementById('save-btn');
-  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
-  try { await doSave(); } catch(e) {}
-  btn.textContent = 'Save Guest'; btn.style.opacity = '1';
+  try { await doSave(); } catch(e) { alert('Save failed — check connection'); return; }
   showList(); renderGuestList(allGuests);
 }
 
 async function saveThenQR() {
   closeSavePopup();
-  const btn = document.getElementById('save-btn');
-  btn.textContent = 'Saving...'; btn.style.opacity = '0.6';
-  try { await doSave(); } catch(e) {}
-  btn.textContent = 'Save Guest'; btn.style.opacity = '1';
+  try { await doSave(); } catch(e) { alert('Save failed — check connection'); return; }
   showQR();
 }
 
+// ── QR ──
 function showQR() {
   const g = currentGuest;
-  if (!g || !g.app_token) return;
+  if (!g?.app_token) { alert('No app token for this guest'); return; }
   const appUrl = `${location.origin}/app?token=${g.app_token}`;
   document.getElementById('qr-card-name').textContent = g.first_name + ' ' + g.last_name;
-  document.getElementById('qr-card-badge').textContent = selectedBadge || 'General Admission';
+  document.getElementById('qr-card-sub').textContent = selectedBadge || 'General Admission';
   document.getElementById('qr-guest-name').textContent = g.first_name + ' ' + g.last_name;
-  // Tags
-  const tags = [];
+  // Pills
+  const pills = [];
   if (selectedBadge) {
-    const slug = selectedBadge === 'Eddie +' ? 'eddie' : selectedBadge.toLowerCase();
-    tags.push(`<span class="qr-tag ${slug}">${selectedBadge}</span>`);
+    const sl = badgeSlug(selectedBadge);
+    pills.push(`<span class="qr-pill ${sl}">${esc(selectedBadge)}</span>`);
   }
-  if (isActor) tags.push('<span class="qr-tag actor">Actor</span>');
-  document.getElementById('qr-guest-tags').innerHTML = tags.join('');
+  if (document.getElementById('ev-actor')?.checked) {
+    pills.push('<span class="qr-pill actor">Actor</span>');
+  }
+  document.getElementById('qr-pills').innerHTML = pills.join('');
   // Draw QR
   const canvas = document.getElementById('qr-canvas');
-  new QRious({ element: canvas, value: appUrl, size: 220, background: '#ffffff', foreground: '#000000' });
+  new QRious({ element: canvas, value: appUrl, size: 220, background: '#fff', foreground: '#000' });
   document.getElementById('qr-modal').classList.add('open');
 }
 
@@ -589,8 +539,6 @@ function closeQR() {
 function closeQRKeepEditing() {
   document.getElementById('qr-modal').classList.remove('open');
 }
-
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 loadGuests();
 </script>
