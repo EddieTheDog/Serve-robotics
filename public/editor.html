@@ -602,41 +602,49 @@ function closeQRKeepEditing() {
 
 loadGuests();
 
-// ── SCANNER ──
+// ── SCANNER (jsQR — works on iOS Safari) ──
 let scanStream = null;
-let scanInterval = null;
+let scanAnimFrame = null;
 let scannedGuest = null;
+let scanActive = false;
 
 async function openScanner() {
   document.getElementById('scan-modal').classList.add('open');
   document.getElementById('scan-status').textContent = 'Starting camera...';
   dismissScanResult();
+  scanActive = true;
   try {
     scanStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     const video = document.getElementById('scan-video');
     video.srcObject = scanStream;
-    document.getElementById('scan-status').textContent = 'Point at a QR code';
-    if ('BarcodeDetector' in window) {
-      const detector = new BarcodeDetector({ formats: ['qr_code'] });
-      scanInterval = setInterval(async () => {
-        if (video.readyState < 2) return;
-        try {
-          const codes = await detector.detect(video);
-          if (codes.length) { await handleScanResult(codes[0].rawValue); }
-        } catch(e) {}
-      }, 400);
-    } else {
-      document.getElementById('scan-status').textContent = 'QR scanning not supported on this browser';
-    }
+    video.addEventListener('loadedmetadata', () => {
+      document.getElementById('scan-status').textContent = 'Point at a QR code';
+      scanLoop();
+    }, { once: true });
   } catch(e) {
-    document.getElementById('scan-status').textContent = 'Camera unavailable';
+    document.getElementById('scan-status').textContent = 'Camera unavailable — check permissions';
   }
 }
 
+function scanLoop() {
+  if (!scanActive) return;
+  const video = document.getElementById('scan-video');
+  if (video.readyState >= 2 && video.videoWidth > 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const img = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+    if (code) { scanActive = false; handleScanResult(code.data); return; }
+  }
+  scanAnimFrame = requestAnimationFrame(scanLoop);
+}
+
 function closeScanner() {
-  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  scanActive = false;
+  if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
   if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
   document.getElementById('scan-modal').classList.remove('open');
   dismissScanResult();
@@ -648,29 +656,23 @@ function dismissScanResult() {
 }
 
 async function handleScanResult(raw) {
-  // Stop scanning while we process
-  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
   document.getElementById('scan-status').textContent = 'Looking up guest...';
   let token = null;
   try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
   if (!token) {
-    document.getElementById('scan-status').textContent = 'Not a valid guest QR code';
-    restartScan(); return;
+    document.getElementById('scan-status').textContent = 'Not a valid guest QR code — try again';
+    setTimeout(() => { scanActive = true; scanLoop(); }, 1500); return;
   }
-  // Find in local list first
   let guest = allGuests.find(g => g.app_token === token);
   if (!guest) {
-    // Fetch from API
     try {
-      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      guest = allGuests.find(g => g.id === data.id);
+      const res = await fetch('/api/app-user?token=' + encodeURIComponent(token));
+      if (res.ok) { const d = await res.json(); guest = allGuests.find(g => g.id === d.id) || d; }
     } catch(e) {}
   }
   if (!guest) {
-    document.getElementById('scan-status').textContent = 'Guest not found — may not be accepted yet';
-    restartScan(); return;
+    document.getElementById('scan-status').textContent = 'Guest not found';
+    setTimeout(() => { scanActive = true; scanLoop(); }, 1500); return;
   }
   scannedGuest = guest;
   document.getElementById('scan-result-name').textContent = guest.first_name + ' ' + guest.last_name;
@@ -678,20 +680,6 @@ async function handleScanResult(raw) {
   document.getElementById('scan-result-sub').textContent = tags || 'No badge assigned';
   document.getElementById('scan-result-sheet').classList.add('show');
   document.getElementById('scan-status').textContent = '';
-}
-
-function restartScan() {
-  if (scanStream && 'BarcodeDetector' in window) {
-    const video = document.getElementById('scan-video');
-    const detector = new BarcodeDetector({ formats: ['qr_code'] });
-    scanInterval = setInterval(async () => {
-      if (video.readyState < 2) return;
-      try {
-        const codes = await detector.detect(video);
-        if (codes.length) { await handleScanResult(codes[0].rawValue); }
-      } catch(e) {}
-    }, 400);
-  }
 }
 
 function openFromScan() {
