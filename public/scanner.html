@@ -158,64 +158,54 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <button class="scan-again-btn" onclick="scanAgain()">Scan Another Guest</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
 let stream = null;
-let detector = null;
 let scanning = true;
-let scanTimeout = null;
+let animFrame = null;
 
-const PASS_EMOJIS = {
-  'drink': '🍹', 'bar': '🍹', 'alcohol': '🍹',
-  'photo': '📸', 'vip': '⭐', 'backstage': '🎭',
-  'meal': '🍽️', 'food': '🍽️', 'parking': '🅿️'
-};
-
-function getPassEmoji(name) {
-  const l = name.toLowerCase();
+const PASS_EMOJIS = { drink: '🍹', bar: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', food: '🍽️', parking: '🅿️' };
+function passIcon(name) {
+  const l = (name||'').toLowerCase();
   for (const [k,v] of Object.entries(PASS_EMOJIS)) if (l.includes(k)) return v;
   return '🎟️';
 }
-
-function pillClass(badge) {
-  return (badge||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-}
+function pillClass(b) { return (b||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''); }
 
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
     });
-    document.getElementById('video').srcObject = stream;
-    document.getElementById('topbar-status').textContent = 'Scanning...';
-    if ('BarcodeDetector' in window) {
-      detector = new BarcodeDetector({ formats: ['qr_code'] });
-      startScanLoop();
-    } else {
-      document.getElementById('topbar-status').textContent = 'QR scanning not supported';
-    }
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    video.addEventListener('loadedmetadata', () => {
+      document.getElementById('topbar-status').textContent = 'Scanning...';
+      scanLoop();
+    });
   } catch(e) {
     document.getElementById('topbar-status').textContent = 'Camera unavailable';
-    showError('Camera access denied. Allow camera in browser settings.');
+    showError('Camera access denied — allow camera in browser settings');
   }
 }
 
-function startScanLoop() {
+function scanLoop() {
+  if (!scanning) return;
   const video = document.getElementById('video');
-  const loop = async () => {
-    if (!scanning) return;
-    try {
-      if (video.readyState >= 2) {
-        const codes = await detector.detect(video);
-        if (codes.length) {
-          scanning = false;
-          await handleCode(codes[0].rawValue);
-          return;
-        }
-      }
-    } catch(e) {}
-    scanTimeout = setTimeout(loop, 300);
-  };
-  loop();
+  if (video.readyState >= 2 && video.videoWidth > 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+    if (code) {
+      scanning = false;
+      handleCode(code.data);
+      return;
+    }
+  }
+  animFrame = requestAnimationFrame(scanLoop);
 }
 
 async function handleCode(raw) {
@@ -225,19 +215,19 @@ async function handleCode(raw) {
   if (!token) {
     setLoading(false);
     showError('Not a valid guest QR code');
-    setTimeout(() => { hideError(); scanning = true; startScanLoop(); }, 2500);
+    setTimeout(() => { hideError(); scanning = true; scanLoop(); }, 2500);
     return;
   }
   try {
-    const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
-    if (!res.ok) throw new Error('Not found');
+    const res = await fetch('/api/app-user?token=' + encodeURIComponent(token));
+    if (!res.ok) throw new Error();
     const g = await res.json();
     setLoading(false);
     showResult(g);
   } catch(e) {
     setLoading(false);
     showError('Guest not found');
-    setTimeout(() => { hideError(); scanning = true; startScanLoop(); }, 2500);
+    setTimeout(() => { hideError(); scanning = true; scanLoop(); }, 2500);
   }
 }
 
@@ -248,24 +238,19 @@ function showResult(g) {
   document.getElementById('result-sub').textContent = g.seat ? '📍 ' + g.seat : 'No seat assigned';
   document.getElementById('topbar-status').textContent = '✓ Found';
 
-  // Pills
   const pills = [];
   if (g.badge) pills.push(`<span class="pill ${pillClass(g.badge)}">${g.badge}</span>`);
   if (g.is_actor) pills.push('<span class="pill actor">Actor</span>');
   document.getElementById('pill-row').innerHTML = pills.join('');
 
-  // Passes
   let passes = [];
   try { passes = g.passes ? JSON.parse(g.passes) : []; } catch(e) {}
   const passEl = document.getElementById('passes-list');
   if (passes.length) {
     passEl.innerHTML = passes.map(p => `
       <div class="pass-card">
-        <div class="pass-icon">${getPassEmoji(p)}</div>
-        <div>
-          <div class="pass-name">${p}</div>
-          <div class="pass-valid">✓ Valid</div>
-        </div>
+        <div class="pass-icon">${passIcon(p)}</div>
+        <div><div class="pass-name">${p}</div><div class="pass-valid">✓ Valid</div></div>
       </div>`).join('');
   } else {
     passEl.innerHTML = '<div class="no-passes">No passes assigned</div>';
@@ -277,17 +262,13 @@ function showResult(g) {
 function scanAgain() {
   document.getElementById('result-sheet').classList.remove('show');
   document.getElementById('topbar-status').textContent = 'Scanning...';
+  hideError();
   scanning = true;
-  startScanLoop();
+  scanLoop();
 }
 
-function setLoading(show) {
-  document.getElementById('loading-banner').classList.toggle('show', show);
-}
-function showError(msg) {
-  const el = document.getElementById('error-banner');
-  el.textContent = msg; el.classList.add('show');
-}
+function setLoading(show) { document.getElementById('loading-banner').classList.toggle('show', show); }
+function showError(msg) { const el = document.getElementById('error-banner'); el.textContent = msg; el.classList.add('show'); }
 function hideError() { document.getElementById('error-banner').classList.remove('show'); }
 
 startCamera();
