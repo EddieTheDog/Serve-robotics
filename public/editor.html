@@ -619,23 +619,31 @@ async function openScanner() {
     });
     const video = document.getElementById('scan-video');
     video.srcObject = scanStream;
-    video.addEventListener('loadedmetadata', () => {
+    const onPlaying = () => {
+      _scanCanvas = null; _scanCtx = null;
       document.getElementById('scan-status').textContent = 'Point at a QR code';
       scanLoop();
-    }, { once: true });
+    };
+    video.addEventListener('playing', onPlaying, { once: true });
+    video.play().catch(() => {});
   } catch(e) {
     document.getElementById('scan-status').textContent = 'Camera unavailable — check permissions';
   }
 }
 
+let _scanCanvas = null, _scanCtx = null;
 function scanLoop() {
   if (!scanActive) return;
   const video = document.getElementById('scan-video');
-  if (video.readyState >= 2 && video.videoWidth > 0) {
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    const img = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+  if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+    if (!_scanCanvas || _scanCanvas.width !== video.videoWidth) {
+      _scanCanvas = document.createElement('canvas');
+      _scanCanvas.width = video.videoWidth;
+      _scanCanvas.height = video.videoHeight;
+      _scanCtx = _scanCanvas.getContext('2d');
+    }
+    _scanCtx.drawImage(video, 0, 0, _scanCanvas.width, _scanCanvas.height);
+    const img = _scanCtx.getImageData(0, 0, _scanCanvas.width, _scanCanvas.height);
     const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
     if (code) { scanActive = false; handleScanResult(code.data); return; }
   }
