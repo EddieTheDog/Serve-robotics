@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pass Scanner — The Eddie's 2025</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; overflow: hidden; }
+
+/* Topbar */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(20px);
+  padding: 14px 20px;
+  padding-top: calc(env(safe-area-inset-top,20px) + 14px);
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.topbar-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; }
+.topbar-status { font-size: 13px; font-weight: 600; color: #fff; }
+
+/* Camera */
+#video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* Viewfinder overlay */
+.viewfinder {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
+.vf-frame { width: 260px; height: 260px; position: relative; }
+.vf-frame::before, .vf-frame::after,
+.vf-inner::before, .vf-inner::after {
+  content: ''; position: absolute; width: 36px; height: 36px;
+  border-color: #fff; border-style: solid;
+}
+.vf-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.vf-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.vf-inner::before  { bottom: 0; left: 0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.vf-inner::after   { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+/* Dimming outside frame */
+.vf-top    { position: fixed; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.55); }
+.vf-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.55); }
+.vf-left   { position: fixed; background: rgba(0,0,0,0.55); }
+.vf-right  { position: fixed; background: rgba(0,0,0,0.55); }
+
+/* Hint */
+.scan-hint {
+  position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 180px);
+  left: 0; right: 0; text-align: center; pointer-events: none;
+}
+.scan-hint p { color: rgba(255,255,255,0.5); font-size: 14px; }
+
+/* Result sheet */
+#result-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: #f2f2f7;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom,20px) + 16px);
+  transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+}
+#result-sheet.show { transform: translateY(0); }
+
+.sheet-handle { width: 36px; height: 4px; background: #ccc; border-radius: 2px; margin: 0 auto 20px; }
+
+.result-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.result-avatar {
+  width: 52px; height: 52px; border-radius: 14px; background: #000;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.result-name { font-size: 22px; font-weight: 800; color: #000; }
+.result-sub  { font-size: 14px; color: #888; margin-top: 2px; }
+
+/* Badge pills */
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.pill {
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+  border-radius: 20px; padding: 5px 14px; background: #000; color: #fff;
+}
+.pill.eddie-plus { background: #FFD700; color: #000; }
+.pill.vip        { background: #9b59b6; color: #fff; }
+.pill.staff      { background: #2196F3; color: #fff; }
+.pill.press      { background: #ff9500; color: #fff; }
+.pill.actor      { background: #fff; color: #000; border: 1.5px solid #e0e0e0; }
+
+/* Pass cards */
+.passes-section { margin-bottom: 16px; }
+.passes-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 10px; }
+.pass-card {
+  background: #fff; border-radius: 14px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px; margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.pass-icon { font-size: 28px; flex-shrink: 0; }
+.pass-name { font-size: 16px; font-weight: 700; color: #000; }
+.pass-valid { font-size: 12px; color: #34c759; font-weight: 700; margin-top: 2px; }
+.no-passes { background: #fff; border-radius: 14px; padding: 20px; text-align: center; color: #aaa; font-size: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+.scan-again-btn {
+  width: 100%; padding: 16px; background: #000; color: #fff; border: none;
+  border-radius: 14px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.scan-again-btn:active { opacity: 0.8; }
+
+/* Error state */
+#error-banner {
+  position: fixed; top: calc(env(safe-area-inset-top,20px) + 70px); left: 16px; right: 16px;
+  background: #ff3b30; color: #fff; border-radius: 12px; padding: 14px 16px;
+  font-size: 15px; font-weight: 600; text-align: center; z-index: 60;
+  display: none;
+}
+#error-banner.show { display: block; }
+
+/* Loading */
+#loading-banner {
+  position: fixed; top: calc(env(safe-area-inset-top,20px) + 70px); left: 16px; right: 16px;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); color: #fff; border-radius: 12px;
+  padding: 14px 16px; font-size: 15px; font-weight: 600; text-align: center; z-index: 60;
+  display: none;
+}
+#loading-banner.show { display: block; }
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline muted></video>
+
+<div class="viewfinder">
+  <div class="vf-frame"><div class="vf-inner"></div></div>
+</div>
+
+<div class="topbar">
+  <span class="topbar-title">Pass Scanner</span>
+  <span class="topbar-status" id="topbar-status">Scanning...</span>
+</div>
+
+<div class="scan-hint"><p>Point camera at a guest QR code</p></div>
+
+<div id="error-banner"></div>
+<div id="loading-banner">Looking up guest...</div>
+
+<!-- Result sheet -->
+<div id="result-sheet">
+  <div class="sheet-handle"></div>
+  <div class="result-header">
+    <div class="result-avatar" id="result-avatar"></div>
+    <div>
+      <div class="result-name" id="result-name"></div>
+      <div class="result-sub" id="result-sub"></div>
+    </div>
+  </div>
+  <div class="pill-row" id="pill-row"></div>
+  <div class="passes-section">
+    <div class="passes-label">Passes</div>
+    <div id="passes-list"></div>
+  </div>
+  <button class="scan-again-btn" onclick="scanAgain()">Scan Another Guest</button>
+</div>
+
+<script>
+let stream = null;
+let detector = null;
+let scanning = true;
+let scanTimeout = null;
+
+const PASS_EMOJIS = {
+  'drink': '🍹', 'bar': '🍹', 'alcohol': '🍹',
+  'photo': '📸', 'vip': '⭐', 'backstage': '🎭',
+  'meal': '🍽️', 'food': '🍽️', 'parking': '🅿️'
+};
+
+function getPassEmoji(name) {
+  const l = name.toLowerCase();
+  for (const [k,v] of Object.entries(PASS_EMOJIS)) if (l.includes(k)) return v;
+  return '🎟️';
+}
+
+function pillClass(badge) {
+  return (badge||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+}
+
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    document.getElementById('video').srcObject = stream;
+    document.getElementById('topbar-status').textContent = 'Scanning...';
+    if ('BarcodeDetector' in window) {
+      detector = new BarcodeDetector({ formats: ['qr_code'] });
+      startScanLoop();
+    } else {
+      document.getElementById('topbar-status').textContent = 'QR scanning not supported';
+    }
+  } catch(e) {
+    document.getElementById('topbar-status').textContent = 'Camera unavailable';
+    showError('Camera access denied. Allow camera in browser settings.');
+  }
+}
+
+function startScanLoop() {
+  const video = document.getElementById('video');
+  const loop = async () => {
+    if (!scanning) return;
+    try {
+      if (video.readyState >= 2) {
+        const codes = await detector.detect(video);
+        if (codes.length) {
+          scanning = false;
+          await handleCode(codes[0].rawValue);
+          return;
+        }
+      }
+    } catch(e) {}
+    scanTimeout = setTimeout(loop, 300);
+  };
+  loop();
+}
+
+async function handleCode(raw) {
+  setLoading(true);
+  let token = null;
+  try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
+  if (!token) {
+    setLoading(false);
+    showError('Not a valid guest QR code');
+    setTimeout(() => { hideError(); scanning = true; startScanLoop(); }, 2500);
+    return;
+  }
+  try {
+    const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
+    if (!res.ok) throw new Error('Not found');
+    const g = await res.json();
+    setLoading(false);
+    showResult(g);
+  } catch(e) {
+    setLoading(false);
+    showError('Guest not found');
+    setTimeout(() => { hideError(); scanning = true; startScanLoop(); }, 2500);
+  }
+}
+
+function showResult(g) {
+  const initials = ((g.first_name||'')[0]||'') + ((g.last_name||'')[0]||'');
+  document.getElementById('result-avatar').textContent = initials;
+  document.getElementById('result-name').textContent = g.first_name + ' ' + g.last_name;
+  document.getElementById('result-sub').textContent = g.seat ? '📍 ' + g.seat : 'No seat assigned';
+  document.getElementById('topbar-status').textContent = '✓ Found';
+
+  // Pills
+  const pills = [];
+  if (g.badge) pills.push(`<span class="pill ${pillClass(g.badge)}">${g.badge}</span>`);
+  if (g.is_actor) pills.push('<span class="pill actor">Actor</span>');
+  document.getElementById('pill-row').innerHTML = pills.join('');
+
+  // Passes
+  let passes = [];
+  try { passes = g.passes ? JSON.parse(g.passes) : []; } catch(e) {}
+  const passEl = document.getElementById('passes-list');
+  if (passes.length) {
+    passEl.innerHTML = passes.map(p => `
+      <div class="pass-card">
+        <div class="pass-icon">${getPassEmoji(p)}</div>
+        <div>
+          <div class="pass-name">${p}</div>
+          <div class="pass-valid">✓ Valid</div>
+        </div>
+      </div>`).join('');
+  } else {
+    passEl.innerHTML = '<div class="no-passes">No passes assigned</div>';
+  }
+
+  document.getElementById('result-sheet').classList.add('show');
+}
+
+function scanAgain() {
+  document.getElementById('result-sheet').classList.remove('show');
+  document.getElementById('topbar-status').textContent = 'Scanning...';
+  scanning = true;
+  startScanLoop();
+}
+
+function setLoading(show) {
+  document.getElementById('loading-banner').classList.toggle('show', show);
+}
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = msg; el.classList.add('show');
+}
+function hideError() { document.getElementById('error-banner').classList.remove('show'); }
+
+startCamera();
+</script>
+</body>
+</html>
