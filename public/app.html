@@ -134,72 +134,63 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 #error-screen p { font-size: 16px; color: #888; }
 #app { display: none; }
 
-/* My Badge section at bottom */
-.badge-section {
-  margin-top: 8px;
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+/* My Badge — pass list */
+.pass-list-card {
+  background: #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 8px;
 }
-.badge-section-row {
+.pass-row {
   display: flex; align-items: center; gap: 14px;
-  padding: 18px 18px; cursor: pointer;
-  transition: background 0.15s;
+  padding: 16px 18px; cursor: pointer; transition: background 0.15s;
+  border-bottom: 1px solid #f0f0f0;
 }
-.badge-section-row:active { background: #f5f5f5; }
-.badge-section-icon {
-  width: 44px; height: 44px; background: #000; border-radius: 10px;
+.pass-row:last-child { border-bottom: none; }
+.pass-row:active { background: #f5f5f5; }
+.pass-row-icon {
+  width: 44px; height: 44px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; overflow: hidden;
+  font-size: 22px; flex-shrink: 0;
 }
-.badge-section-icon canvas { display: block; }
-.badge-section-text strong { display: block; font-size: 16px; font-weight: 700; }
-.badge-section-text span { font-size: 13px; color: #aaa; }
-.badge-section-chevron { margin-left: auto; font-size: 18px; color: #ccc; }
+.pass-row-icon.badge-icon { background: #000; }
+.pass-row-icon.actor-icon { background: #ff6b00; }
+.pass-row-icon.pass-icon  { background: #f0f0f0; }
+.pass-row-text { flex: 1; }
+.pass-row-text strong { display: block; font-size: 16px; font-weight: 700; }
+.pass-row-text span { font-size: 13px; color: #aaa; }
+.pass-row-chevron { font-size: 18px; color: #ccc; }
 
-
-/* Badge modal */
-#badge-modal {
+/* QR fullscreen modal (replaces badge-modal) */
+#qr-fullscreen {
   display: none; position: fixed; inset: 0;
-  background: #0a0a0a; z-index: 450;
+  background: #0a0a0a; z-index: 450; overflow-y: auto;
   flex-direction: column; align-items: center; justify-content: center;
   padding: calc(env(safe-area-inset-top,20px) + 20px) 24px calc(env(safe-area-inset-bottom,20px) + 30px);
 }
-#badge-modal.open { display: flex; }
-.bm-event { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #444; margin-bottom: 32px; }
-.bm-barcode-wrap {
-  background: #fff; border-radius: 12px; padding: 20px 16px 14px;
-  width: 100%; max-width: 340px;
-  display: flex; flex-direction: column; align-items: center;
-  box-shadow: 0 0 60px rgba(255,255,255,0.06);
+#qr-fullscreen.open { display: flex; }
+.qrf-event { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #444; margin-bottom: 24px; }
+.qrf-card {
+  background: #fff; border-radius: 20px; padding: 28px 24px 20px;
+  width: 100%; max-width: 300px; text-align: center; margin-bottom: 24px;
 }
-.bm-barcode-wrap canvas { width: 100%; height: auto; display: block; }
-.bm-barcode-name {
-  font-size: 13px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 2px; color: #000; margin-top: 10px;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+.qrf-pass-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #aaa; margin-bottom: 4px; }
+.qrf-name { font-size: 20px; font-weight: 800; color: #000; margin-bottom: 20px; }
+.qrf-qr { display: flex; justify-content: center; }
+.qrf-fullname { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.qrf-pill {
+  display: inline-block; font-size: 12px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.5px; border-radius: 20px; padding: 4px 12px; background: #222; color: #aaa;
 }
-.bm-barcode-sub { font-size: 10px; color: #aaa; letter-spacing: 1px; margin-top: 3px; font-family: monospace; }
-.bm-name-below {
-  margin-top: 28px; text-align: center;
-}
-.bm-name-below .bm-fullname { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-.bm-name-below .bm-badge-pill {
-  display: inline-block; padding: 4px 14px; border-radius: 20px;
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-  background: #222; color: #aaa;
-}
-.bm-name-below .bm-badge-pill.eddie-plus { background: #FFD700; color: #000; }
-.bm-name-below .bm-badge-pill.vip { background: #9b59b6; color: #fff; }
-.bm-name-below .bm-badge-pill.staff { background: #2196F3; color: #fff; }
-.bm-name-below .bm-badge-pill.press { background: #ff9500; color: #fff; }
-.bm-close {
-  margin-top: 36px; background: #1a1a1a; color: #fff; border: none;
+.qrf-pill.eddie-plus { background: #FFD700; color: #000; }
+.qrf-pill.vip        { background: #9b59b6; color: #fff; }
+.qrf-pill.staff      { background: #2196F3; color: #fff; }
+.qrf-pill.press      { background: #ff9500; color: #fff; }
+.qrf-pill.actor      { background: #fff; color: #000; }
+.qrf-close {
+  margin-top: 32px; background: #1a1a1a; color: #fff; border: none;
   border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
-  cursor: pointer; width: 100%; max-width: 340px; letter-spacing: 0.5px;
+  cursor: pointer; width: 100%; max-width: 300px;
 }
-.bm-close:active { opacity: 0.7; }
+.qrf-close:active { opacity: 0.7; }
 
 /* After Pass section */
 .after-pass-section {
@@ -250,6 +241,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 }
 .ap-close:active { opacity: 0.7; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 </head>
 <body>
 
@@ -320,46 +312,22 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <div id="custom-fields-info-wrap"></div>
 
-    <div class="section-label" style="margin-top:24px;">My Badge</div>
-    <div class="badge-section" onclick="showMyBadge()">
-      <div class="badge-section-row">
-        <div class="badge-section-icon">
-          <canvas id="badge-mini-canvas" width="44" height="44"></canvas>
-        </div>
-        <div class="badge-section-text">
-          <strong>Show My Badge</strong>
-          <span>Tap to display your barcode</span>
-        </div>
-        <div class="badge-section-chevron">›</div>
-      </div>
-    </div>
+    <div class="section-label" style="margin-top:24px;">My Passes</div>
+    <div class="pass-list" id="pass-list"></div>
   </div>
 </div>
 
-<!-- Badge Modal -->
-<div id="badge-modal">
-  <div class="bm-event">The Eddie's 2025</div>
-  <div class="bm-barcode-wrap">
-    <canvas id="bm-canvas-barcode"></canvas>
-    <div class="bm-barcode-name" id="bm-barcode-name"></div>
-    <div class="bm-barcode-sub" id="bm-barcode-sub"></div>
+<!-- QR Fullscreen Modal -->
+<div id="qr-fullscreen">
+  <div class="qrf-label" id="qrf-label">The Eddie's 2025</div>
+  <div class="qrf-card">
+    <div class="qrf-pass-name" id="qrf-pass-name"></div>
+    <div class="qrf-person" id="qrf-person"></div>
+    <div class="qrf-qr"><canvas id="qrf-canvas" width="220" height="220"></canvas></div>
   </div>
-  <div class="bm-name-below">
-    <div class="bm-fullname" id="bm-fullname"></div>
-    <span class="bm-badge-pill" id="bm-badge-pill" style="display:none;"></span>
-  </div>
-  <!-- Actor Pass — shown only for actors -->
-  <div id="bm-actor-pass-wrap" style="display:none;margin-top:24px;width:100%;max-width:340px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#ff6b00;margin-bottom:8px;text-align:center;">🎬 Actor Pass</div>
-    <div class="bm-barcode-wrap">
-      <canvas id="bm-actor-canvas"></canvas>
-      <div class="bm-barcode-name" id="bm-actor-name"></div>
-      <div class="bm-barcode-sub" id="bm-actor-sub"></div>
-    </div>
-  </div>
-  <!-- Assignable passes — shown per guest -->
-  <div id="bm-passes-wrap" style="width:100%;max-width:340px;"></div>
-  <button class="bm-close" onclick="document.getElementById('badge-modal').classList.remove('open')">Close</button>
+  <div class="qrf-fullname" id="qrf-fullname"></div>
+  <div class="qrf-sublabel" id="qrf-sublabel"></div>
+  <button class="qrf-close" onclick="document.getElementById('qr-fullscreen').classList.remove('open')">Close</button>
 </div>
 
 <!-- Actor Request Sheet -->
@@ -488,7 +456,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     if (g.badge) { badgeRow.style.display='flex'; document.getElementById('info-badge').textContent = g.badge; }
     else { badgeRow.style.display='none'; }
     // Mini badge preview
-    drawMiniBadge();
+    buildPassList();
 
     // Custom fields
     const cfWrap = document.getElementById('custom-fields-info-wrap');
@@ -759,24 +727,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
 
   // ---- My Badge Modal ----
-  function drawMiniBadge() {
-    // Draw a tiny decorative barcode preview in the section card
-    const mini = document.getElementById('badge-mini-canvas');
-    if (!mini || !guestData) return;
-    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
-    mini.width = 44; mini.height = 44;
-    const ctx = mini.getContext('2d');
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 44, 44);
-    // Draw fake mini bars from name chars as decoration
-    ctx.fillStyle = '#fff';
-    let x = 3;
-    for (let i = 0; i < name.length && x < 41; i++) {
-      const w = 1 + (name.charCodeAt(i) % 2);
-      ctx.fillRect(x, 4, w, 36);
-      x += w + 1 + (name.charCodeAt(i) % 2);
-    }
-  }
+
 
   // ---- Actor Request ----
   let actorReqSent = false;
@@ -818,140 +769,64 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('actor-req-sub').textContent = 'Send a request to staff';
   }
 
-  function showMyBadge() {
+  // ── Pass List & QR ──
+  const PASS_ICONS = { badge: '🎫', actor: '🎬', drink: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', parking: '🅿️' };
+  function passIcon(name) {
+    const l = (name||'').toLowerCase();
+    for (const [k,v] of Object.entries(PASS_ICONS)) if (l.includes(k)) return v;
+    return '🎟️';
+  }
+
+  function buildPassList() {
     if (!guestData) return;
-    const name = (guestData.first_name + ' ' + guestData.last_name).toUpperCase();
-
-    document.getElementById('bm-barcode-name').textContent = name;
-    const tokenSnip = (guestData.id || '').slice(0,8).toUpperCase();
-    document.getElementById('bm-barcode-sub').textContent = tokenSnip;
-    document.getElementById('bm-fullname').textContent = guestData.first_name + ' ' + guestData.last_name;
-
-    // Badge pill
-    const pill = document.getElementById('bm-badge-pill');
-    if (guestData.badge) {
-      const slug = guestData.badge.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-      pill.textContent = guestData.badge;
-      pill.className = 'bm-badge-pill ' + slug;
-      pill.style.display = 'inline-block';
-    } else {
-      pill.style.display = 'none';
+    const wrap = document.getElementById('pass-list');
+    if (!wrap) return;
+    const rows = [];
+    const name = guestData.first_name + ' ' + guestData.last_name;
+    // 1. Main badge / event pass
+    rows.push({ label: 'Event Pass', sub: guestData.badge || 'General Admission', icon: '🎫', iconBg: '#000', qrData: guestData.app_token ? location.origin + '/app?token=' + guestData.app_token : name, passName: 'Event Pass', sublabel: guestData.badge || 'General Admission' });
+    // 2. Actor pass
+    if (guestData.is_actor) {
+      rows.push({ label: 'Actor Pass', sub: 'Cast Access', icon: '🎬', iconBg: '#ff6b00', qrData: 'ACTOR:' + guestData.id, passName: 'Actor Pass', sublabel: 'Cast Access' });
     }
-
-    drawCode128(document.getElementById('bm-canvas-barcode'), name);
-
-    // Actor Pass — show inside modal for actors
-    const actorWrap = document.getElementById('bm-actor-pass-wrap');
-    if (guestData.is_actor && !guestData.actor_request_disabled) {
-      actorWrap.style.display = 'block';
-      const actorCode = (guestData.last_name + ' ' + guestData.first_name + ' ACTORPASS').toUpperCase();
-      document.getElementById('bm-actor-name').textContent = name;
-      document.getElementById('bm-actor-sub').textContent = 'ACT-' + (guestData.id||'').slice(-6).toUpperCase();
-      drawCode128(document.getElementById('bm-actor-canvas'), actorCode);
-    } else {
-      actorWrap.style.display = 'none';
-    }
-
-    // Assignable passes (drink, photo, etc.)
-    const passesWrap = document.getElementById('bm-passes-wrap');
-    let passesHtml = '';
+    // 3. Assigned passes
     try {
       const passes = guestData.passes ? JSON.parse(guestData.passes) : [];
       passes.forEach(p => {
-        passesHtml += `<div style="margin-top:24px;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#888;margin-bottom:8px;text-align:center;">${esc(p)}</div>
-          <div class="bm-barcode-wrap">
-            <canvas id="bm-pass-${p.replace(/\s+/g,'-')}" width="300" height="74"></canvas>
-            <div class="bm-barcode-name">${esc((guestData.first_name + ' ' + guestData.last_name).toUpperCase())}</div>
-            <div class="bm-barcode-sub">${esc(p.toUpperCase().slice(0,3))}-${(guestData.id||'').slice(-6).toUpperCase()}</div>
-          </div>
-        </div>`;
+        rows.push({ label: p, sub: 'Valid', icon: passIcon(p), iconBg: '#f0f0f0', qrData: p.toUpperCase().replace(/\s+/g,'-') + ':' + guestData.id, passName: p, sublabel: 'Valid Pass' });
       });
-      passesWrap.innerHTML = passesHtml;
-      passes.forEach(p => {
-        const el = document.getElementById('bm-pass-' + p.replace(/\s+/g,'-'));
-        if (el) drawCode128(el, (p + ' ' + guestData.first_name + ' ' + guestData.last_name).toUpperCase());
-      });
-    } catch(e) { passesWrap.innerHTML = ''; }
+    } catch(e) {}
 
-    document.getElementById('badge-modal').classList.add('open');
+    wrap.innerHTML = rows.map((r, i) => `
+      <div class="pass-row" onclick="showQR(${i})">
+        <div class="pass-row-icon" style="background:${r.iconBg};color:${r.iconBg==='#f0f0f0'?'#333':'#fff'}">${r.icon}</div>
+        <div class="pass-row-text">
+          <strong>${esc(r.label)}</strong>
+          <span>${esc(r.sub)}</span>
+        </div>
+        <div class="pass-row-chevron">›</div>
+      </div>`).join('');
+
+    // Store rows for QR modal
+    wrap._passes = rows;
   }
 
-  // ---- Code 128 B Barcode (real encoding) ----
-  function drawCode128(canvas, text) {
-    // Code 128 B character patterns [bars,spaces alternating, 6 elements each]
-    const PATTERNS = {
-      START_B: [2,1,1,4,1,2],
-      STOP:    [2,3,3,1,1,1,2],
-      // Code values for ASCII 32-126 in Code B
-      chars: (() => {
-        // Each pattern: 6 widths (bar,space,bar,space,bar,space)
-        const p = [
-          [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,3,2,2],[1,2,1,2,3,1],
-          [1,3,1,2,2,1],[1,2,3,2,1,2],[1,2,3,1,2,2],[1,2,1,2,3,2],[3,1,1,2,2,2],//0-9
-          [3,2,1,1,2,2],[3,2,1,2,2,1],[3,2,1,2,1,2],[2,1,2,3,2,1],[2,1,2,1,3,2],//10-14
-          [2,1,3,2,1,2],[2,3,1,1,2,2],[2,3,1,2,2,1],[2,3,1,2,1,2],[2,1,2,2,3,1],//15-19
-          [2,1,2,3,1,2],[2,1,3,1,2,2],[3,1,2,2,1,2],[3,1,2,1,2,2],[3,2,2,1,1,2],//20-24
-          [3,2,2,2,1,1],[3,2,2,1,2,1],[3,1,1,2,3,1],[3,1,1,3,2,1],[3,1,2,3,1,1],//25-29
-          [3,1,3,2,1,1],[3,2,3,1,1,1],[1,1,2,2,1,3],[1,2,2,1,1,3],[1,2,2,3,1,1],//30-34 (space,!,",#,$)
-          [1,1,3,2,1,2],[1,2,3,1,2,1],[1,2,3,2,1,1],[2,2,3,2,1,1],[2,2,1,1,3,2],//35-39
-          [2,2,1,3,1,2],[2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,2],[1,1,2,3,1,2],//40-44
-          [1,3,2,1,1,2],[1,3,2,3,1,1],[2,1,1,3,2,2],[2,3,3,1,1,1],[2,1,3,3,1,1],//45-49
-          [3,1,1,1,2,3],[3,1,1,3,2,1],[1,1,3,1,2,2],[1,1,3,2,2,1],[2,1,1,2,3,2],//50-54
-          [2,1,1,3,3,1],[2,3,1,1,3,1],[1,1,2,2,3,2],[1,3,2,2,1,2],[1,3,2,2,2,1],//55-59
-          [3,3,2,1,1,1],[2,1,3,2,2,1],[2,1,3,1,3,1],[1,1,1,3,2,3],[1,3,1,1,2,3],//60-64
-          [1,3,1,3,2,1],[1,3,1,2,3,1],[1,3,3,2,1,1],[3,1,3,1,2,1],[2,1,1,3,2,1],//65-69 (A-E)
-          [3,1,1,2,1,3],[3,1,1,1,3,2],[1,2,3,1,1,3],[1,1,3,1,3,2],[1,3,3,1,2,1],//70-74 (F-J)
-          [1,2,1,3,3,1],[3,1,2,1,3,1],[1,1,1,2,3,3],[1,2,1,1,3,3],[1,2,3,3,1,1],//75-79 (K-O)
-          [3,2,1,3,1,1],[2,1,3,1,1,3],[2,3,1,1,1,3],[2,1,1,1,3,3],[3,1,2,1,1,3],//80-84 (P-T)
-          [3,1,1,1,2,3],[2,3,2,1,1,1],[2,3,1,1,2,1],[2,3,2,1,1,1],[1,2,2,2,1,3],//85-89 (U-Y)
-          [1,2,2,1,2,3],[1,2,2,3,2,1],[1,1,3,3,1,2],[1,2,3,1,3,1],[3,2,1,1,2,1],//90-94 (Z,[,\,],^)
-          [3,1,2,2,1,2],[1,2,1,2,2,3],[1,2,1,2,3,2],[1,2,1,3,2,2],[1,3,1,2,2,2],//95-99 (_,`,a,b,c)
-        ];
-        // Extend to full 96 chars (codes 0-95 = ASCII 32-127)
-        return p;
-      })()
-    };
-
-    const safe = text.replace(/[^\x20-\x7E]/g,'').slice(0,28) || ' ';
-    const mw = 2; // module width px
-    const bh = 70; // bar height
-
-    // Calculate checksum
-    let check = 104; // START B value
-    for (let i = 0; i < safe.length; i++) {
-      check += (safe.charCodeAt(i) - 32) * (i + 1);
-    }
-    check = check % 103;
-
-    // Build sequence: START_B + chars + check + STOP
-    const seq = [PATTERNS.START_B];
-    for (const ch of safe) {
-      const idx = ch.charCodeAt(0) - 32;
-      seq.push(PATTERNS.chars[idx] || PATTERNS.chars[0]);
-    }
-    seq.push(PATTERNS.chars[check] || PATTERNS.chars[0]);
-    seq.push(PATTERNS.STOP);
-
-    const totalModules = seq.reduce((s, p) => s + p.reduce((a,b) => a+b, 0), 0);
-    canvas.width = totalModules * mw + 20;
-    canvas.height = bh + 4;
-
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#000';
-
-    let x = 10;
-    seq.forEach(pattern => {
-      pattern.forEach((w, i) => {
-        if (i % 2 === 0) ctx.fillRect(x, 2, w * mw, bh);
-        x += w * mw;
-      });
-    });
+  function showQR(idx) {
+    const wrap = document.getElementById('pass-list');
+    if (!wrap || !wrap._passes) return;
+    const r = wrap._passes[idx];
+    if (!r) return;
+    const name = guestData.first_name + ' ' + guestData.last_name;
+    document.getElementById('qrf-pass-name').textContent = r.passName;
+    document.getElementById('qrf-person').textContent = name.toUpperCase();
+    document.getElementById('qrf-fullname').textContent = name;
+    document.getElementById('qrf-sublabel').textContent = r.sublabel;
+    new QRious({ element: document.getElementById('qrf-canvas'), value: r.qrData, size: 220, background: '#fff', foreground: '#000' });
+    document.getElementById('qr-fullscreen').classList.add('open');
   }
 
-  function showApp() { document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
+  function showApp()
+ { document.getElementById('loading-screen').style.display='none'; document.getElementById('app').style.display='block'; }
   function showLocked() { document.getElementById('loading-screen').style.display='none'; document.getElementById('locked-screen').style.display='flex'; }
   function showError() { document.getElementById('loading-screen').style.display='none'; document.getElementById('error-screen').style.display='flex'; }
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
