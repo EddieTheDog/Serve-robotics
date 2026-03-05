@@ -8,72 +8,161 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #000; color: #fff; min-height: 100vh; overflow: hidden; }
 
-/* Topbar */
-.topbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(20px);
+/* ── SETUP SCREEN ── */
+#setup-screen {
+  position: fixed; inset: 0; background: #f2f2f7; z-index: 200;
+  display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top,20px) + 0px) 0 calc(env(safe-area-inset-bottom,20px) + 0px);
+}
+#setup-screen.hidden { display: none; }
+
+.setup-topbar {
+  background: #000; color: #fff; padding: 14px 20px;
+  padding-top: calc(env(safe-area-inset-top,20px) + 14px);
+  flex-shrink: 0;
+}
+.setup-topbar-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; }
+.setup-topbar-event { font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px; }
+
+.setup-body { flex: 1; overflow-y: auto; padding: 20px 16px 20px; }
+.setup-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 0 0 10px 4px; }
+
+/* Mode chips */
+.mode-chips { display: flex; gap: 8px; margin-bottom: 20px; }
+.mode-chip {
+  flex: 1; padding: 14px 10px; background: #fff; border: 2px solid #e0e0e0;
+  border-radius: 14px; text-align: center; cursor: pointer; transition: all 0.15s;
+}
+.mode-chip.sel { background: #000; border-color: #000; color: #fff; }
+.mode-chip:active { opacity: 0.7; }
+.mode-chip-icon { font-size: 24px; margin-bottom: 4px; }
+.mode-chip-label { font-size: 13px; font-weight: 700; }
+.mode-chip-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+.mode-chip.sel .mode-chip-sub { color: rgba(255,255,255,0.6); }
+
+/* Filter card */
+.filter-card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+#filter-section { display: none; }
+#filter-section.show { display: block; }
+.filter-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-chip {
+  padding: 8px 14px; border-radius: 20px; border: 2px solid #e0e0e0;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  background: #f8f8f8; color: #999; cursor: pointer;
+}
+.filter-chip.sel { background: #000; color: #fff; border-color: #000; }
+.filter-chip.eddie.sel  { background: #FFD700; color: #000; border-color: #FFD700; }
+.filter-chip.actor.sel  { background: #ff6b00; color: #fff; border-color: #ff6b00; }
+.filter-chip.vip.sel    { background: #9b59b6; color: #fff; border-color: #9b59b6; }
+.filter-chip.staff.sel  { background: #2196F3; color: #fff; border-color: #2196F3; }
+.filter-chip.custom.sel { background: #34c759; color: #fff; border-color: #34c759; }
+
+.custom-pass-input {
+  margin-top: 12px; display: none;
+}
+.custom-pass-input.show { display: block; }
+.custom-pass-input input {
+  width: 100%; padding: 12px 14px; font-size: 16px; font-family: inherit;
+  border: 2px solid #e0e0e0; border-radius: 10px; outline: none;
+}
+.custom-pass-input input:focus { border-color: #000; }
+
+.start-btn {
+  width: 100%; padding: 17px; background: #000; color: #fff; border: none;
+  border-radius: 14px; font-size: 17px; font-weight: 800; font-family: inherit;
+  cursor: pointer; margin-top: 8px;
+}
+.start-btn:active { opacity: 0.8; }
+
+/* ── SCAN SCREEN ── */
+#scan-screen { position: fixed; inset: 0; background: #000; z-index: 100; display: none; }
+#scan-screen.show { display: block; }
+
+#video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* Viewfinder */
+.vf-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.vf-frame { width: 260px; height: 260px; position: relative; }
+.vf-frame::before, .vf-frame::after, .vf-inner::before, .vf-inner::after {
+  content: ''; position: absolute; width: 36px; height: 36px; border-style: solid;
+}
+.vf-frame.normal::before, .vf-frame.normal::after, .vf-frame.normal + .vf-inner::before, .vf-frame.normal + .vf-inner::after { border-color: #fff; }
+.vf-frame.filtered::before, .vf-frame.filtered::after, .vf-frame.filtered + .vf-inner::before, .vf-frame.filtered + .vf-inner::after { border-color: #34c759; }
+.vf-frame::before  { top:0; left:0;   border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+.vf-frame::after   { top:0; right:0;  border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+.vf-inner::before  { bottom:0; left:0;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+.vf-inner::after   { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+/* Scan topbar */
+.scan-topbar {
+  position: absolute; top:0; left:0; right:0; z-index:10;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(16px);
   padding: 14px 20px;
   padding-top: calc(env(safe-area-inset-top,20px) + 14px);
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.topbar-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; }
-.topbar-status { font-size: 13px; font-weight: 600; color: #fff; }
-
-/* Camera */
-#video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-
-/* Viewfinder overlay */
-.viewfinder {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+.scan-topbar-left { flex: 1; }
+.scan-mode-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.5); }
+.scan-filter-label { font-size: 15px; font-weight: 800; color: #fff; margin-top: 2px; }
+.scan-back-btn {
+  background: rgba(255,255,255,0.12); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
 }
-.vf-frame { width: 260px; height: 260px; position: relative; }
-.vf-frame::before, .vf-frame::after,
-.vf-inner::before, .vf-inner::after {
-  content: ''; position: absolute; width: 36px; height: 36px;
-  border-color: #fff; border-style: solid;
-}
-.vf-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-.vf-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-.vf-inner::before  { bottom: 0; left: 0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-.vf-inner::after   { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-/* Dimming outside frame */
-.vf-top    { position: fixed; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.55); }
-.vf-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.55); }
-.vf-left   { position: fixed; background: rgba(0,0,0,0.55); }
-.vf-right  { position: fixed; background: rgba(0,0,0,0.55); }
 
-/* Hint */
-.scan-hint {
-  position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 180px);
-  left: 0; right: 0; text-align: center; pointer-events: none;
+/* Filter badge on frame */
+.filter-badge {
+  position: absolute; bottom: calc(50% - 130px - 40px); left: 50%; transform: translateX(-50%);
+  background: rgba(52,199,89,0.9); color: #fff; font-size: 12px; font-weight: 700;
+  padding: 6px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;
+  pointer-events: none;
 }
-.scan-hint p { color: rgba(255,255,255,0.5); font-size: 14px; }
+.filter-badge.hidden { display: none; }
 
-/* Result sheet */
+/* Reject flash */
+#reject-flash {
+  position: absolute; inset: 0; background: rgba(255,59,48,0.5);
+  opacity: 0; pointer-events: none; transition: opacity 0.1s;
+}
+#reject-flash.show { opacity: 1; }
+
+/* Accept flash */
+#accept-flash {
+  position: absolute; inset: 0; background: rgba(52,199,89,0.3);
+  opacity: 0; pointer-events: none; transition: opacity 0.1s;
+}
+#accept-flash.show { opacity: 1; }
+
+/* Status pill */
+#scan-status {
+  position: absolute; bottom: calc(env(safe-area-inset-bottom,20px) + 180px);
+  left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+  color: #fff; font-size: 14px; font-weight: 600;
+  padding: 8px 20px; border-radius: 20px;
+  white-space: nowrap; max-width: 90vw;
+  transition: opacity 0.2s;
+}
+
+/* ── RESULT SHEET ── */
 #result-sheet {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  background: #f2f2f7;
-  border-radius: 24px 24px 0 0;
+  position: absolute; bottom:0; left:0; right:0; z-index:20;
+  background: #f2f2f7; border-radius: 24px 24px 0 0;
   padding: 20px 16px;
   padding-bottom: calc(env(safe-area-inset-bottom,20px) + 16px);
-  transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  transform: translateY(100%); transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
 }
 #result-sheet.show { transform: translateY(0); }
-
 .sheet-handle { width: 36px; height: 4px; background: #ccc; border-radius: 2px; margin: 0 auto 20px; }
-
-.result-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.result-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .result-avatar {
   width: 52px; height: 52px; border-radius: 14px; background: #000;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; font-weight: 800; color: #fff; flex-shrink: 0;
 }
-.result-name { font-size: 22px; font-weight: 800; color: #000; }
+.result-name { font-size: 22px; font-weight: 800; color: #000; line-height: 1.1; }
 .result-sub  { font-size: 14px; color: #888; margin-top: 2px; }
-
-/* Badge pills */
-.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .pill {
   font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
   border-radius: 20px; padding: 5px 14px; background: #000; color: #fff;
@@ -82,89 +171,137 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .pill.vip        { background: #9b59b6; color: #fff; }
 .pill.staff      { background: #2196F3; color: #fff; }
 .pill.press      { background: #ff9500; color: #fff; }
-.pill.actor      { background: #fff; color: #000; border: 1.5px solid #e0e0e0; }
+.pill.actor      { background: #fff; color: #000; border: 1.5px solid #ddd; }
 
-/* Pass cards */
-.passes-section { margin-bottom: 16px; }
-.passes-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 10px; }
-.pass-card {
-  background: #fff; border-radius: 14px; padding: 16px 18px;
-  display: flex; align-items: center; gap: 14px; margin-bottom: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+/* Pass result */
+.pass-result {
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
+  font-weight: 700;
 }
-.pass-icon { font-size: 28px; flex-shrink: 0; }
-.pass-name { font-size: 16px; font-weight: 700; color: #000; }
-.pass-valid { font-size: 12px; color: #34c759; font-weight: 700; margin-top: 2px; }
-.no-passes { background: #fff; border-radius: 14px; padding: 20px; text-align: center; color: #aaa; font-size: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.pass-result.valid   { background: #e8fff0; }
+.pass-result.invalid { background: #fff0f0; }
+.pass-result.na      { background: #f5f5f5; }
+.pass-result-icon  { font-size: 26px; flex-shrink: 0; }
+.pass-result-title { font-size: 16px; font-weight: 800; color: #000; }
+.pass-result-sub   { font-size: 13px; margin-top: 2px; }
+.pass-result.valid   .pass-result-sub { color: #34c759; }
+.pass-result.invalid .pass-result-sub { color: #ff3b30; }
+.pass-result.na      .pass-result-sub { color: #aaa; }
+
+.all-passes-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 10px; }
+.pass-card {
+  background: #fff; border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.pass-card-icon { font-size: 22px; flex-shrink: 0; }
+.pass-card-name { font-size: 15px; font-weight: 700; color: #000; }
+.pass-card-valid { font-size: 12px; color: #34c759; font-weight: 700; margin-top: 1px; }
+.no-passes { background: #fff; border-radius: 14px; padding: 18px; text-align: center; color: #aaa; font-size: 15px; }
 
 .scan-again-btn {
   width: 100%; padding: 16px; background: #000; color: #fff; border: none;
-  border-radius: 14px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer;
+  border-radius: 14px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 4px;
 }
 .scan-again-btn:active { opacity: 0.8; }
-
-/* Error state */
-#error-banner {
-  position: fixed; top: calc(env(safe-area-inset-top,20px) + 70px); left: 16px; right: 16px;
-  background: #ff3b30; color: #fff; border-radius: 12px; padding: 14px 16px;
-  font-size: 15px; font-weight: 600; text-align: center; z-index: 60;
-  display: none;
-}
-#error-banner.show { display: block; }
-
-/* Loading */
-#loading-banner {
-  position: fixed; top: calc(env(safe-area-inset-top,20px) + 70px); left: 16px; right: 16px;
-  background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); color: #fff; border-radius: 12px;
-  padding: 14px 16px; font-size: 15px; font-weight: 600; text-align: center; z-index: 60;
-  display: none;
-}
-#loading-banner.show { display: block; }
 </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline muted></video>
-
-<div class="viewfinder">
-  <div class="vf-frame"><div class="vf-inner"></div></div>
-</div>
-
-<div class="topbar">
-  <span class="topbar-title">Pass Scanner</span>
-  <span class="topbar-status" id="topbar-status">Scanning...</span>
-</div>
-
-<div class="scan-hint"><p>Point camera at a guest QR code</p></div>
-
-<div id="error-banner"></div>
-<div id="loading-banner">Looking up guest...</div>
-
-<!-- Result sheet -->
-<div id="result-sheet">
-  <div class="sheet-handle"></div>
-  <div class="result-header">
-    <div class="result-avatar" id="result-avatar"></div>
-    <div>
-      <div class="result-name" id="result-name"></div>
-      <div class="result-sub" id="result-sub"></div>
+<!-- ── SETUP SCREEN ── -->
+<div id="setup-screen">
+  <div class="setup-topbar">
+    <div class="setup-topbar-title">The Eddie's 2025</div>
+    <div class="setup-topbar-event">Pass Scanner</div>
+  </div>
+  <div class="setup-body">
+    <div class="setup-label" style="margin-top:20px;">Scan Mode</div>
+    <div class="mode-chips">
+      <div class="mode-chip sel" id="chip-normal" onclick="selectMode('normal')">
+        <div class="mode-chip-icon">🎫</div>
+        <div class="mode-chip-label">Normal</div>
+        <div class="mode-chip-sub">Show all passes</div>
+      </div>
+      <div class="mode-chip" id="chip-filtered" onclick="selectMode('filtered')">
+        <div class="mode-chip-icon">🔍</div>
+        <div class="mode-chip-label">Filter</div>
+        <div class="mode-chip-sub">Check one pass type</div>
+      </div>
     </div>
+
+    <div id="filter-section">
+      <div class="setup-label">Filter By Pass</div>
+      <div class="filter-card">
+        <div class="filter-options" id="filter-options">
+          <button class="filter-chip" onclick="selectFilter('badge')">Event Badge</button>
+          <button class="filter-chip actor" onclick="selectFilter('actor')">Actor Pass</button>
+          <button class="filter-chip eddie" onclick="selectFilter('eddie')">Eddie+</button>
+          <button class="filter-chip vip" onclick="selectFilter('vip')">VIP</button>
+          <button class="filter-chip staff" onclick="selectFilter('staff')">Staff</button>
+          <button class="filter-chip custom" onclick="selectFilter('custom')">Custom Pass...</button>
+        </div>
+        <div class="custom-pass-input" id="custom-pass-wrap">
+          <input type="text" id="custom-pass-input" placeholder="e.g. Drink Pass" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <button class="start-btn" onclick="startScanning()">Start Scanning →</button>
   </div>
-  <div class="pill-row" id="pill-row"></div>
-  <div class="passes-section">
-    <div class="passes-label">Passes</div>
-    <div id="passes-list"></div>
+</div>
+
+<!-- ── SCAN SCREEN ── -->
+<div id="scan-screen">
+  <video id="video" autoplay playsinline muted></video>
+
+  <div class="scan-topbar">
+    <div class="scan-topbar-left">
+      <div class="scan-mode-label" id="scan-mode-label">Normal Mode</div>
+      <div class="scan-filter-label" id="scan-filter-label">Showing all passes</div>
+    </div>
+    <button class="scan-back-btn" onclick="goBack()">⚙ Setup</button>
   </div>
-  <button class="scan-again-btn" onclick="scanAgain()">Scan Another Guest</button>
+
+  <div class="vf-wrap">
+    <div class="vf-frame normal" id="vf-frame"><div class="vf-inner"></div></div>
+  </div>
+  <div class="filter-badge hidden" id="filter-badge"></div>
+
+  <div id="scan-status">Point at a QR code</div>
+
+  <div id="reject-flash"></div>
+  <div id="accept-flash"></div>
+
+  <!-- Result sheet -->
+  <div id="result-sheet">
+    <div class="sheet-handle"></div>
+    <div class="result-header">
+      <div class="result-avatar" id="result-avatar"></div>
+      <div>
+        <div class="result-name" id="result-name"></div>
+        <div class="result-sub" id="result-sub"></div>
+      </div>
+    </div>
+    <div class="pill-row" id="pill-row"></div>
+    <div id="filter-result"></div>
+    <div id="all-passes-wrap"></div>
+    <button class="scan-again-btn" onclick="scanAgain()">Scan Another</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
+// ── State ──
+let scanMode = 'normal'; // 'normal' | 'filtered'
+let filterType = null;   // 'badge' | 'actor' | 'eddie' | 'vip' | 'staff' | 'custom'
+let customPassName = '';
 let stream = null;
-let scanning = true;
+let scanning = false;
 let animFrame = null;
+let offscreenCanvas, offscreenCtx;
 
-const PASS_EMOJIS = { drink: '🍹', bar: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', food: '🍽️', parking: '🅿️' };
+const PASS_EMOJIS = { drink:'🍹', bar:'🍹', photo:'📸', vip:'⭐', backstage:'🎭', meal:'🍽️', food:'🍽️', parking:'🅿️', actor:'🎬', badge:'🎫', event:'🎫' };
 function passIcon(name) {
   const l = (name||'').toLowerCase();
   for (const [k,v] of Object.entries(PASS_EMOJIS)) if (l.includes(k)) return v;
@@ -172,33 +309,101 @@ function passIcon(name) {
 }
 function pillClass(b) { return (b||'').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''); }
 
-async function startCamera() {
+// ── Setup UI ──
+function selectMode(m) {
+  scanMode = m;
+  document.getElementById('chip-normal').classList.toggle('sel', m === 'normal');
+  document.getElementById('chip-filtered').classList.toggle('sel', m === 'filtered');
+  document.getElementById('filter-section').classList.toggle('show', m === 'filtered');
+}
+
+function selectFilter(f) {
+  filterType = f;
+  document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('sel'));
+  event.target.classList.add('sel');
+  document.getElementById('custom-pass-wrap').classList.toggle('show', f === 'custom');
+  if (f !== 'custom') document.getElementById('custom-pass-input').value = '';
+}
+
+function getFilterLabel() {
+  if (scanMode === 'normal') return 'All Passes';
+  if (!filterType) return '';
+  const labels = { badge: 'Event Badge', actor: 'Actor Pass', eddie: 'Eddie+', vip: 'VIP', staff: 'Staff', custom: customPassName || 'Custom Pass' };
+  return labels[filterType] || filterType;
+}
+
+function startScanning() {
+  if (scanMode === 'filtered') {
+    if (!filterType) { alert('Please choose a filter first'); return; }
+    if (filterType === 'custom') {
+      customPassName = document.getElementById('custom-pass-input').value.trim();
+      if (!customPassName) { alert('Enter a pass name'); return; }
+    }
+  }
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('scan-screen').classList.add('show');
+
+  // Update scan UI labels
+  const label = getFilterLabel();
+  document.getElementById('scan-mode-label').textContent = scanMode === 'filtered' ? 'Filter Mode' : 'Normal Mode';
+  document.getElementById('scan-filter-label').textContent = scanMode === 'filtered' ? 'Checking: ' + label : 'Showing all passes';
+  const badge = document.getElementById('filter-badge');
+  const frame = document.getElementById('vf-frame');
+  if (scanMode === 'filtered') {
+    badge.textContent = label; badge.classList.remove('hidden');
+    frame.className = 'vf-frame filtered';
+  } else {
+    badge.classList.add('hidden');
+    frame.className = 'vf-frame normal';
+  }
+
+  initCamera();
+}
+
+function goBack() {
+  stopCamera();
+  document.getElementById('result-sheet').classList.remove('show');
+  document.getElementById('scan-screen').classList.remove('show');
+  document.getElementById('setup-screen').classList.remove('hidden');
+}
+
+// ── Camera ──
+async function initCamera() {
+  setScanStatus('Starting camera...');
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     const video = document.getElementById('video');
     video.srcObject = stream;
-    video.addEventListener('loadedmetadata', () => {
-      document.getElementById('topbar-status').textContent = 'Scanning...';
+    video.onloadedmetadata = () => {
+      // Create persistent offscreen canvas
+      offscreenCanvas = document.createElement('canvas');
+      offscreenCanvas.width = video.videoWidth;
+      offscreenCanvas.height = video.videoHeight;
+      offscreenCtx = offscreenCanvas.getContext('2d');
+      setScanStatus('Point at a QR code');
+      scanning = true;
       scanLoop();
-    });
+    };
   } catch(e) {
-    document.getElementById('topbar-status').textContent = 'Camera unavailable';
-    showError('Camera access denied — allow camera in browser settings');
+    setScanStatus('Camera unavailable — check permissions');
   }
+}
+
+function stopCamera() {
+  scanning = false;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
 }
 
 function scanLoop() {
   if (!scanning) return;
   const video = document.getElementById('video');
   if (video.readyState >= 2 && video.videoWidth > 0) {
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+    offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+    const img = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
     if (code) {
       scanning = false;
       handleCode(code.data);
@@ -208,70 +413,125 @@ function scanLoop() {
   animFrame = requestAnimationFrame(scanLoop);
 }
 
+// ── Code Handling ──
 async function handleCode(raw) {
-  setLoading(true);
+  setScanStatus('Looking up...');
   let token = null;
   try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
   if (!token) {
-    setLoading(false);
-    showError('Not a valid guest QR code');
-    setTimeout(() => { hideError(); scanning = true; scanLoop(); }, 2500);
+    flash('reject'); setScanStatus('Not a guest QR code');
+    setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
     return;
   }
   try {
     const res = await fetch('/api/app-user?token=' + encodeURIComponent(token));
     if (!res.ok) throw new Error();
     const g = await res.json();
-    setLoading(false);
     showResult(g);
   } catch(e) {
-    setLoading(false);
-    showError('Guest not found');
-    setTimeout(() => { hideError(); scanning = true; scanLoop(); }, 2500);
+    flash('reject'); setScanStatus('Guest not found');
+    setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
   }
 }
 
+// ── Check filter pass ──
+function checkFilter(g) {
+  if (scanMode === 'normal') return null; // no check
+  let passes = [];
+  try { passes = g.passes ? JSON.parse(g.passes) : []; } catch(e) {}
+
+  if (filterType === 'badge') return { valid: true, label: 'Event Badge', note: g.badge || 'General Admission', icon: '🎫' };
+  if (filterType === 'actor') {
+    return g.is_actor
+      ? { valid: true,  label: 'Actor Pass', note: 'Verified actor', icon: '🎬' }
+      : { valid: false, label: 'Actor Pass', note: 'Not an actor', icon: '🎬' };
+  }
+  if (filterType === 'eddie') {
+    return g.badge === 'Eddie +'
+      ? { valid: true,  label: 'Eddie+ Badge', note: 'Confirmed Eddie+', icon: '⭐' }
+      : { valid: false, label: 'Eddie+ Badge', note: 'Does not have Eddie+', icon: '⭐' };
+  }
+  if (filterType === 'vip') {
+    return g.badge === 'VIP'
+      ? { valid: true,  label: 'VIP Badge', note: 'Confirmed VIP', icon: '💜' }
+      : { valid: false, label: 'VIP Badge', note: 'Not a VIP', icon: '💜' };
+  }
+  if (filterType === 'staff') {
+    return g.badge === 'Staff'
+      ? { valid: true,  label: 'Staff Badge', note: 'Confirmed Staff', icon: '🔵' }
+      : { valid: false, label: 'Staff Badge', note: 'Not staff', icon: '🔵' };
+  }
+  if (filterType === 'custom') {
+    const has = passes.some(p => p.toLowerCase().includes(customPassName.toLowerCase()));
+    return has
+      ? { valid: true,  label: customPassName, note: '✓ Pass found', icon: passIcon(customPassName) }
+      : { valid: false, label: customPassName, note: 'Does not have this pass', icon: passIcon(customPassName) };
+  }
+  return null;
+}
+
+// ── Show Result ──
 function showResult(g) {
+  const filterResult = checkFilter(g);
+  const isValid = filterResult ? filterResult.valid : true;
+  flash(isValid ? 'accept' : 'reject');
+
   const initials = ((g.first_name||'')[0]||'') + ((g.last_name||'')[0]||'');
   document.getElementById('result-avatar').textContent = initials;
   document.getElementById('result-name').textContent = g.first_name + ' ' + g.last_name;
-  document.getElementById('result-sub').textContent = g.seat ? '📍 ' + g.seat : 'No seat assigned';
-  document.getElementById('topbar-status').textContent = '✓ Found';
+  document.getElementById('result-sub').textContent = g.seat ? '📍 ' + g.seat : g.badge || 'No badge';
 
   const pills = [];
   if (g.badge) pills.push(`<span class="pill ${pillClass(g.badge)}">${g.badge}</span>`);
   if (g.is_actor) pills.push('<span class="pill actor">Actor</span>');
   document.getElementById('pill-row').innerHTML = pills.join('');
 
-  let passes = [];
-  try { passes = g.passes ? JSON.parse(g.passes) : []; } catch(e) {}
-  const passEl = document.getElementById('passes-list');
-  if (passes.length) {
-    passEl.innerHTML = passes.map(p => `
-      <div class="pass-card">
-        <div class="pass-icon">${passIcon(p)}</div>
-        <div><div class="pass-name">${p}</div><div class="pass-valid">✓ Valid</div></div>
-      </div>`).join('');
+  // Filter result block
+  const fr = document.getElementById('filter-result');
+  if (filterResult) {
+    const cls = filterResult.valid ? 'valid' : 'invalid';
+    fr.innerHTML = `<div class="pass-result ${cls}">
+      <div class="pass-result-icon">${filterResult.icon}</div>
+      <div>
+        <div class="pass-result-title">${filterResult.label}</div>
+        <div class="pass-result-sub">${filterResult.valid ? '✓ ' : '✗ '}${filterResult.note}</div>
+      </div>
+    </div>`;
   } else {
-    passEl.innerHTML = '<div class="no-passes">No passes assigned</div>';
+    fr.innerHTML = '';
   }
 
+  // All passes
+  let passes = [];
+  try { passes = g.passes ? JSON.parse(g.passes) : []; } catch(e) {}
+  const pw = document.getElementById('all-passes-wrap');
+  const showAll = scanMode === 'normal';
+  if (showAll) {
+    pw.innerHTML = '<div class="all-passes-label">All Passes</div>' + (passes.length
+      ? passes.map(p => `<div class="pass-card"><div class="pass-card-icon">${passIcon(p)}</div><div><div class="pass-card-name">${p}</div><div class="pass-card-valid">✓ Valid</div></div></div>`).join('')
+      : '<div class="no-passes">No extra passes</div>');
+  } else {
+    pw.innerHTML = '';
+  }
+
+  setScanStatus(isValid ? '✓ ' + (filterResult ? filterResult.label : 'Guest found') : '✗ Pass not valid');
   document.getElementById('result-sheet').classList.add('show');
 }
 
 function scanAgain() {
   document.getElementById('result-sheet').classList.remove('show');
-  document.getElementById('topbar-status').textContent = 'Scanning...';
-  hideError();
+  setScanStatus('Point at a QR code');
   scanning = true;
   scanLoop();
 }
 
-function setLoading(show) { document.getElementById('loading-banner').classList.toggle('show', show); }
-function showError(msg) { const el = document.getElementById('error-banner'); el.textContent = msg; el.classList.add('show'); }
-function hideError() { document.getElementById('error-banner').classList.remove('show'); }
-
-startCamera();
+// ── Utils ──
+function setScanStatus(msg) { document.getElementById('scan-status').textContent = msg; }
+function flash(type) {
+  const el = document.getElementById(type === 'reject' ? 'reject-flash' : 'accept-flash');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 300);
+}
 </script>
 </body>
 </html>
