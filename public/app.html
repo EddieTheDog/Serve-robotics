@@ -733,10 +733,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
           }
         }
         if (actorReqPending) {
-          // Actor requests also go through accommodation queue — check same endpoint
-          // Only reset if accomPending resolved it — share the resolved check
-          if (!accomPending && accomSent === false && actorReqSent) {
-            // Will self-resolve on next accommodation resolved check
+          const ar2 = await (await fetch(`/api/help?token=${encodeURIComponent(token)}&type=accommodation`)).json();
+          if (ar2.resolved) {
+            actorReqPending = false; actorReqSent = false;
+            const btn2 = document.getElementById('actor-req-btn');
+            btn2.classList.remove('sent'); btn2.classList.add('resolved-state');
+            document.getElementById('actor-req-title').textContent = 'Request Handled ✓';
+            document.getElementById('actor-req-sub').textContent = 'Tap to make another request';
+            showToast('✓ Your request was taken care of!');
+            setTimeout(() => { btn2.classList.remove('resolved-state'); resetActorReqBtn(); }, 5000);
           }
         }
         checkNotices();
