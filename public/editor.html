@@ -202,6 +202,65 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   border: none; border-radius: 14px; font-size: 15px; font-weight: 700;
   font-family: inherit; cursor: pointer;
 }
+
+/* ── SCAN MODAL ── */
+#scan-modal {
+  display: none; position: fixed; inset: 0;
+  background: #000; z-index: 700;
+  flex-direction: column; align-items: center;
+  padding-top: calc(env(safe-area-inset-top,20px) + 0px);
+}
+#scan-modal.open { display: flex; }
+.scan-topbar {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; flex-shrink: 0;
+}
+.scan-topbar-title { font-size: 15px; font-weight: 700; color: #fff; }
+.scan-close-btn {
+  background: #222; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.scan-viewfinder {
+  position: relative; width: 100%; flex: 1; overflow: hidden; background: #000;
+}
+#scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
+.scan-frame {
+  width: 240px; height: 240px; position: relative;
+}
+.scan-frame::before, .scan-frame::after,
+.scan-frame-inner::before, .scan-frame-inner::after {
+  content: ''; position: absolute; width: 32px; height: 32px; border-color: #fff; border-style: solid;
+}
+.scan-frame::before  { top: 0;    left: 0;  border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.scan-frame::after   { top: 0;    right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.scan-frame-inner::before { bottom: 0; left: 0;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.scan-frame-inner::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+.scan-hint { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; padding: 24px; }
+.scan-hint p { color: rgba(255,255,255,0.6); font-size: 14px; }
+.scan-status { font-size: 14px; color: rgba(255,255,255,0.5); padding: 14px 20px; text-align: center; flex-shrink: 0; min-height: 48px; }
+
+/* Scan result sheet */
+.scan-result-sheet {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: #f2f2f7; border-radius: 20px 20px 0 0;
+  padding: 20px 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom,20px) + 16px);
+  transform: translateY(100%); transition: transform 0.3s ease;
+}
+.scan-result-sheet.show { transform: translateY(0); }
+.scan-result-name { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.scan-result-sub { font-size: 14px; color: #888; margin-bottom: 20px; }
+.scan-edit-btn {
+  width: 100%; padding: 16px; background: #000; color: #fff; border: none;
+  border-radius: 14px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer; margin-bottom: 10px;
+}
+.scan-dismiss-btn {
+  width: 100%; padding: 14px; background: none; border: none;
+  color: #888; font-size: 15px; font-family: inherit; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -211,6 +270,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   <div style="display:flex;gap:8px;">
     <button class="topbar-btn active" id="btn-all" onclick="setMode('all')">All</button>
     <button class="topbar-btn" id="btn-new" onclick="setMode('new')">New</button>
+    <button class="topbar-btn" onclick="openScanner()">Scan</button>
     <button class="topbar-btn" onclick="loadGuests()">↻</button>
   </div>
 </div>
@@ -541,6 +601,128 @@ function closeQRKeepEditing() {
 }
 
 loadGuests();
+
+// ── SCANNER ──
+let scanStream = null;
+let scanInterval = null;
+let scannedGuest = null;
+
+async function openScanner() {
+  document.getElementById('scan-modal').classList.add('open');
+  document.getElementById('scan-status').textContent = 'Starting camera...';
+  dismissScanResult();
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = document.getElementById('scan-video');
+    video.srcObject = scanStream;
+    document.getElementById('scan-status').textContent = 'Point at a QR code';
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      scanInterval = setInterval(async () => {
+        if (video.readyState < 2) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length) { await handleScanResult(codes[0].rawValue); }
+        } catch(e) {}
+      }, 400);
+    } else {
+      document.getElementById('scan-status').textContent = 'QR scanning not supported on this browser';
+    }
+  } catch(e) {
+    document.getElementById('scan-status').textContent = 'Camera unavailable';
+  }
+}
+
+function closeScanner() {
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  document.getElementById('scan-modal').classList.remove('open');
+  dismissScanResult();
+}
+
+function dismissScanResult() {
+  document.getElementById('scan-result-sheet').classList.remove('show');
+  scannedGuest = null;
+}
+
+async function handleScanResult(raw) {
+  // Stop scanning while we process
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  document.getElementById('scan-status').textContent = 'Looking up guest...';
+  let token = null;
+  try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
+  if (!token) {
+    document.getElementById('scan-status').textContent = 'Not a valid guest QR code';
+    restartScan(); return;
+  }
+  // Find in local list first
+  let guest = allGuests.find(g => g.app_token === token);
+  if (!guest) {
+    // Fetch from API
+    try {
+      const res = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      guest = allGuests.find(g => g.id === data.id);
+    } catch(e) {}
+  }
+  if (!guest) {
+    document.getElementById('scan-status').textContent = 'Guest not found — may not be accepted yet';
+    restartScan(); return;
+  }
+  scannedGuest = guest;
+  document.getElementById('scan-result-name').textContent = guest.first_name + ' ' + guest.last_name;
+  const tags = [guest.badge, guest.is_actor ? 'Actor' : ''].filter(Boolean).join(' · ');
+  document.getElementById('scan-result-sub').textContent = tags || 'No badge assigned';
+  document.getElementById('scan-result-sheet').classList.add('show');
+  document.getElementById('scan-status').textContent = '';
+}
+
+function restartScan() {
+  if (scanStream && 'BarcodeDetector' in window) {
+    const video = document.getElementById('scan-video');
+    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+    scanInterval = setInterval(async () => {
+      if (video.readyState < 2) return;
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length) { await handleScanResult(codes[0].rawValue); }
+      } catch(e) {}
+    }, 400);
+  }
+}
+
+function openFromScan() {
+  if (!scannedGuest) return;
+  closeScanner();
+  openEditor(scannedGuest);
+}
 </script>
+
+<!-- Scan Modal -->
+<div id="scan-modal">
+  <div class="scan-topbar">
+    <span class="scan-topbar-title">Scan Guest QR</span>
+    <button class="scan-close-btn" onclick="closeScanner()">Close</button>
+  </div>
+  <div class="scan-viewfinder">
+    <video id="scan-video" autoplay playsinline muted></video>
+    <div class="scan-overlay">
+      <div class="scan-frame"><div class="scan-frame-inner"></div></div>
+    </div>
+    <div class="scan-hint"><p>Point at the guest's QR code</p></div>
+    <!-- Result sheet slides up from bottom -->
+    <div class="scan-result-sheet" id="scan-result-sheet">
+      <div class="scan-result-name" id="scan-result-name">—</div>
+      <div class="scan-result-sub" id="scan-result-sub"></div>
+      <button class="scan-edit-btn" onclick="openFromScan()">Edit This Guest →</button>
+      <button class="scan-dismiss-btn" onclick="dismissScanResult()">Scan Again</button>
+    </div>
+  </div>
+  <div class="scan-status" id="scan-status">Starting camera...</div>
+</div>
+
 </body>
 </html>
