@@ -506,8 +506,9 @@ async function queueNext(id) {
 
 // ---- GUESTS ----
 async function loadGuests() {
-  const res = await fetch('/api/admin-guests');
-  const guests = await res.json();
+  const [gRes, pRes] = await Promise.all([fetch('/api/admin-guests'), fetch('/api/passes')]);
+  const guests = await gRes.json();
+  _allPassPresets = await pRes.json();
   const el = document.getElementById('guests-list');
   el.innerHTML = '';
   if (!guests.length) { el.innerHTML = '<div class="empty">No guests yet</div>'; return; }
@@ -581,14 +582,7 @@ async function loadGuests() {
     if (g.app_token) renderQR(`gqr-${g.id}`, `${BASE_URL}/app?token=${g.app_token}`);
     else if (g.qr_data) renderQR(`gqr-${g.id}`, g.qr_data.startsWith('http') ? g.qr_data : 'https://'+g.qr_data);
 
-    // Render pass chips after DOM insertion (needs _allPassPresets)
-    const currentPasses = parsePasses(g.passes);
-    if (_allPassPresets.length) {
-      renderGuestPassChips(g.id, currentPasses);
-    } else {
-      // Load presets first, then render
-      fetch('/api/passes').then(r=>r.json()).then(p => { _allPassPresets = p; renderGuestPassChips(g.id, currentPasses); });
-    }
+    renderGuestPassChips(g.id, parsePasses(g.passes));
   });
 }
 
@@ -1051,33 +1045,38 @@ async function assignPassToGuest() {
   setTimeout(() => { status.textContent = ''; }, 3000);
 }
 
-// Render pass chips for guest edit form (called after loadPasses caches presets)
+// Render pass chips for guest edit form
 function renderGuestPassChips(guestId, currentPasses) {
   const container = document.getElementById(`ef-passes-chips-${guestId}`);
   if (!container) return;
   container.dataset.passes = JSON.stringify(currentPasses);
-  container.innerHTML = _allPassPresets.map(p => {
+  if (!_allPassPresets.length) {
+    container.innerHTML = '<span style="font-size:13px;color:#aaa;">No pass presets — create some in the Passes tab</span>';
+    return;
+  }
+  container.innerHTML = _allPassPresets.map((p, i) => {
     const has = currentPasses.includes(p.name);
     const dark = isDarkColor(p.color);
     const bg = has ? p.color : '#f0f0f0';
     const col = has ? (dark ? '#fff' : '#000') : '#888';
-    return `<button onclick="toggleGuestPass('${guestId}','${esc(p.name)}')"
+    return `<button data-gid="${guestId}" data-idx="${i}" onclick="toggleGuestPass(this)"
       style="padding:6px 12px;border:2px solid ${has?p.color:'#e0e0e0'};border-radius:20px;
-      background:${bg};color:${col};font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">
+      background:${bg};color:${col};font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;">
       ${p.emoji} ${esc(p.name)}
     </button>`;
-  }).join('') || '<span style="font-size:13px;color:#aaa;">No pass presets — create some in the Passes tab</span>';
+  }).join('');
 }
 
-function toggleGuestPass(guestId, passName) {
+function toggleGuestPass(btn) {
+  const guestId = btn.dataset.gid;
+  const idx = parseInt(btn.dataset.idx);
+  const p = _allPassPresets[idx];
+  if (!p) return;
   const container = document.getElementById(`ef-passes-chips-${guestId}`);
   if (!container) return;
   let passes = JSON.parse(container.dataset.passes || '[]');
-  if (passes.includes(passName)) {
-    passes = passes.filter(p => p !== passName);
-  } else {
-    passes.push(passName);
-  }
+  const passName = p.name;
+  passes = passes.includes(passName) ? passes.filter(x => x !== passName) : [...passes, passName];
   renderGuestPassChips(guestId, passes);
 }
 
@@ -1108,13 +1107,18 @@ async function loadPasses() {
     }).join('');
   }
 
-  // Populate individual assign dropdowns
+  // Populate individual assign dropdowns — preserve current selections
   const gSel = document.getElementById('individual-pass-guest');
+  const pSel = document.getElementById('individual-pass-name');
+  const prevGuest = gSel.value;
+  const prevPass = pSel.value;
   gSel.innerHTML = '<option value="">Select guest...</option>' +
     guests.filter(g => g.app_token).map(g => `<option value="${g.id}">${esc(g.first_name)} ${esc(g.last_name)}</option>`).join('');
-  const pSel = document.getElementById('individual-pass-name');
   pSel.innerHTML = '<option value="">Select pass...</option>' +
     presets.map(p => `<option value="${esc(p.name)}">${p.emoji} ${esc(p.name)}</option>`).join('');
+  // Restore previous selections
+  if (prevGuest) gSel.value = prevGuest;
+  if (prevPass) pSel.value = prevPass;
 }
 
 function quickAssign(passName) {
