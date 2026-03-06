@@ -416,8 +416,15 @@ function scanLoop() {
 // ── Code Handling ──
 async function handleCode(raw) {
   setScanStatus('Looking up...');
+  // QR format: PREFIX-<token>  e.g. EVT-abc123, ACT-abc123, DRI-abc123
+  // Also support legacy full URL format just in case
   let token = null;
-  try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
+  const prefixMatch = raw.match(/^[A-Z]{3}-(.+)$/);
+  if (prefixMatch) {
+    token = prefixMatch[1];
+  } else {
+    try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
+  }
   if (!token) {
     flash('reject'); setScanStatus('Not a guest QR code');
     setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
