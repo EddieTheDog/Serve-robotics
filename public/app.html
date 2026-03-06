@@ -784,16 +784,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     const rows = [];
     const name = guestData.first_name + ' ' + guestData.last_name;
     // 1. Main badge / event pass
-    rows.push({ label: 'Event Pass', sub: guestData.badge || 'General Admission', icon: '🎫', iconBg: '#000', qrData: guestData.app_token ? location.origin + '/app?token=' + guestData.app_token : name, passName: 'Event Pass', sublabel: guestData.badge || 'General Admission' });
+    const tok = guestData.app_token || guestData.id || '';
+    rows.push({ label: 'Event Pass', sub: guestData.badge || 'General Admission', icon: '🎫', iconBg: '#000', qrData: 'EVT-' + tok, passName: 'Event Pass', sublabel: guestData.badge || 'General Admission' });
     // 2. Actor pass
     if (guestData.is_actor) {
-      rows.push({ label: 'Actor Pass', sub: 'Cast Access', icon: '🎬', iconBg: '#ff6b00', qrData: 'ACTOR:' + guestData.id, passName: 'Actor Pass', sublabel: 'Cast Access' });
+      rows.push({ label: 'Actor Pass', sub: 'Cast Access', icon: '🎬', iconBg: '#ff6b00', qrData: 'ACT-' + tok, passName: 'Actor Pass', sublabel: 'Cast Access' });
     }
     // 3. Assigned passes
     try {
       const passes = guestData.passes ? JSON.parse(guestData.passes) : [];
       passes.forEach(p => {
-        rows.push({ label: p, sub: 'Valid', icon: passIcon(p), iconBg: '#f0f0f0', qrData: p.toUpperCase().replace(/\s+/g,'-') + ':' + guestData.id, passName: p, sublabel: 'Valid Pass' });
+        const prefix = p.replace(/\s+/g,'').slice(0,3).toUpperCase();
+        rows.push({ label: p, sub: 'Valid', icon: passIcon(p), iconBg: '#f0f0f0', qrData: prefix + '-' + tok, passName: p, sublabel: 'Valid Pass' });
       });
     } catch(e) {}
 
