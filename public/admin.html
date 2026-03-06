@@ -313,39 +313,61 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <!-- PASSES -->
 <div class="tab-content" id="tab-passes">
   <div class="section-label">Pass Presets</div>
-  <p style="font-size:14px;color:#888;margin-bottom:16px;">Create pass types with a name, emoji, and color. Then assign them to groups or individuals.</p>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Create pass types with a name, emoji, color, and optional description. Set auto-assign to give a pass to every guest with a certain badge automatically.</p>
 
   <!-- Builder -->
   <div class="pass-builder">
-    <div class="pass-builder-row">
-      <input type="text" id="new-pass-emoji" placeholder="🎟️" style="width:72px;padding:10px;font-size:22px;border:2px solid #e0e0e0;border-radius:8px;outline:none;text-align:center;">
+    <div class="pass-builder-row" style="margin-bottom:8px;">
+      <input type="text" id="new-pass-emoji" placeholder="🎟️" style="width:72px;padding:10px;font-size:22px;border:2px solid #e0e0e0;border-radius:8px;outline:none;text-align:center;" oninput="updatePassPreview()">
       <input type="text" id="new-pass-name" placeholder="Pass name e.g. Drink Pass" style="flex:1;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;" oninput="updatePassPreview()">
     </div>
+    <input type="text" id="new-pass-desc" placeholder="Description (optional) e.g. One drink at the bar" style="width:100%;padding:10px 14px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;margin-bottom:10px;">
+
     <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Background Color</div>
-    <div class="pass-color-swatches" id="pass-color-swatches">
-      <div class="color-swatch sel" style="background:#000000;" data-color="#000000" onclick="selectPassColor('#000000',this)"></div>
-      <div class="color-swatch" style="background:#ff6b00;" data-color="#ff6b00" onclick="selectPassColor('#ff6b00',this)"></div>
-      <div class="color-swatch" style="background:#FFD700;" data-color="#FFD700" onclick="selectPassColor('#FFD700',this)"></div>
-      <div class="color-swatch" style="background:#9b59b6;" data-color="#9b59b6" onclick="selectPassColor('#9b59b6',this)"></div>
-      <div class="color-swatch" style="background:#2196F3;" data-color="#2196F3" onclick="selectPassColor('#2196F3',this)"></div>
-      <div class="color-swatch" style="background:#34c759;" data-color="#34c759" onclick="selectPassColor('#34c759',this)"></div>
-      <div class="color-swatch" style="background:#ff3b30;" data-color="#ff3b30" onclick="selectPassColor('#ff3b30',this)"></div>
-      <div class="color-swatch" style="background:#af8c6a;" data-color="#af8c6a" onclick="selectPassColor('#af8c6a',this)"></div>
-      <div class="color-swatch" style="background:#1a1a2e;" data-color="#1a1a2e" onclick="selectPassColor('#1a1a2e',this)"></div>
+    <div class="pass-color-swatches">
+      <div class="color-swatch sel" style="background:#000000;" onclick="selectPassColor('#000000',this)"></div>
+      <div class="color-swatch" style="background:#ff6b00;" onclick="selectPassColor('#ff6b00',this)"></div>
+      <div class="color-swatch" style="background:#FFD700;" onclick="selectPassColor('#FFD700',this)"></div>
+      <div class="color-swatch" style="background:#9b59b6;" onclick="selectPassColor('#9b59b6',this)"></div>
+      <div class="color-swatch" style="background:#2196F3;" onclick="selectPassColor('#2196F3',this)"></div>
+      <div class="color-swatch" style="background:#34c759;" onclick="selectPassColor('#34c759',this)"></div>
+      <div class="color-swatch" style="background:#ff3b30;" onclick="selectPassColor('#ff3b30',this)"></div>
+      <div class="color-swatch" style="background:#af8c6a;" onclick="selectPassColor('#af8c6a',this)"></div>
+      <div class="color-swatch" style="background:#1a1a2e;" onclick="selectPassColor('#1a1a2e',this)"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#555;cursor:pointer;">
+        <input type="color" id="custom-color-picker" value="#000000" oninput="selectPassColor(this.value,null,true)" style="width:32px;height:32px;border:2px solid #e0e0e0;border-radius:8px;cursor:pointer;padding:2px;">
+        Custom
+      </label>
     </div>
+
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin:10px 0 6px;">Auto-Assign (optional)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;" id="auto-assign-chips">
+      <button class="assign-chip sel" data-aa="" onclick="selectAutoAssign('',this)">None</button>
+      <button class="assign-chip" data-aa="badge:Eddie +" onclick="selectAutoAssign('badge:Eddie +',this)">Eddie+</button>
+      <button class="assign-chip" data-aa="badge:VIP" onclick="selectAutoAssign('badge:VIP',this)">VIP</button>
+      <button class="assign-chip" data-aa="badge:Staff" onclick="selectAutoAssign('badge:Staff',this)">Staff</button>
+      <button class="assign-chip" data-aa="badge:Press" onclick="selectAutoAssign('badge:Press',this)">Press</button>
+      <button class="assign-chip" data-aa="actor" onclick="selectAutoAssign('actor',this)">Actors</button>
+      <button class="assign-chip" data-aa="ALL" onclick="selectAutoAssign('ALL',this)">Everyone</button>
+    </div>
+
     <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Preview</div>
     <div class="pass-builder-preview" id="pass-preview" style="background:#000;color:#fff;">
       <span class="pass-builder-preview-emoji" id="pass-preview-emoji">🎟️</span>
-      <span id="pass-preview-name">Pass Name</span>
-    </div>
-    <div style="margin-top:14px;display:flex;gap:8px;">
-      <button class="btn green" onclick="createPassPreset()">+ Create Pass</button>
-      <button class="btn gray" onclick="toggleAssignSheet()">Assign to Group →</button>
+      <div>
+        <div id="pass-preview-name" style="font-size:16px;font-weight:800;">Pass Name</div>
+        <div id="pass-preview-desc" style="font-size:12px;opacity:0.7;margin-top:2px;"></div>
+      </div>
     </div>
 
-    <!-- Assign sheet -->
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn green" onclick="createPassPreset()">+ Create Pass</button>
+      <button class="btn gray" onclick="toggleAssignSheet()">Bulk Assign →</button>
+    </div>
+
+    <!-- Bulk assign sheet -->
     <div class="assign-sheet" id="assign-sheet">
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Assign to:</div>
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Assign current pass to group:</div>
       <div class="assign-chip-row" id="assign-chips">
         <button class="assign-chip sel" data-target="ALL" onclick="selectAssignTarget('ALL',this)">Everyone</button>
         <button class="assign-chip" data-target="badge:Eddie +" onclick="selectAssignTarget('badge:Eddie +',this)">Eddie+</button>
@@ -354,7 +376,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <button class="assign-chip" data-target="badge:Press" onclick="selectAssignTarget('badge:Press',this)">Press</button>
         <button class="assign-chip" data-target="actor" onclick="selectAssignTarget('actor',this)">Actors</button>
       </div>
-      <button class="btn blue full" onclick="bulkAssignPass()">Assign Pass to Group</button>
+      <button class="btn blue full" onclick="bulkAssignPass()">Assign to Group</button>
     </div>
   </div>
 
@@ -364,7 +386,6 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
   <!-- Individual assign -->
   <div class="section-label">Assign to Individual</div>
-  <p style="font-size:14px;color:#888;margin-bottom:12px;">Use the Guest tab → Edit to assign passes to specific people, or select below.</p>
   <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
     <select id="individual-pass-guest" style="flex:1;min-width:180px;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;background:#fff;"></select>
     <select id="individual-pass-name" style="flex:1;min-width:140px;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;background:#fff;"></select>
@@ -545,8 +566,9 @@ async function loadGuests() {
           </label>
         </div>
         <div style="margin:8px 0;">
-          <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Passes (comma separated)</label>
-          <input type="text" id="ef-passes-${g.id}" value="${esc(g.passes||'')}" placeholder="e.g. Drink Pass, Photo Pass">
+          <label style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Passes</label>
+          <div id="ef-passes-chips-${g.id}" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px;" data-passes='${JSON.stringify(parsePasses(g.passes))}'></div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Tap to toggle · passes loaded from presets</div>
         </div>
         <div class="edit-btns">
           <button class="btn small" onclick="saveFullEdit('${g.id}')">Save All</button>
@@ -558,6 +580,15 @@ async function loadGuests() {
 
     if (g.app_token) renderQR(`gqr-${g.id}`, `${BASE_URL}/app?token=${g.app_token}`);
     else if (g.qr_data) renderQR(`gqr-${g.id}`, g.qr_data.startsWith('http') ? g.qr_data : 'https://'+g.qr_data);
+
+    // Render pass chips after DOM insertion (needs _allPassPresets)
+    const currentPasses = parsePasses(g.passes);
+    if (_allPassPresets.length) {
+      renderGuestPassChips(g.id, currentPasses);
+    } else {
+      // Load presets first, then render
+      fetch('/api/passes').then(r=>r.json()).then(p => { _allPassPresets = p; renderGuestPassChips(g.id, currentPasses); });
+    }
   });
 }
 
@@ -569,9 +600,8 @@ async function saveFullEdit(id) {
   const seat = document.getElementById(`ef-seat-${id}`).value.trim();
   const badge = document.getElementById(`ef-badge-${id}`).value;
   const is_actor = document.getElementById(`ef-actor-${id}`).checked ? 1 : 0;
-  const passesRaw = document.getElementById(`ef-passes-${id}`).value.trim();
-  // Store passes as JSON array of trimmed non-empty strings
-  const passesArr = passesRaw ? passesRaw.split(',').map(p=>p.trim()).filter(Boolean) : [];
+  const chipsEl = document.getElementById(`ef-passes-chips-${id}`);
+  const passesArr = chipsEl ? JSON.parse(chipsEl.dataset.passes || '[]') : [];
   if (!first || !last) return alert('First and last name required');
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({guestId:id, first_name:first, last_name:last, seat, badge, is_actor, passes:JSON.stringify(passesArr)})});
@@ -921,32 +951,49 @@ async function sendNotice() {
 
 // ---- PASSES ----
 let selectedPassColor = '#000000';
+let selectedAutoAssign = '';
 let assignTarget = 'ALL';
+let _allPassPresets = []; // cached for use in guest edit chips
 
 function isDarkColor(hex) {
+  if (!hex || hex.length < 7) return true;
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   return (r*299 + g*587 + b*114) / 1000 < 128;
 }
 
-function selectPassColor(color, el) {
+function parsePasses(raw) {
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch(e) { return raw.split(',').map(p=>p.trim()).filter(Boolean); }
+}
+
+function selectPassColor(color, el, isCustom) {
   selectedPassColor = color;
-  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('sel'));
-  el.classList.add('sel');
+  if (!isCustom) {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('sel'));
+    if (el) el.classList.add('sel');
+    document.getElementById('custom-color-picker').value = color;
+  }
   updatePassPreview();
+}
+
+function selectAutoAssign(val, el) {
+  selectedAutoAssign = val;
+  document.querySelectorAll('#auto-assign-chips .assign-chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
 }
 
 function updatePassPreview() {
   const name = document.getElementById('new-pass-name').value || 'Pass Name';
   const emoji = document.getElementById('new-pass-emoji').value || '🎟️';
+  const desc = document.getElementById('new-pass-desc').value || '';
   const preview = document.getElementById('pass-preview');
-  const isDark = isDarkColor(selectedPassColor);
+  const dark = isDarkColor(selectedPassColor);
   preview.style.background = selectedPassColor;
-  preview.style.color = isDark ? '#fff' : '#000';
+  preview.style.color = dark ? '#fff' : '#000';
   document.getElementById('pass-preview-emoji').textContent = emoji;
   document.getElementById('pass-preview-name').textContent = name;
+  document.getElementById('pass-preview-desc').textContent = desc;
 }
-
-document.getElementById('new-pass-emoji').addEventListener('input', updatePassPreview);
 
 function toggleAssignSheet() {
   document.getElementById('assign-sheet').classList.toggle('show');
@@ -961,13 +1008,17 @@ function selectAssignTarget(target, el) {
 async function createPassPreset() {
   const name = document.getElementById('new-pass-name').value.trim();
   const emoji = document.getElementById('new-pass-emoji').value.trim() || '🎟️';
+  const desc = document.getElementById('new-pass-desc').value.trim();
   if (!name) return alert('Enter a pass name');
-  await fetch('/api/passes', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ name, emoji, color: selectedPassColor })});
+  const res = await fetch('/api/passes', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ name, emoji, color: selectedPassColor, description: desc, auto_assign: selectedAutoAssign })});
+  const created = await res.json();
   document.getElementById('new-pass-name').value = '';
   document.getElementById('new-pass-emoji').value = '';
+  document.getElementById('new-pass-desc').value = '';
   updatePassPreview();
   loadPasses();
+  if (selectedAutoAssign) alert(`Pass created and auto-assigned to: ${selectedAutoAssign}`);
 }
 
 async function bulkAssignPass() {
@@ -982,7 +1033,8 @@ async function bulkAssignPass() {
 }
 
 async function deletePassPreset(id, name) {
-  if (!confirm(`Delete pass preset "${name}"?`)) return;
+  if (!confirm(`Delete pass preset "${name}"?
+(This does not remove it from guests who already have it.)`)) return;
   await fetch('/api/passes', {method:'DELETE', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ id })});
   loadPasses();
@@ -992,53 +1044,77 @@ async function assignPassToGuest() {
   const guestId = document.getElementById('individual-pass-guest').value;
   const passName = document.getElementById('individual-pass-name').value;
   if (!guestId || !passName) return alert('Select a guest and a pass');
-  // Fetch guest current passes, add this one
-  const gRes = await fetch('/api/admin-guests');
-  const guests = await gRes.json();
-  const guest = guests.find(g => g.id === guestId);
-  if (!guest) return;
-  let passes = [];
-  try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
-  if (!passes.includes(passName)) passes.push(passName);
-  await fetch('/api/admin-guests', {method:'PATCH', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ guestId, passes: JSON.stringify(passes) })});
+  await fetch('/api/passes', {method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ presetName: passName, guestId })});
   const status = document.getElementById('individual-pass-status');
-  status.textContent = `✓ "${passName}" assigned to guest`;
+  status.textContent = `✓ "${passName}" assigned`;
   setTimeout(() => { status.textContent = ''; }, 3000);
 }
 
+// Render pass chips for guest edit form (called after loadPasses caches presets)
+function renderGuestPassChips(guestId, currentPasses) {
+  const container = document.getElementById(`ef-passes-chips-${guestId}`);
+  if (!container) return;
+  container.dataset.passes = JSON.stringify(currentPasses);
+  container.innerHTML = _allPassPresets.map(p => {
+    const has = currentPasses.includes(p.name);
+    const dark = isDarkColor(p.color);
+    const bg = has ? p.color : '#f0f0f0';
+    const col = has ? (dark ? '#fff' : '#000') : '#888';
+    return `<button onclick="toggleGuestPass('${guestId}','${esc(p.name)}')"
+      style="padding:6px 12px;border:2px solid ${has?p.color:'#e0e0e0'};border-radius:20px;
+      background:${bg};color:${col};font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">
+      ${p.emoji} ${esc(p.name)}
+    </button>`;
+  }).join('') || '<span style="font-size:13px;color:#aaa;">No pass presets — create some in the Passes tab</span>';
+}
+
+function toggleGuestPass(guestId, passName) {
+  const container = document.getElementById(`ef-passes-chips-${guestId}`);
+  if (!container) return;
+  let passes = JSON.parse(container.dataset.passes || '[]');
+  if (passes.includes(passName)) {
+    passes = passes.filter(p => p !== passName);
+  } else {
+    passes.push(passName);
+  }
+  renderGuestPassChips(guestId, passes);
+}
+
 async function loadPasses() {
-  const res = await fetch('/api/passes');
-  const presets = await res.json();
+  const [pRes, gRes] = await Promise.all([fetch('/api/passes'), fetch('/api/admin-guests')]);
+  const presets = await pRes.json();
+  const guests = await gRes.json();
+  _allPassPresets = presets;
 
   const grid = document.getElementById('pass-preset-grid');
   if (!presets.length) {
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No passes created yet.</div>';
   } else {
     grid.innerHTML = presets.map(p => {
-      const isDark = isDarkColor(p.color);
-      const textColor = isDark ? '#fff' : '#000';
-      return `<div class="pass-preset-card" style="background:${p.color};color:${textColor};">
+      const dark = isDarkColor(p.color);
+      const tc = dark ? '#fff' : '#000';
+      const aaLabel = p.auto_assign ? `<div style="font-size:11px;opacity:0.7;margin-top:2px;">Auto: ${p.auto_assign.replace('badge:','')}</div>` : '';
+      return `<div class="pass-preset-card" style="background:${p.color};color:${tc};">
         <button class="pass-preset-del" onclick="deletePassPreset('${p.id}','${esc(p.name)}')" title="Delete">✕</button>
         <div class="pass-preset-emoji">${p.emoji}</div>
         <div class="pass-preset-name">${esc(p.name)}</div>
+        ${p.description ? `<div style="font-size:11px;opacity:0.65;margin-top:2px;">${esc(p.description)}</div>` : ''}
+        ${aaLabel}
         <div class="pass-preset-actions">
-          <button class="btn small" style="background:rgba(${isDark?'255,255,255':'0,0,0'},0.15);color:${textColor};font-size:12px;" onclick="quickAssign('${esc(p.name)}')">Assign →</button>
+          <button class="btn small" style="background:rgba(${dark?'255,255,255':'0,0,0'},0.15);color:${tc};font-size:12px;" onclick="quickAssign('${esc(p.name)}')">Bulk Assign →</button>
         </div>
       </div>`;
     }).join('');
   }
 
   // Populate individual assign dropdowns
-  const [gRes, pRes] = await Promise.all([fetch('/api/admin-guests'), fetch('/api/passes')]);
-  const guests = await gRes.json();
-  const passes2 = await pRes.json();
   const gSel = document.getElementById('individual-pass-guest');
   gSel.innerHTML = '<option value="">Select guest...</option>' +
     guests.filter(g => g.app_token).map(g => `<option value="${g.id}">${esc(g.first_name)} ${esc(g.last_name)}</option>`).join('');
   const pSel = document.getElementById('individual-pass-name');
   pSel.innerHTML = '<option value="">Select pass...</option>' +
-    passes2.map(p => `<option value="${esc(p.name)}">${p.emoji} ${esc(p.name)}</option>`).join('');
+    presets.map(p => `<option value="${esc(p.name)}">${p.emoji} ${esc(p.name)}</option>`).join('');
 }
 
 function quickAssign(passName) {
