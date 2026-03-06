@@ -490,30 +490,33 @@ function renderEditorPassChips() {
   const currentPasses = parsePasses(currentGuest?.passes);
   container.dataset.passes = JSON.stringify(currentPasses);
   if (!_passPresets.length) {
-    container.innerHTML = '<span style="font-size:13px;color:#aaa;">No passes created yet</span>';
+    container.innerHTML = '<span style="font-size:13px;color:#aaa;">No passes created yet — add some in Admin → Passes</span>';
     return;
   }
-  container.innerHTML = _passPresets.map(p => {
+  container.innerHTML = _passPresets.map((p, i) => {
     const has = currentPasses.includes(p.name);
     const dark = isDarkColor(p.color);
     const bg = has ? p.color : '#f0f0f0';
     const col = has ? (dark ? '#fff' : '#000') : '#888';
-    return `<button onclick="toggleEditorPass(${JSON.stringify(p.name)})"
+    return `<button data-idx="${i}" onclick="toggleEditorPass(this)"
       style="padding:7px 14px;border:2px solid ${has?p.color:'#e0e0e0'};border-radius:20px;
-      background:${bg};color:${col};font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
+      background:${bg};color:${col};font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;">
       ${p.emoji} ${esc(p.name)}
     </button>`;
   }).join('');
 }
 
-function toggleEditorPass(passName) {
+function toggleEditorPass(btn) {
+  const idx = parseInt(btn.dataset.idx);
+  const p = _passPresets[idx];
+  if (!p) return;
+  const passName = p.name;
   const container = document.getElementById('ev-passes-chips');
   let passes = JSON.parse(container.dataset.passes || '[]');
-  passes = passes.includes(passName) ? passes.filter(p=>p!==passName) : [...passes, passName];
+  passes = passes.includes(passName) ? passes.filter(x => x !== passName) : [...passes, passName];
   container.dataset.passes = JSON.stringify(passes);
-  renderEditorPassChips();
-  // Update currentGuest so re-renders stay in sync
   if (currentGuest) currentGuest = { ...currentGuest, passes: JSON.stringify(passes) };
+  renderEditorPassChips();
 }
 
 function renderHeroTags() {
