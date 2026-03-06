@@ -325,6 +325,12 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
     </div>
 
+    <div class="field-card" id="passes-card">
+      <div class="field-label">Passes</div>
+      <div id="ev-passes-chips" style="display:flex;flex-wrap:wrap;gap:8px;min-height:32px;"></div>
+      <div style="font-size:11px;color:#aaa;margin-top:8px;">Tap to toggle passes on/off</div>
+    </div>
+
     <div id="custom-fields-wrap"></div>
 
     <button class="save-btn" onclick="openSavePopup()">Save Guest</button>
@@ -373,6 +379,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <script>
 let currentGuest = null;
+let _passPresets = [];
 let selectedBadge = '';
 let customFields = [];
 let allGuests = [];
@@ -397,8 +404,9 @@ function setMode(mode) {
 async function loadGuests() {
   document.getElementById('guest-list').innerHTML = '<div class="empty">Loading...</div>';
   try {
-    const res = await fetch('/api/editor');
+    const [res, pRes] = await Promise.all([fetch('/api/editor'), fetch('/api/passes')]);
     const data = await res.json();
+    _passPresets = await pRes.json();
     customFields = data.fields || [];
     allGuests = data.guests || [];
     renderGuestList(allGuests);
@@ -458,9 +466,54 @@ function openEditor(guest) {
         : `<input type="text" class="field-input" id="cf-${f.id}" placeholder="${esc(f.label)}..." autocomplete="off">`}
     </div>`).join('');
 
+  renderEditorPassChips();
+
   document.getElementById('guest-list-view').style.display = 'none';
   document.getElementById('editor-view').style.display = 'block';
   window.scrollTo(0,0);
+}
+
+function isDarkColor(hex) {
+  if (!hex || hex.length < 7) return true;
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*299 + g*587 + b*114) / 1000 < 128;
+}
+
+function parsePasses(raw) {
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch(e) { return raw.split(',').map(p=>p.trim()).filter(Boolean); }
+}
+
+function renderEditorPassChips() {
+  const container = document.getElementById('ev-passes-chips');
+  if (!container) return;
+  const currentPasses = parsePasses(currentGuest?.passes);
+  container.dataset.passes = JSON.stringify(currentPasses);
+  if (!_passPresets.length) {
+    container.innerHTML = '<span style="font-size:13px;color:#aaa;">No passes created yet</span>';
+    return;
+  }
+  container.innerHTML = _passPresets.map(p => {
+    const has = currentPasses.includes(p.name);
+    const dark = isDarkColor(p.color);
+    const bg = has ? p.color : '#f0f0f0';
+    const col = has ? (dark ? '#fff' : '#000') : '#888';
+    return `<button onclick="toggleEditorPass(${JSON.stringify(p.name)})"
+      style="padding:7px 14px;border:2px solid ${has?p.color:'#e0e0e0'};border-radius:20px;
+      background:${bg};color:${col};font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
+      ${p.emoji} ${esc(p.name)}
+    </button>`;
+  }).join('');
+}
+
+function toggleEditorPass(passName) {
+  const container = document.getElementById('ev-passes-chips');
+  let passes = JSON.parse(container.dataset.passes || '[]');
+  passes = passes.includes(passName) ? passes.filter(p=>p!==passName) : [...passes, passName];
+  container.dataset.passes = JSON.stringify(passes);
+  renderEditorPassChips();
+  // Update currentGuest so re-renders stay in sync
+  if (currentGuest) currentGuest = { ...currentGuest, passes: JSON.stringify(passes) };
 }
 
 function renderHeroTags() {
@@ -531,21 +584,24 @@ function collectFormData() {
     if (!el) return;
     fieldValues[f.id] = f.field_type === 'checkbox' ? (el.checked ? 'yes' : 'no') : el.value.trim();
   });
-  return { seat, badge, is_actor, accom_enabled, fieldValues };
+  const passesChipsEl = document.getElementById('ev-passes-chips');
+  const passes = passesChipsEl ? passesChipsEl.dataset.passes || '[]' : '[]';
+  return { seat, badge, is_actor, accom_enabled, passes, fieldValues };
 }
 
 // ── Save ──
 async function doSave() {
-  const { seat, badge, is_actor, accom_enabled, fieldValues } = collectFormData();
+  const { seat, badge, is_actor, accom_enabled, passes, fieldValues } = collectFormData();
   const res = await fetch('/api/editor', {
     method: 'PATCH',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ guestId: currentGuest.id, seat, badge, is_actor, accom_enabled, fieldValues })
+    body: JSON.stringify({ guestId: currentGuest.id, seat, badge, is_actor, accom_enabled, passes, fieldValues })
   });
   if (!res.ok) throw new Error('Save failed');
   // Update local list
   const idx = allGuests.findIndex(g => g.id === currentGuest.id);
-  if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor, accom_enabled };
+  if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor, accom_enabled, passes };
+  if (currentGuest) currentGuest = { ...currentGuest, seat, badge, is_actor, accom_enabled, passes };
 }
 
 // ── Save Popup ──
@@ -666,9 +722,13 @@ function dismissScanResult() {
 async function handleScanResult(raw) {
   document.getElementById('scan-status').textContent = 'Looking up guest...';
   let token = null;
-  const prefixMatch = raw.match(/^[A-Z]{3}-(.+)$/);
-  if (prefixMatch) { token = prefixMatch[1]; }
-  else { try { token = new URL(raw).searchParams.get('token'); } catch(e) {} }
+  const s = (raw||'').trim();
+  if (/^[A-Z]{3}-/.test(s)) {
+    token = s.slice(4); // strip "XXX-" prefix
+  } else {
+    try { token = new URL(s).searchParams.get('token'); } catch(e) {}
+    if (!token && /^[0-9a-f-]{32,}$/i.test(s)) token = s; // bare UUID
+  }
   if (!token) {
     document.getElementById('scan-status').textContent = 'Not a valid guest QR code — try again';
     setTimeout(() => { scanActive = true; scanLoop(); }, 1500); return;
