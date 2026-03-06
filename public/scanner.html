@@ -414,27 +414,38 @@ function scanLoop() {
 }
 
 // ── Code Handling ──
+// Parse any QR format → { token, passType }
+// Formats: "EVT-<tok>", "ACT-<tok>", "DRI-<tok>", legacy URL
+function parseQR(raw) {
+  // New format: 3 uppercase letters, dash, then the token (which may contain dashes)
+  const m = raw.match(/^([A-Z]{3})-(.+)$/);
+  if (m) {
+    const prefix = m[1];
+    const token  = m[2];
+    const typeMap = { EVT: 'badge', ACT: 'actor' };
+    return { token, passType: typeMap[prefix] || 'custom', prefix };
+  }
+  // Legacy URL format
+  try {
+    const t = new URL(raw).searchParams.get('token');
+    if (t) return { token: t, passType: 'badge', prefix: 'EVT' };
+  } catch(e) {}
+  return null;
+}
+
 async function handleCode(raw) {
   setScanStatus('Looking up...');
-  // QR format: PREFIX-<token>  e.g. EVT-abc123, ACT-abc123, DRI-abc123
-  // Also support legacy full URL format just in case
-  let token = null;
-  const prefixMatch = raw.match(/^[A-Z]{3}-(.+)$/);
-  if (prefixMatch) {
-    token = prefixMatch[1];
-  } else {
-    try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
-  }
-  if (!token) {
+  const parsed = parseQR(raw);
+  if (!parsed) {
     flash('reject'); setScanStatus('Not a guest QR code');
     setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
     return;
   }
   try {
-    const res = await fetch('/api/app-user?token=' + encodeURIComponent(token));
+    const res = await fetch('/api/app-user?token=' + encodeURIComponent(parsed.token));
     if (!res.ok) throw new Error();
     const g = await res.json();
-    showResult(g);
+    showResult(g, parsed);
   } catch(e) {
     flash('reject'); setScanStatus('Guest not found');
     setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
@@ -442,44 +453,60 @@ async function handleCode(raw) {
 }
 
 // ── Check filter pass ──
-function checkFilter(g) {
-  if (scanMode === 'normal') return null; // no check
+function checkFilter(g, parsed) {
+  if (scanMode === 'normal') return null;
   let passes = [];
   try { passes = g.passes ? JSON.parse(g.passes) : []; } catch(e) {}
 
-  if (filterType === 'badge') return { valid: true, label: 'Event Badge', note: g.badge || 'General Admission', icon: '🎫' };
+  // In filter mode, also check the QR was the right pass type
+  // e.g. if checking Actor Pass but they showed their Event Badge QR → reject
+  const scannedType = parsed ? parsed.passType : 'badge';
+
+  if (filterType === 'badge') {
+    if (scannedType !== 'badge') return { valid: false, label: 'Event Badge', note: 'Wrong pass shown — needs Event Pass QR', icon: '🎫' };
+    return { valid: true, label: 'Event Badge', note: g.badge || 'General Admission', icon: '🎫' };
+  }
   if (filterType === 'actor') {
+    if (scannedType !== 'actor' && scannedType !== 'badge') return { valid: false, label: 'Actor Pass', note: 'Wrong pass type scanned', icon: '🎬' };
     return g.is_actor
       ? { valid: true,  label: 'Actor Pass', note: 'Verified actor', icon: '🎬' }
       : { valid: false, label: 'Actor Pass', note: 'Not an actor', icon: '🎬' };
   }
   if (filterType === 'eddie') {
     return g.badge === 'Eddie +'
-      ? { valid: true,  label: 'Eddie+ Badge', note: 'Confirmed Eddie+', icon: '⭐' }
-      : { valid: false, label: 'Eddie+ Badge', note: 'Does not have Eddie+', icon: '⭐' };
+      ? { valid: true,  label: 'Eddie+', note: 'Confirmed Eddie+', icon: '⭐' }
+      : { valid: false, label: 'Eddie+', note: 'Does not have Eddie+', icon: '⭐' };
   }
   if (filterType === 'vip') {
     return g.badge === 'VIP'
-      ? { valid: true,  label: 'VIP Badge', note: 'Confirmed VIP', icon: '💜' }
-      : { valid: false, label: 'VIP Badge', note: 'Not a VIP', icon: '💜' };
+      ? { valid: true,  label: 'VIP', note: 'Confirmed VIP', icon: '💜' }
+      : { valid: false, label: 'VIP', note: 'Not a VIP', icon: '💜' };
   }
   if (filterType === 'staff') {
     return g.badge === 'Staff'
-      ? { valid: true,  label: 'Staff Badge', note: 'Confirmed Staff', icon: '🔵' }
-      : { valid: false, label: 'Staff Badge', note: 'Not staff', icon: '🔵' };
+      ? { valid: true,  label: 'Staff', note: 'Confirmed Staff', icon: '🔵' }
+      : { valid: false, label: 'Staff', note: 'Not staff', icon: '🔵' };
   }
   if (filterType === 'custom') {
-    const has = passes.some(p => p.toLowerCase().includes(customPassName.toLowerCase()));
-    return has
-      ? { valid: true,  label: customPassName, note: '✓ Pass found', icon: passIcon(customPassName) }
+    // For custom passes, check both the pass list AND that the QR prefix matches
+    const passMatch = passes.find(p => p.toLowerCase().includes(customPassName.toLowerCase()));
+    if (scannedType === 'custom' && parsed) {
+      // Verify the prefix loosely matches the expected pass
+      const expectedPrefix = customPassName.replace(/\s+/g,'').slice(0,3).toUpperCase();
+      if (parsed.prefix && parsed.prefix !== expectedPrefix && parsed.prefix !== 'EVT') {
+        return { valid: false, label: customPassName, note: 'Wrong pass shown', icon: passIcon(customPassName) };
+      }
+    }
+    return passMatch
+      ? { valid: true,  label: customPassName, note: '✓ ' + passMatch, icon: passIcon(customPassName) }
       : { valid: false, label: customPassName, note: 'Does not have this pass', icon: passIcon(customPassName) };
   }
   return null;
 }
 
 // ── Show Result ──
-function showResult(g) {
-  const filterResult = checkFilter(g);
+function showResult(g, parsed) {
+  const filterResult = checkFilter(g, parsed);
   const isValid = filterResult ? filterResult.valid : true;
   flash(isValid ? 'accept' : 'reject');
 
