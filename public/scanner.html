@@ -205,6 +205,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   border-radius: 14px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 4px;
 }
 .scan-again-btn:active { opacity: 0.8; }
+.assign-pass-btn {
+  width: 100%; padding: 14px; background: #007aff; color: #fff; border: none;
+  border-radius: 14px; font-size: 16px; font-weight: 700; font-family: inherit;
+  cursor: pointer; margin-bottom: 8px;
+}
 </style>
 </head>
 <body>
@@ -300,6 +305,12 @@ let stream = null;
 let scanning = false;
 let animFrame = null;
 let offscreenCanvas, offscreenCtx;
+let _currentGuest = null;
+let _passPresets = [];
+
+async function loadPassPresets() {
+  try { _passPresets = await (await fetch('/api/passes')).json(); } catch(e) { _passPresets = []; }
+}
 
 const PASS_EMOJIS = { drink:'🍹', bar:'🍹', photo:'📸', vip:'⭐', backstage:'🎭', meal:'🍽️', food:'🍽️', parking:'🅿️', actor:'🎬', badge:'🎫', event:'🎫' };
 function passIcon(name) {
@@ -516,6 +527,7 @@ function checkFilter(g, parsed) {
 
 // ── Show Result ──
 function showResult(g, parsed) {
+  _currentGuest = g;
   const filterResult = checkFilter(g, parsed);
   const isValid = filterResult ? filterResult.valid : true;
   flash(isValid ? 'accept' : 'reject');
@@ -559,7 +571,51 @@ function showResult(g, parsed) {
   }
 
   setScanStatus(isValid ? '✓ ' + (filterResult ? filterResult.label : 'Guest found') : '✗ Pass not valid');
+  // Assign pass UI — show when in filtered custom mode and pass is missing, or always in normal mode
+  const assignWrap = document.getElementById('assign-pass-wrap');
+  const assignSel = document.getElementById('assign-pass-select');
+  document.getElementById('assign-pass-status').textContent = '';
+  if (_passPresets.length) {
+    const showAssign = scanMode === 'normal' || (scanMode === 'filtered' && filterResult && !filterResult.valid);
+    assignWrap.style.display = showAssign ? 'block' : 'none';
+    assignSel.innerHTML = '<option value="">Select pass to assign...</option>' +
+      _passPresets.map(p => `<option value="${p.name}">${p.emoji} ${p.name}</option>`).join('');
+    // Pre-select the filtered pass if it was missing
+    if (scanMode === 'filtered' && filterType === 'custom' && customPassName) {
+      const opt = [...assignSel.options].find(o => o.value === customPassName);
+      if (opt) opt.selected = true;
+    }
+  } else {
+    assignWrap.style.display = 'none';
+  }
+
   document.getElementById('result-sheet').classList.add('show');
+}
+
+async function doAssignPass() {
+  if (!_currentGuest) return;
+  const passName = document.getElementById('assign-pass-select').value;
+  if (!passName) return;
+  const statusEl = document.getElementById('assign-pass-status');
+  statusEl.textContent = 'Assigning...';
+  statusEl.style.color = '#aaa';
+  try {
+    const res = await fetch('/api/passes', {method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ presetName: passName, guestId: _currentGuest.id })});
+    const data = await res.json();
+    if (data.success) {
+      statusEl.textContent = `✓ "${passName}" assigned`;
+      statusEl.style.color = '#34c759';
+      // Update local guest data
+      let passes = [];
+      try { passes = _currentGuest.passes ? JSON.parse(_currentGuest.passes) : []; } catch(e) {}
+      if (!passes.includes(passName)) passes.push(passName);
+      _currentGuest.passes = JSON.stringify(passes);
+    }
+  } catch(e) {
+    statusEl.textContent = 'Failed — check connection';
+    statusEl.style.color = '#ff3b30';
+  }
 }
 
 function scanAgain() {
@@ -576,6 +632,9 @@ function flash(type) {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 300);
 }
+
+// Load pass presets on page load so assign dropdown is ready
+loadPassPresets();
 </script>
 </body>
 </html>
