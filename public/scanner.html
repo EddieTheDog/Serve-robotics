@@ -414,29 +414,39 @@ function scanLoop() {
 }
 
 // ── Code Handling ──
-// Parse any QR format → { token, passType }
-// Formats: "EVT-<tok>", "ACT-<tok>", "DRI-<tok>", legacy URL
+// Parse any QR format → { token, passType, prefix }
+// Formats: "EVT-<uuid>", "ACT-<uuid>", "DRI-<uuid>", or legacy URL
 function parseQR(raw) {
-  // New format: 3 uppercase letters, dash, then the token (which may contain dashes)
-  const m = raw.match(/^([A-Z]{3})-(.+)$/);
-  if (m) {
-    const prefix = m[1];
-    const token  = m[2];
+  if (!raw) return null;
+  const s = raw.trim();
+
+  // Check for PREFIX- format: exactly 3 A-Z letters then a hyphen
+  if (/^[A-Z]{3}-/.test(s)) {
+    const prefix = s.slice(0, 3);
+    const token  = s.slice(4); // everything after "XXX-"
+    if (!token) return null;
     const typeMap = { EVT: 'badge', ACT: 'actor' };
     return { token, passType: typeMap[prefix] || 'custom', prefix };
   }
-  // Legacy URL format
+
+  // Legacy URL format (e.g. https://site.com/app?token=uuid)
   try {
-    const t = new URL(raw).searchParams.get('token');
+    const t = new URL(s).searchParams.get('token');
     if (t) return { token: t, passType: 'badge', prefix: 'EVT' };
   } catch(e) {}
+
+  // Bare UUID fallback (just in case)
+  if (/^[0-9a-f-]{32,}$/i.test(s)) {
+    return { token: s, passType: 'badge', prefix: 'EVT' };
+  }
+
   return null;
 }
 
 async function handleCode(raw) {
   setScanStatus('Looking up...');
   const parsed = parseQR(raw);
-  if (!parsed) {
+  if (!parsed || !parsed.token) {
     flash('reject'); setScanStatus('Not a guest QR code');
     setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
     return;
