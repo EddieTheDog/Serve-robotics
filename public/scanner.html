@@ -239,12 +239,12 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <div class="setup-label">Filter By Pass</div>
       <div class="filter-card">
         <div class="filter-options" id="filter-options">
-          <button class="filter-chip" onclick="selectFilter('badge')">Event Badge</button>
-          <button class="filter-chip actor" onclick="selectFilter('actor')">Actor Pass</button>
-          <button class="filter-chip eddie" onclick="selectFilter('eddie')">Eddie+</button>
-          <button class="filter-chip vip" onclick="selectFilter('vip')">VIP</button>
-          <button class="filter-chip staff" onclick="selectFilter('staff')">Staff</button>
-          <button class="filter-chip custom" onclick="selectFilter('custom')">Custom Pass...</button>
+          <button class="filter-chip" onclick="selectFilter('badge',this)">Event Badge</button>
+          <button class="filter-chip actor" onclick="selectFilter('actor',this)">Actor Pass</button>
+          <button class="filter-chip eddie" onclick="selectFilter('eddie',this)">Eddie+</button>
+          <button class="filter-chip vip" onclick="selectFilter('vip',this)">VIP</button>
+          <button class="filter-chip staff" onclick="selectFilter('staff',this)">Staff</button>
+          <button class="filter-chip custom" onclick="selectFilter('custom',this)">Custom Pass...</button>
         </div>
         <div class="custom-pass-input" id="custom-pass-wrap">
           <input type="text" id="custom-pass-input" placeholder="e.g. Drink Pass" autocomplete="off">
@@ -291,6 +291,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="pill-row" id="pill-row"></div>
     <div id="filter-result"></div>
     <div id="all-passes-wrap"></div>
+    <div id="assign-pass-wrap" style="display:none;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Assign a Pass</div>
+      <div style="display:flex;gap:8px;">
+        <select id="assign-pass-select" style="flex:1;padding:10px 12px;font-size:14px;border:2px solid #e0e0e0;border-radius:10px;outline:none;font-family:inherit;background:#fff;"></select>
+        <button onclick="doAssignPass()" style="padding:10px 18px;background:#000;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Assign</button>
+      </div>
+      <div id="assign-pass-status" style="font-size:13px;color:#34c759;font-weight:700;margin-top:6px;min-height:18px;"></div>
+    </div>
     <button class="scan-again-btn" onclick="scanAgain()">Scan Another</button>
   </div>
 </div>
@@ -328,10 +336,10 @@ function selectMode(m) {
   document.getElementById('filter-section').classList.toggle('show', m === 'filtered');
 }
 
-function selectFilter(f) {
+function selectFilter(f, el) {
   filterType = f;
-  document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('sel'));
-  event.target.classList.add('sel');
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('sel'));
+  if (el) el.classList.add('sel');
   document.getElementById('custom-pass-wrap').classList.toggle('show', f === 'custom');
   if (f !== 'custom') document.getElementById('custom-pass-input').value = '';
 }
