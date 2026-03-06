@@ -666,7 +666,9 @@ function dismissScanResult() {
 async function handleScanResult(raw) {
   document.getElementById('scan-status').textContent = 'Looking up guest...';
   let token = null;
-  try { token = new URL(raw).searchParams.get('token'); } catch(e) {}
+  const prefixMatch = raw.match(/^[A-Z]{3}-(.+)$/);
+  if (prefixMatch) { token = prefixMatch[1]; }
+  else { try { token = new URL(raw).searchParams.get('token'); } catch(e) {} }
   if (!token) {
     document.getElementById('scan-status').textContent = 'Not a valid guest QR code — try again';
     setTimeout(() => { scanActive = true; scanLoop(); }, 1500); return;
