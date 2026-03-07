@@ -1,29 +1,32 @@
 export async function onRequestGet({ env }) {
+  const now = Date.now();
   const { results } = await env.DB.prepare(`
-    SELECT id, label, emoji, action, sort_order, visible
-    FROM custom_buttons WHERE visible = 1 ORDER BY sort_order ASC
-  `).all();
+    SELECT id, label, emoji, action, sort_order, visible, expires_at
+    FROM custom_buttons
+    WHERE visible = 1
+      AND (expires_at IS NULL OR expires_at = 0 OR expires_at > ?)
+    ORDER BY sort_order ASC
+  `).bind(now).all();
   return Response.json(results);
 }
 
 export async function onRequestPost({ request, env }) {
-  const { label, emoji, action, sort_order } = await request.json();
+  const { label, emoji, action, sort_order, expires_at } = await request.json();
   if (!label) return new Response('Missing label', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
   const { results: existing } = await env.DB.prepare(`SELECT MAX(sort_order) as m FROM custom_buttons`).all();
   const nextOrder = sort_order ?? ((existing[0]?.m ?? -1) + 1);
   await env.DB.prepare(`
-    INSERT INTO custom_buttons (id, label, emoji, action, sort_order, visible, created_at)
-    VALUES (?, ?, ?, ?, ?, 1, ?)
-  `).bind(id, label, emoji ?? '🔘', action ?? 'none', nextOrder, now).run();
+    INSERT INTO custom_buttons (id, label, emoji, action, sort_order, visible, expires_at, created_at)
+    VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+  `).bind(id, label, emoji ?? '🔘', action ?? 'none', nextOrder, expires_at ?? null, now).run();
   return Response.json({ success: true, id });
 }
 
 export async function onRequestPatch({ request, env }) {
   const body = await request.json();
 
-  // Bulk reorder
   if (body.reorder) {
     const stmts = body.reorder.map(({ id, sort_order }) =>
       env.DB.prepare(`UPDATE custom_buttons SET sort_order = ? WHERE id = ?`).bind(sort_order, id)
@@ -32,13 +35,14 @@ export async function onRequestPatch({ request, env }) {
     return Response.json({ success: true });
   }
 
-  const { id, label, emoji, visible } = body;
+  const { id, label, emoji, visible, expires_at } = body;
   if (!id) return new Response('Missing id', { status: 400 });
   const updates = [];
   const binds = [];
-  if (label !== undefined) { updates.push('label = ?'); binds.push(label); }
-  if (emoji !== undefined) { updates.push('emoji = ?'); binds.push(emoji); }
-  if (visible !== undefined) { updates.push('visible = ?'); binds.push(visible); }
+  if (label !== undefined)     { updates.push('label = ?');      binds.push(label); }
+  if (emoji !== undefined)     { updates.push('emoji = ?');       binds.push(emoji); }
+  if (visible !== undefined)   { updates.push('visible = ?');     binds.push(visible); }
+  if (expires_at !== undefined){ updates.push('expires_at = ?'); binds.push(expires_at); }
   if (!updates.length) return new Response('Nothing to update', { status: 400 });
   binds.push(id);
   await env.DB.prepare(`UPDATE custom_buttons SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
