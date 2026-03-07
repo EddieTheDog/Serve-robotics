@@ -758,8 +758,9 @@ async function handleScanResult(raw) {
 
 function openFromScan() {
   if (!scannedGuest) return;
+  const guest = scannedGuest; // capture before closeScanner calls dismissScanResult which nulls scannedGuest
   closeScanner();
-  openEditor(scannedGuest);
+  openEditor(guest);
 }
 </script>
 
