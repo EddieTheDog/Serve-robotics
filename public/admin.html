@@ -198,8 +198,8 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <div class="tab-content" id="tab-guests">
   <div class="section-label">All Attendees</div>
   <div style="display:flex;gap:8px;margin-bottom:16px;">
-    <button class="btn" style="flex:1;background:#ff3b30;" onclick="lockAll()">🔒 Lock All</button>
-    <button class="btn" style="flex:1;background:#34c759;" onclick="unlockAll()">🔓 Unlock All</button>
+    <button class="btn" style="flex:1;background:#c0392b;" onclick="lockAll()">🔒 Lock All</button>
+    <button class="btn" style="flex:1;background:#27ae60;" onclick="unlockAll()">🔓 Unlock All</button>
   </div>
   <div id="guests-list"></div>
 </div>
@@ -326,22 +326,23 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div class="add-form">
 
     <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Target</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;" id="notice-target-chips">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:0;" id="notice-target-chips">
       <button class="assign-chip sel" data-target="ALL" onclick="selectNoticeTarget('ALL',this)">📣 Everyone</button>
       <button class="assign-chip" data-target="badge:Eddie +" onclick="selectNoticeTarget('badge:Eddie +',this)">Eddie+</button>
       <button class="assign-chip" data-target="badge:VIP" onclick="selectNoticeTarget('badge:VIP',this)">VIP</button>
       <button class="assign-chip" data-target="badge:Staff" onclick="selectNoticeTarget('badge:Staff',this)">Staff</button>
       <button class="assign-chip" data-target="badge:Press" onclick="selectNoticeTarget('badge:Press',this)">Press</button>
       <button class="assign-chip" data-target="actor" onclick="selectNoticeTarget('actor',this)">Actors</button>
+      <button class="assign-chip" id="notice-oneperson-chip" data-target="guest" onclick="selectNoticeTarget('guest',this)">One Person…</button>
     </div>
 
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;" id="notice-pass-chips">
-      <!-- populated by loadNotices with pass presets -->
+    <div id="notice-pass-row" style="display:none;">
+      <div style="height:1px;background:#f0f0f0;margin:10px 0;"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="notice-pass-chips"></div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-      <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;white-space:nowrap;">One person:</span>
-      <select id="notice-guest-select" style="flex:1;padding:9px 12px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;background:#fff;" onchange="selectNoticeGuestTarget(this)">
+    <div id="notice-guest-row" style="display:none;margin-top:10px;">
+      <select id="notice-guest-select" style="width:100%;padding:9px 12px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;background:#fff;" onchange="selectNoticeGuestTarget(this)">
         <option value="">— select guest —</option>
       </select>
     </div>
@@ -1152,18 +1153,44 @@ async function deleteReason(id) {
 let noticeTarget = 'ALL';
 
 function selectNoticeTarget(target, el) {
-  noticeTarget = target;
-  // Deselect all chips across both chip rows + guest select
-  document.querySelectorAll('#notice-target-chips .assign-chip, #notice-pass-chips .assign-chip').forEach(c => c.classList.remove('sel'));
+  // Deselect all chips — reset pass chips back to plain style
+  document.querySelectorAll('#notice-target-chips .assign-chip, #notice-pass-chips .assign-chip').forEach(c => {
+    c.classList.remove('sel');
+    c.style.background = '';
+    c.style.color = '';
+    c.style.borderColor = '';
+  });
   document.getElementById('notice-guest-select').value = '';
-  if (el) el.classList.add('sel');
+
+  if (target === 'guest') {
+    // Show the guest picker, don't set a real target yet
+    noticeTarget = '';
+    document.getElementById('notice-guest-row').style.display = 'block';
+    if (el) el.classList.add('sel');
+    updateNoticePreview();
+    return;
+  }
+
+  document.getElementById('notice-guest-row').style.display = 'none';
+  noticeTarget = target;
+
+  if (el) {
+    el.classList.add('sel');
+    // If it's a pass chip, apply its own color when selected
+    const passColor = el.dataset.passColor;
+    const passText = el.dataset.passText;
+    if (passColor) {
+      el.style.background = passColor;
+      el.style.color = passText || '#fff';
+      el.style.borderColor = passColor;
+    }
+  }
   updateNoticePreview();
 }
 
 function selectNoticeGuestTarget(sel) {
   if (!sel.value) return;
   noticeTarget = 'guest:' + sel.value;
-  document.querySelectorAll('#notice-target-chips .assign-chip, #notice-pass-chips .assign-chip').forEach(c => c.classList.remove('sel'));
   updateNoticePreview();
 }
 
@@ -1196,13 +1223,15 @@ async function loadNotices() {
   const pRes = await fetch('/api/passes');
   const presets = await pRes.json();
   const passChips = document.getElementById('notice-pass-chips');
+  const passRow = document.getElementById('notice-pass-row');
   if (presets.length) {
+    passRow.style.display = 'block';
     passChips.innerHTML = presets.map(p => {
-      const isDark = isDarkColor(p.color);
-      return `<button class="assign-chip" style="background:${p.color};color:${isDark?'#fff':'#000'};border-color:${p.color};"
+      return `<button class="assign-chip" data-pass-color="${p.color}" data-pass-text="${isDarkColor(p.color)?'#fff':'#000'}"
         data-target="pass:${esc(p.name)}" onclick="selectNoticeTarget('pass:${esc(p.name)}',this)">${p.emoji} ${esc(p.name)}</button>`;
     }).join('');
   } else {
+    passRow.style.display = 'none';
     passChips.innerHTML = '';
   }
 
