@@ -11,17 +11,14 @@ export async function onRequestPost({ request, env }) {
 
   const id = crypto.randomUUID();
   const now = Date.now();
-  const reqType = type || 'help'; // 'help' or 'accommodation'
+  const reqType = type || 'help';
 
   await env.DB.prepare(`
     INSERT INTO help_requests (id, guest_id, message, resolved, created_at, type) VALUES (?, ?, ?, 0, ?, ?)
   `).bind(id, resolvedGuestId, reason ?? null, now, reqType).run();
 
-  // Only flip guest status to 'help' for emergency help, not accommodations
-  if (reqType === 'help') {
-    await env.DB.prepare(`UPDATE guests SET status = 'help', updated_at = ? WHERE id = ?`)
-      .bind(now, resolvedGuestId).run();
-  }
+  // NOTE: We intentionally do NOT change guest.status here.
+  // Help requests are tracked via help_requests table; guest status is for check-in queue only.
 
   return Response.json({ success: true, helpId: id });
 }
@@ -30,9 +27,8 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const unresolvedOnly = url.searchParams.get('unresolved') === '1';
   const token = url.searchParams.get('token');
-  const type = url.searchParams.get('type') || 'help'; // default to 'help' type
+  const type = url.searchParams.get('type') || 'help';
 
-  // Attendee polling: check if their latest request (of given type) was resolved
   if (token) {
     const guest = await env.DB.prepare(`SELECT id FROM guests WHERE app_token = ?`).bind(token).first();
     if (!guest) return Response.json({ resolved: false });
@@ -59,13 +55,5 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPatch({ request, env }) {
   const { id } = await request.json();
   await env.DB.prepare(`UPDATE help_requests SET resolved = 1 WHERE id = ?`).bind(id).run();
-
-  // Reset guest status only for 'help' type requests
-  const req = await env.DB.prepare(`SELECT guest_id, type FROM help_requests WHERE id = ?`).bind(id).first();
-  if (req?.guest_id && req.type !== 'accommodation') {
-    await env.DB.prepare(`UPDATE guests SET status = 'accepted', updated_at = ? WHERE id = ? AND status = 'help'`)
-      .bind(Date.now(), req.guest_id).run();
-  }
-
   return Response.json({ success: true });
 }
