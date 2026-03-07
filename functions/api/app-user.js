@@ -5,13 +5,14 @@ export async function onRequestGet({ request, env }) {
   if (!token) return new Response('Missing token', { status: 400 });
 
   const guest = await env.DB.prepare(`
-    SELECT id, first_name, last_name, status, locked, badge, seat, app_token, help_disabled, accom_enabled, accom_disabled, is_actor, actor_request_disabled, passes
+    SELECT id, first_name, last_name, status, locked, badge, seat, app_token,
+           help_disabled, accom_enabled, accom_disabled, is_actor, actor_request_disabled,
+           passes, blocks
     FROM guests WHERE app_token = ?
   `).bind(token).first();
 
   if (!guest) return new Response('Invalid token', { status: 404 });
 
-  // Also fetch custom field definitions + this guest's values
   const { results: fields } = await env.DB.prepare(`
     SELECT cf.id, cf.label, cf.field_type, COALESCE(gfv.value, '') as value
     FROM custom_fields cf
