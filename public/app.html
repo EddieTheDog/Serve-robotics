@@ -598,22 +598,24 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     const p = _activePoll;
     if (!p) return;
     const hasVoted = p.myVote && p.myVote.length > 0;
+    const canSeeResults = hasVoted && (p.show_results !== 0);
     document.getElementById('poll-question').textContent = p.question;
     document.getElementById('poll-subtitle').textContent =
-      hasVoted ? `${p.totalVoters} vote${p.totalVoters!==1?'s':''} total`
-      : p.allow_multiple ? 'Select all that apply' : 'Choose one';
+      hasVoted
+        ? (canSeeResults ? `${p.totalVoters} vote${p.totalVoters!==1?'s':''} total` : 'Your vote has been recorded!')
+        : p.allow_multiple ? 'Select all that apply' : 'Choose one';
 
     const wrap = document.getElementById('poll-options-wrap');
     wrap.innerHTML = p.options.map((opt, i) => {
       const votes = p.tallies ? p.tallies[i] : 0;
-      const pct = (p.totalVoters && hasVoted) ? Math.round(votes / p.totalVoters * 100) : 0;
-      const sel = _pollSelections.has(i);
+      const pct = (p.totalVoters && canSeeResults) ? Math.round(votes / p.totalVoters * 100) : 0;
+      const sel = _pollSelections.has(i) || (hasVoted && p.myVote?.includes(i));
       return `<button class="poll-option${sel?' selected':''}" onclick="togglePollOption(${i})" ${hasVoted?'disabled':''}>
-        ${hasVoted
+        ${canSeeResults
           ? `<div class="poll-option-bar" style="width:${pct}%"></div>`
           : `<div class="poll-option-check">${sel?'✓':''}</div>`}
         <span class="poll-option-text">${esc(opt)}</span>
-        ${hasVoted ? `<span class="poll-option-pct">${pct}%</span>` : ''}
+        ${canSeeResults ? `<span class="poll-option-pct">${pct}%</span>` : ''}
       </button>`;
     }).join('');
 
@@ -622,9 +624,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     if (hasVoted) {
       voteBtn.style.display = 'none';
       alreadyEl.style.display = 'block';
+      alreadyEl.textContent = canSeeResults ? 'You\'ve already voted — results shown above' : 'Your vote was recorded. Thank you!';
     } else {
       voteBtn.style.display = 'block';
       voteBtn.disabled = _pollSelections.size === 0;
+      voteBtn.textContent = 'Submit Vote';
       alreadyEl.style.display = 'none';
     }
   }
