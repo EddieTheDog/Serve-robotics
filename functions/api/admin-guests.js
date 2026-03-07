@@ -10,8 +10,15 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPatch({ request, env }) {
   const body = await request.json();
-  const { guestId } = body;
   const now = Date.now();
+
+  // Bulk lock / unlock all guests
+  if (body.lockAll !== undefined) {
+    await env.DB.prepare(`UPDATE guests SET locked = ?, updated_at = ?`).bind(body.lockAll ? 1 : 0, now).run();
+    return Response.json({ success: true });
+  }
+
+  const { guestId } = body;
   if (!guestId) return new Response('Missing guestId', { status: 400 });
 
   const updates = ['updated_at = ?'];
