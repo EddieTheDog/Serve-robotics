@@ -156,6 +156,28 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 #error-screen p { font-size: 16px; color: #888; }
 #app { display: none; }
 
+/* Passes collapsible toggle */
+.passes-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: none; border: none; padding: 0; margin: 20px 0 0;
+  cursor: pointer; font-family: inherit;
+}
+.passes-toggle span:first-child {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: #888;
+}
+.passes-chevron {
+  font-size: 16px; color: #aaa; transition: transform 0.25s ease;
+}
+.passes-chevron.open { transform: rotate(180deg); }
+.pass-list {
+  overflow: hidden;
+  max-height: 2000px;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+  opacity: 1;
+}
+.pass-list.collapsed { max-height: 0; opacity: 0; }
+
 /* My Badge — pass list */
 .pass-list-card {
   background: #fff; border-radius: 16px; overflow: hidden;
@@ -320,6 +342,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <div id="custom-buttons-wrap"></div>
 
+    <div id="passes-section-wrap">
+      <button class="passes-toggle" id="passes-toggle" onclick="togglePasses()">
+        <span>🎟️ My Passes</span>
+        <span class="passes-chevron" id="passes-chevron">▾</span>
+      </button>
+      <div class="pass-list" id="pass-list"></div>
+    </div>
+
     <div id="schedule-wrap">
     <div class="section-label">What's Happening</div>
     <div class="card" id="schedule-card">
@@ -335,11 +365,6 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <div class="info-row" id="info-badge-row" style="display:none;"><div class="info-icon">🏅</div><span id="info-badge">—</span></div>
     </div>
     <div id="custom-fields-info-wrap"></div>
-
-    <div id="passes-section-wrap">
-    <div class="section-label" style="margin-top:24px;">My Passes</div>
-    <div class="pass-list" id="pass-list"></div>
-    </div>
   </div>
 </div>
 
@@ -872,6 +897,19 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
 
   // Toast
+  let _passesOpen = true;
+  function togglePasses() {
+    _passesOpen = !_passesOpen;
+    const list = document.getElementById('pass-list');
+    const chevron = document.getElementById('passes-chevron');
+    if (_passesOpen) {
+      list.classList.remove('collapsed');
+      chevron.classList.add('open');
+    } else {
+      list.classList.add('collapsed');
+      chevron.classList.remove('open');
+    }
+  }
   let toastTimer;
   function showToast(msg) {
     const t = document.getElementById('toast');
@@ -924,7 +962,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
 
   // ── Pass List & QR ──
-  const PASS_ICONS = { badge: '🎫', actor: '🎬', drink: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', parking: '🅿️', bar: '🍹' };
+  const PASS_ICONS = { badge: '🎫', actor: '🎬', drink: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', parking: '🅿️' };
   function passIcon(name) {
     const l = (name||'').toLowerCase();
     for (const [k,v] of Object.entries(PASS_ICONS)) if (l.includes(k)) return v;
