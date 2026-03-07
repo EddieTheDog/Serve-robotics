@@ -30,6 +30,17 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .content { padding: 20px 16px; padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 40px); max-width: 600px; margin: 0 auto; }
 .section-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 24px 0 10px 4px; }
 .card { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.staff-link-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border-bottom: 1px solid #f0f0f0;
+  text-decoration: none; color: inherit; transition: background 0.15s;
+}
+.staff-link-row:active { background: #f5f5f5; }
+.staff-link-icon { width: 40px; height: 40px; background: #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.staff-link-text { flex: 1; }
+.staff-link-text strong { display: block; font-size: 16px; font-weight: 700; color: #000; }
+.staff-link-text span { font-size: 13px; color: #888; }
+.staff-link-arrow { font-size: 22px; color: #ccc; font-weight: 300; }
 
 .help-btn { background: #000; color: #fff; border: none; border-radius: 16px; padding: 20px; width: 100%; display: flex; align-items: center; gap: 16px; cursor: pointer; text-align: left; transition: opacity 0.15s; }
 .help-btn:active { opacity: 0.75; }
@@ -163,7 +174,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   padding: 14px 18px; margin: 24px 0 0;
   cursor: pointer; font-family: inherit;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, border-radius 0.2s;
+}
+.passes-toggle.is-open {
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -1px 4px rgba(0,0,0,0.06);
 }
 .passes-toggle:active { opacity: 0.7; }
 .passes-toggle span:first-child {
@@ -178,13 +193,16 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   max-height: 2000px;
   transition: max-height 0.35s ease, opacity 0.25s ease;
   opacity: 1;
+  background: #fff;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  margin-bottom: 4px;
 }
-.pass-list.collapsed { max-height: 0; opacity: 0; }
+.pass-list.collapsed { max-height: 0; opacity: 0; box-shadow: none; }
 
 /* My Badge — pass list */
 .pass-list-card {
-  background: #fff; border-radius: 16px; overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 8px;
+  background: #fff; border-radius: 0; overflow: hidden;
 }
 .pass-row {
   display: flex; align-items: center; gap: 14px;
@@ -344,6 +362,28 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       </button>
     </div>
     <div id="custom-buttons-wrap"></div>
+
+    <div id="staff-links-wrap" style="display:none;">
+      <div class="section-label">Staff Tools</div>
+      <div class="card">
+        <a href="/scanner.html" class="staff-link-row">
+          <div class="staff-link-icon">📷</div>
+          <div class="staff-link-text">
+            <strong>Scanner</strong>
+            <span>Check in guests &amp; scan passes</span>
+          </div>
+          <div class="staff-link-arrow">›</div>
+        </a>
+        <a href="/editor.html" class="staff-link-row" style="border-bottom:none;">
+          <div class="staff-link-icon">✏️</div>
+          <div class="staff-link-text">
+            <strong>Editor</strong>
+            <span>View &amp; edit guest details</span>
+          </div>
+          <div class="staff-link-arrow">›</div>
+        </a>
+      </div>
+    </div>
 
     <div id="passes-section-wrap">
       <button class="passes-toggle" id="passes-toggle" onclick="togglePasses()">
@@ -529,6 +569,16 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     const showActorReq = g.is_actor && !g.actor_request_disabled;
     document.getElementById('actor-req-wrap').style.display = showActorReq ? 'block' : 'none';
 
+    // Staff quick links
+    const staffWrap = document.getElementById('staff-links-wrap');
+    if (staffWrap) {
+      if (g.badge === 'Staff') {
+        staffWrap.style.display = 'block';
+      } else {
+        staffWrap.style.display = 'none';
+      }
+    }
+
     // Apply blocks — blocks override individual flags above
     let blocks = [];
     try { blocks = g.blocks ? JSON.parse(g.blocks) : []; } catch(e) {}
@@ -547,6 +597,8 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     else { badgeRow.style.display='none'; }
     // Mini badge preview
     buildPassList();  // async - fetches presets
+    // Passes toggle starts open
+    document.getElementById('passes-toggle')?.classList.add('is-open');
 
     // Custom fields
     const cfWrap = document.getElementById('custom-fields-info-wrap');
@@ -924,14 +976,17 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   let _passesOpen = true;
   function togglePasses() {
     _passesOpen = !_passesOpen;
+    const toggle = document.getElementById('passes-toggle');
     const list = document.getElementById('pass-list');
     const chevron = document.getElementById('passes-chevron');
     if (_passesOpen) {
       list.classList.remove('collapsed');
-      chevron.classList.add('open');
+      chevron.classList.remove('open');
+      toggle.classList.add('is-open');
     } else {
       list.classList.add('collapsed');
-      chevron.classList.remove('open');
+      chevron.classList.add('open');
+      toggle.classList.remove('is-open');
     }
   }
   let toastTimer;
