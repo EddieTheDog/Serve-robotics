@@ -119,6 +119,28 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .msg-close { width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; }
 .msg-close:active { opacity: 0.8; }
 
+/* Poll modal */
+#poll-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 450; align-items: flex-end; justify-content: center; }
+#poll-overlay.open { display: flex; }
+.poll-sheet { background: #fff; border-radius: 28px 28px 0 0; padding: 28px 20px; padding-bottom: calc(env(safe-area-inset-bottom,20px) + 20px); width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; }
+.poll-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 20px; }
+.poll-icon { font-size: 36px; text-align: center; margin-bottom: 10px; }
+.poll-question { font-size: 20px; font-weight: 800; line-height: 1.3; margin-bottom: 6px; color: #000; }
+.poll-subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+.poll-option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s, background 0.15s; font-size: 16px; font-weight: 600; background: #fff; width: 100%; text-align: left; font-family: inherit; position: relative; overflow: hidden; }
+.poll-option.selected { border-color: #000; background: #f8f8f8; }
+.poll-option.selected::before { content: ''; position: absolute; inset: 0; background: #000; opacity: 0.04; }
+.poll-option-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.15s; }
+.poll-option.selected .poll-option-check { background: #000; border-color: #000; color: #fff; }
+.poll-option-text { flex: 1; }
+.poll-option-bar { position: absolute; left: 0; top: 0; bottom: 0; background: #000; opacity: 0.08; border-radius: 12px; transition: width 0.4s ease; pointer-events: none; }
+.poll-option-pct { font-size: 13px; font-weight: 700; color: #888; flex-shrink: 0; }
+.poll-vote-btn { width: 100%; padding: 16px; background: #000; color: #fff; border: none; border-radius: 16px; font-size: 17px; font-weight: 800; margin-top: 6px; cursor: pointer; font-family: inherit; }
+.poll-vote-btn:disabled { background: #ccc; }
+.poll-vote-btn:active { opacity: 0.8; }
+.poll-already-voted { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
+.poll-close-link { display: block; text-align: center; font-size: 15px; color: #888; margin-top: 16px; cursor: pointer; }
+
 #toast { position: fixed; bottom: calc(env(safe-area-inset-bottom,20px) + 20px); left: 50%; transform: translateX(-50%) translateY(100px); background: #000; color: #fff; padding: 14px 24px; border-radius: 30px; font-size: 15px; font-weight: 700; transition: transform 0.3s ease; z-index: 300; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 #toast.show { transform: translateX(-50%) translateY(0); }
 
@@ -382,6 +404,20 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   </div>
 </div>
 
+<!-- Poll Sheet -->
+<div id="poll-overlay">
+  <div class="poll-sheet">
+    <div class="poll-handle"></div>
+    <div class="poll-icon">🗳️</div>
+    <div class="poll-question" id="poll-question"></div>
+    <div class="poll-subtitle" id="poll-subtitle"></div>
+    <div id="poll-options-wrap"></div>
+    <button class="poll-vote-btn" id="poll-vote-btn" onclick="submitVote()">Submit Vote</button>
+    <div class="poll-already-voted" id="poll-already-voted" style="display:none;">You've already voted — results shown above</div>
+    <span class="poll-close-link" onclick="closePoll()">Close</span>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -393,6 +429,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   let helpPending = false;
   let lastRefreshSignal = null;
   let currentNoticeId = null;
+  let _pendingNoticeAction = null;
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
@@ -456,11 +493,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     let blocks = [];
     try { blocks = g.blocks ? JSON.parse(g.blocks) : []; } catch(e) {}
     const blk = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
-    if (blocks.includes('help'))           blk('help-wrap');
-    if (blocks.includes('accommodations')) blk('accom-wrap');
-    if (blocks.includes('actor_request'))  blk('actor-req-wrap');
-    if (blocks.includes('passes'))         blk('passes-section-wrap');
-    if (blocks.includes('schedule'))       blk('schedule-wrap');
+    if (blocks.includes('help'))     blk('help-wrap');
+    if (blocks.includes('passes'))   blk('passes-section-wrap');
+    if (blocks.includes('schedule')) blk('schedule-wrap');
+    if (blocks.includes('buttons'))  blk('custom-buttons-wrap');
     // Seat row
     const seatRow = document.getElementById('info-seat-row');
     if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
@@ -519,11 +555,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
           ${buttons.map(b => {
             const isLink = b.action && b.action.startsWith('http');
             const isMsg = b.action && b.action.startsWith('msg:');
+            const isPoll = b.action && b.action.startsWith('poll:');
             const msgContent = isMsg ? b.action.slice(4) : '';
-            return `<button class="custom-action-btn" onclick="${isLink ? `openLink('${esc(b.action)}')` : isMsg ? `showMsgModal('${esc(b.emoji)}','${esc(b.label)}','${esc(msgContent)}')` : ''}">
+            const pollId = isPoll ? b.action.slice(5) : '';
+            return `<button class="custom-action-btn" onclick="${isLink ? `openLink('${esc(b.action)}')` : isMsg ? `showMsgModal('${esc(b.emoji)}','${esc(b.label)}','${esc(msgContent)}')` : isPoll ? `openPoll('${pollId}')` : ''}">
               <span class="ca-emoji">${esc(b.emoji)}</span>
               <span class="ca-label">${esc(b.label)}</span>
               ${isLink ? '<span class="ca-hint">Tap to open ↗</span>' : ''}
+              ${isPoll ? '<span class="ca-hint">Tap to vote</span>' : ''}
             </button>`;
           }).join('')}
         </div>`;
@@ -537,6 +576,95 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('msg-title').textContent = title;
     document.getElementById('msg-body').textContent = body;
     document.getElementById('msg-overlay').classList.add('open');
+  }
+
+  // ── POLL VOTING ──────────────────────────────────────────────
+  let _activePoll = null;
+  let _pollSelections = new Set();
+
+  async function openPoll(pollId) {
+    if (!pollId) return;
+    try {
+      const res = await fetch(`/api/polls?id=${encodeURIComponent(pollId)}&token=${encodeURIComponent(token)}`);
+      if (!res.ok) return;
+      _activePoll = await res.json();
+      _pollSelections = new Set(_activePoll.myVote || []);
+      renderPollSheet();
+      document.getElementById('poll-overlay').classList.add('open');
+    } catch(e) {}
+  }
+
+  function renderPollSheet() {
+    const p = _activePoll;
+    if (!p) return;
+    const hasVoted = p.myVote && p.myVote.length > 0;
+    document.getElementById('poll-question').textContent = p.question;
+    document.getElementById('poll-subtitle').textContent =
+      hasVoted ? `${p.totalVoters} vote${p.totalVoters!==1?'s':''} total`
+      : p.allow_multiple ? 'Select all that apply' : 'Choose one';
+
+    const wrap = document.getElementById('poll-options-wrap');
+    wrap.innerHTML = p.options.map((opt, i) => {
+      const votes = p.tallies ? p.tallies[i] : 0;
+      const pct = (p.totalVoters && hasVoted) ? Math.round(votes / p.totalVoters * 100) : 0;
+      const sel = _pollSelections.has(i);
+      return `<button class="poll-option${sel?' selected':''}" onclick="togglePollOption(${i})" ${hasVoted?'disabled':''}>
+        ${hasVoted
+          ? `<div class="poll-option-bar" style="width:${pct}%"></div>`
+          : `<div class="poll-option-check">${sel?'✓':''}</div>`}
+        <span class="poll-option-text">${esc(opt)}</span>
+        ${hasVoted ? `<span class="poll-option-pct">${pct}%</span>` : ''}
+      </button>`;
+    }).join('');
+
+    const voteBtn = document.getElementById('poll-vote-btn');
+    const alreadyEl = document.getElementById('poll-already-voted');
+    if (hasVoted) {
+      voteBtn.style.display = 'none';
+      alreadyEl.style.display = 'block';
+    } else {
+      voteBtn.style.display = 'block';
+      voteBtn.disabled = _pollSelections.size === 0;
+      alreadyEl.style.display = 'none';
+    }
+  }
+
+  function togglePollOption(idx) {
+    if (!_activePoll) return;
+    if (_activePoll.myVote && _activePoll.myVote.length) return; // already voted
+    if (_activePoll.allow_multiple) {
+      if (_pollSelections.has(idx)) _pollSelections.delete(idx);
+      else _pollSelections.add(idx);
+    } else {
+      _pollSelections = new Set([idx]);
+    }
+    renderPollSheet();
+  }
+
+  async function submitVote() {
+    if (!_activePoll || _pollSelections.size === 0) return;
+    const btn = document.getElementById('poll-vote-btn');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+    try {
+      await fetch('/api/polls', {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: _activePoll.id, token, choices: [..._pollSelections] })
+      });
+      // Reload poll to show results
+      const res = await fetch(`/api/polls?id=${encodeURIComponent(_activePoll.id)}&token=${encodeURIComponent(token)}`);
+      _activePoll = await res.json();
+      _pollSelections = new Set(_activePoll.myVote || []);
+      renderPollSheet();
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Submit Vote';
+    }
+  }
+
+  function closePoll() {
+    document.getElementById('poll-overlay').classList.remove('open');
+    _activePoll = null;
+    _pollSelections = new Set();
   }
 
   // Help & Accommodation Reasons
@@ -658,7 +786,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
   function showNotice(notice) {
     currentNoticeId = notice.id;
+    _pendingNoticeAction = (notice.action && notice.action.startsWith('poll:')) ? notice.action.slice(5) : null;
     document.getElementById('notice-message').textContent = notice.message;
+    // Show poll badge on notice if it has a poll attached
+    const hasAction = !!_pendingNoticeAction;
+    document.getElementById('notice-ok-btn').textContent = hasAction ? 'OK — Vote Now 🗳️' : 'OK';
     document.getElementById('notice-overlay').classList.add('open');
     const timerEl = document.getElementById('notice-timer');
     if (notice.duration > 0) {
@@ -675,7 +807,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('notice-overlay').classList.remove('open');
     if (!currentNoticeId) return;
     try { await fetch('/api/notices', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentNoticeId, token})}); } catch(e) {}
+    const actionPollId = _pendingNoticeAction;
+    _pendingNoticeAction = null;
     currentNoticeId = null;
+    if (actionPollId) openPoll(actionPollId);
   }
 
   // Poll loop
