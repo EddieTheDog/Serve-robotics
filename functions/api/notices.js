@@ -1,4 +1,4 @@
-// GET ?token=xxx  → fetch unread notices for this guest (per-guest dismissal)
+// GET ?token=xxx  → fetch unread notices for this guest
 // GET (no token)  → admin: all recent notices
 // POST            → send notice { message, target, duration, action? }
 // PATCH           → guest dismisses notice { id, token }
@@ -16,16 +16,27 @@ export async function onRequestGet({ request, env }) {
     let passes = [];
     try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
 
-    // Get all non-expired notices not yet dismissed by this guest
-    const { results: all } = await env.DB.prepare(`
-      SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
-      FROM notices n
-      WHERE NOT EXISTS (
-        SELECT 1 FROM notice_dismissals nd
-        WHERE nd.notice_id = n.id AND nd.guest_id = ?
-      )
-      ORDER BY n.created_at DESC
-    `).bind(guest.id).all();
+    // Fetch undismissed notices — try per-guest dismissal table first, fall back to global flag
+    let all = [];
+    try {
+      const { results } = await env.DB.prepare(`
+        SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
+        FROM notices n
+        LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
+        WHERE n.dismissed = 0 AND nd.notice_id IS NULL
+        ORDER BY n.created_at DESC
+      `).bind(guest.id).all();
+      all = results;
+    } catch(e) {
+      // notice_dismissals table may not exist yet — fall back to global dismissed flag only
+      const { results } = await env.DB.prepare(`
+        SELECT id, message, duration, action, created_at, guest_id
+        FROM notices
+        WHERE dismissed = 0
+        ORDER BY created_at DESC
+      `).all();
+      all = results;
+    }
 
     const mine = all.filter(n => {
       if (n.guest_id === 'ALL') return true;
@@ -46,18 +57,29 @@ export async function onRequestGet({ request, env }) {
   }
 
   // Admin: get all recent
-  const { results } = await env.DB.prepare(`
-    SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id,
-           (SELECT COUNT(*) FROM notice_dismissals nd WHERE nd.notice_id = n.id) as seen_count
-    FROM notices n
-    ORDER BY n.created_at DESC LIMIT 50
-  `).all();
+  let results = [];
+  try {
+    const r = await env.DB.prepare(`
+      SELECT n.id, n.message, n.duration, n.action, n.dismissed, n.created_at, n.guest_id,
+             (SELECT COUNT(*) FROM notice_dismissals nd WHERE nd.notice_id = n.id) as seen_count
+      FROM notices n
+      ORDER BY n.created_at DESC LIMIT 50
+    `).all();
+    results = r.results;
+  } catch(e) {
+    const r = await env.DB.prepare(`
+      SELECT id, message, duration, action, dismissed, created_at, guest_id
+      FROM notices
+      ORDER BY created_at DESC LIMIT 50
+    `).all();
+    results = r.results;
+  }
 
   return Response.json(results.map(n => ({
     ...n,
     action: n.action || '',
     recipient: labelForTarget(n.guest_id),
-    dismissed: n.seen_count > 0
+    dismissed: (n.seen_count > 0) || n.dismissed === 1
   })));
 }
 
@@ -76,26 +98,43 @@ export async function onRequestPost({ request, env }) {
   const id = crypto.randomUUID();
   const now = Date.now();
   const dest = target || 'ALL';
-  await env.DB.prepare(`
-    INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
-    VALUES (?, ?, ?, ?, ?, 0, ?)
-  `).bind(id, dest, message, duration ?? null, action || '', now).run();
+
+  // Try inserting with action column; fall back if column doesn't exist yet
+  try {
+    await env.DB.prepare(`
+      INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?)
+    `).bind(id, dest, message, duration ?? null, action || '', now).run();
+  } catch(e) {
+    await env.DB.prepare(`
+      INSERT INTO notices (id, guest_id, message, duration, dismissed, created_at)
+      VALUES (?, ?, ?, ?, 0, ?)
+    `).bind(id, dest, message, duration ?? null, now).run();
+  }
+
   return Response.json({ success: true, id });
 }
 
 export async function onRequestPatch({ request, env }) {
   const { id, token } = await request.json();
   if (!id) return new Response('Missing id', { status: 400 });
+
   if (token) {
     const guest = await env.DB.prepare(`SELECT id FROM guests WHERE app_token = ?`).bind(token).first();
     if (!guest) return new Response('Unauthorized', { status: 403 });
     const now = Date.now();
-    await env.DB.prepare(
-      `INSERT OR IGNORE INTO notice_dismissals (notice_id, guest_id, dismissed_at) VALUES (?, ?, ?)`
-    ).bind(id, guest.id, now).run();
+    try {
+      await env.DB.prepare(
+        `INSERT OR IGNORE INTO notice_dismissals (notice_id, guest_id, dismissed_at) VALUES (?, ?, ?)`
+      ).bind(id, guest.id, now).run();
+    } catch(e) {
+      // notice_dismissals not yet created — fall back to global dismiss
+      await env.DB.prepare(`UPDATE notices SET dismissed = 1 WHERE id = ?`).bind(id).run();
+    }
   } else {
-    // Admin dismiss-all: mark globally dismissed
+    // Admin: dismiss globally for everyone
     await env.DB.prepare(`UPDATE notices SET dismissed = 1 WHERE id = ?`).bind(id).run();
   }
+
   return Response.json({ success: true });
 }
