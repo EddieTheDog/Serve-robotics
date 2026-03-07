@@ -1,10 +1,9 @@
 // GET    /api/polls              → list all polls (admin)
-// GET    /api/polls?id=X         → single poll with vote counts + guest's vote if token provided
-// GET    /api/polls?id=X&token=Y → single poll + whether this guest has voted
-// POST                            → create poll { question, options[], allow_multiple }
-// PUT                             → update poll { id, question, options[], allow_multiple, active }
-// DELETE                          → { id }
-// PATCH                           → cast vote { id, token, choices[] }
+// GET    /api/polls?id=X&token=Y → single poll + guest's vote
+// POST                           → create poll { question, options[], allow_multiple, show_results }
+// PUT                            → partial update { id, ...fields }  (any subset)
+// DELETE                         → { id }
+// PATCH                          → cast vote { id, token, choices[] }
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -15,7 +14,6 @@ export async function onRequestGet({ request, env }) {
     const poll = await env.DB.prepare(`SELECT * FROM polls WHERE id = ?`).bind(id).first();
     if (!poll) return new Response('Poll not found', { status: 404 });
 
-    // Vote counts per option
     const { results: votes } = await env.DB.prepare(
       `SELECT choices FROM poll_votes WHERE poll_id = ?`
     ).bind(id).all();
@@ -24,10 +22,7 @@ export async function onRequestGet({ request, env }) {
     const tallies = new Array(options.length).fill(0);
     const totalVoters = votes.length;
     votes.forEach(v => {
-      try {
-        const choices = JSON.parse(v.choices);
-        choices.forEach(c => { if (c >= 0 && c < tallies.length) tallies[c]++; });
-      } catch(e) {}
+      try { JSON.parse(v.choices).forEach(c => { if (c >= 0 && c < tallies.length) tallies[c]++; }); } catch(e) {}
     });
 
     let myVote = null;
@@ -52,23 +47,32 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const { question, options, allow_multiple } = await request.json();
+  const { question, options, allow_multiple, show_results } = await request.json();
   if (!question || !options?.length) return new Response('Missing fields', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
   await env.DB.prepare(
-    `INSERT INTO polls (id, question, options, allow_multiple, active, created_at, updated_at) VALUES (?,?,?,?,1,?,?)`
-  ).bind(id, question, JSON.stringify(options), allow_multiple ? 1 : 0, now, now).run();
-  return Response.json({ id, question, options, allow_multiple, active: 1 });
+    `INSERT INTO polls (id, question, options, allow_multiple, active, show_results, created_at, updated_at)
+     VALUES (?,?,?,?,1,?,?,?)`
+  ).bind(id, question, JSON.stringify(options), allow_multiple ? 1 : 0, show_results !== false ? 1 : 0, now, now).run();
+  return Response.json({ id, question, options, allow_multiple, active: 1, show_results: show_results !== false ? 1 : 0 });
 }
 
 export async function onRequestPut({ request, env }) {
-  const { id, question, options, allow_multiple, active } = await request.json();
+  // Supports partial updates — only fields present in body are updated
+  const body = await request.json();
+  const { id } = body;
   if (!id) return new Response('Missing id', { status: 400 });
   const now = Date.now();
-  await env.DB.prepare(
-    `UPDATE polls SET question=?, options=?, allow_multiple=?, active=?, updated_at=? WHERE id=?`
-  ).bind(question, JSON.stringify(options), allow_multiple ? 1 : 0, active ? 1 : 0, now, id).run();
+  const updates = ['updated_at = ?'];
+  const binds = [now];
+  if (body.question !== undefined)      { updates.push('question = ?');      binds.push(body.question); }
+  if (body.options !== undefined)       { updates.push('options = ?');        binds.push(JSON.stringify(body.options)); }
+  if (body.allow_multiple !== undefined){ updates.push('allow_multiple = ?'); binds.push(body.allow_multiple ? 1 : 0); }
+  if (body.active !== undefined)        { updates.push('active = ?');         binds.push(body.active ? 1 : 0); }
+  if (body.show_results !== undefined)  { updates.push('show_results = ?');   binds.push(body.show_results ? 1 : 0); }
+  binds.push(id);
+  await env.DB.prepare(`UPDATE polls SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
   return Response.json({ success: true });
 }
 
@@ -86,15 +90,12 @@ export async function onRequestPatch({ request, env }) {
   if (!guest) return new Response('Invalid token', { status: 403 });
   const poll = await env.DB.prepare(`SELECT * FROM polls WHERE id = ? AND active = 1`).bind(id).first();
   if (!poll) return new Response('Poll not found or inactive', { status: 404 });
-
   const voteId = crypto.randomUUID();
   const now = Date.now();
-  // Upsert — one vote per guest per poll
   await env.DB.prepare(
     `INSERT INTO poll_votes (id, poll_id, guest_id, choices, created_at)
      VALUES (?,?,?,?,?)
      ON CONFLICT(poll_id, guest_id) DO UPDATE SET choices=excluded.choices, created_at=excluded.created_at`
   ).bind(voteId, id, guest.id, JSON.stringify(choices), now).run();
-
   return Response.json({ success: true });
 }
