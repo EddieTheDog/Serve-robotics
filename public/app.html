@@ -159,15 +159,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 /* Passes collapsible toggle */
 .passes-toggle {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
-  background: none; border: none; padding: 0; margin: 20px 0 0;
+  background: #fff; border: none; border-radius: 16px;
+  padding: 14px 18px; margin: 24px 0 0;
   cursor: pointer; font-family: inherit;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: opacity 0.15s;
 }
+.passes-toggle:active { opacity: 0.7; }
 .passes-toggle span:first-child {
-  font-size: 13px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1px; color: #888;
+  font-size: 15px; font-weight: 700; color: #000;
 }
 .passes-chevron {
-  font-size: 16px; color: #aaa; transition: transform 0.25s ease;
+  font-size: 14px; color: #aaa; transition: transform 0.25s ease;
 }
 .passes-chevron.open { transform: rotate(180deg); }
 .pass-list {
@@ -344,7 +347,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
     <div id="passes-section-wrap">
       <button class="passes-toggle" id="passes-toggle" onclick="togglePasses()">
-        <span>🎟️ My Passes</span>
+        <span>Passes</span>
         <span class="passes-chevron" id="passes-chevron">▾</span>
       </button>
       <div class="pass-list" id="pass-list"></div>
@@ -440,6 +443,17 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <button class="poll-vote-btn" id="poll-vote-btn" onclick="submitVote()">Submit Vote</button>
     <div class="poll-already-voted" id="poll-already-voted" style="display:none;">You've already voted — results shown above</div>
     <span class="poll-close-link" onclick="closePoll()">Close</span>
+  </div>
+</div>
+
+<!-- Link Warning Sheet -->
+<div class="sheet-overlay" id="link-warn-sheet">
+  <div class="sheet">
+    <div class="sheet-title">Opening External Link</div>
+    <p style="font-size:15px;color:#555;margin:0 0 6px;line-height:1.5;">You're about to leave the app and open:</p>
+    <div id="link-warn-url" style="font-size:13px;color:#888;word-break:break-all;background:#f5f5f5;border-radius:10px;padding:10px 12px;margin-bottom:20px;"></div>
+    <button style="width:100%;padding:16px;background:#000;color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;" onclick="confirmOpenLink()">Open Link ↗</button>
+    <button class="sheet-cancel" onclick="document.getElementById('link-warn-sheet').classList.remove('open')">Cancel</button>
   </div>
 </div>
 
@@ -595,7 +609,17 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     } catch(e) {}
   }
 
-  function openLink(url) { if (url) window.open(url, '_blank', 'noopener'); }
+  let _pendingLinkUrl = null;
+  function openLink(url) {
+    if (!url) return;
+    _pendingLinkUrl = url;
+    document.getElementById('link-warn-url').textContent = url;
+    document.getElementById('link-warn-sheet').classList.add('open');
+  }
+  function confirmOpenLink() {
+    document.getElementById('link-warn-sheet').classList.remove('open');
+    if (_pendingLinkUrl) { window.open(_pendingLinkUrl, '_blank', 'noopener'); _pendingLinkUrl = null; }
+  }
 
   function showMsgModal(emoji, title, body) {
     document.getElementById('msg-emoji').textContent = emoji || '💬';
