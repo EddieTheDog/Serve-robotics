@@ -39,6 +39,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .btn:active { opacity: 0.8; }
 .btn.green { background: #34c759; }
 .btn.red { background: #ff3b30; }
+.btn.purple { background: #9b59b6; color: #fff; }
 .btn.gray { background: #e0e0e0; color: #333; }
 .btn.orange { background: #ff9500; }
 .btn.blue { background: #007aff; }
@@ -411,6 +412,19 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div id="custom-fields-list"></div>
 </div>
 
+<!-- Block Modal -->
+<div class="modal-overlay" id="block-modal" onclick="if(event.target===this)closeBlockModal()">
+  <div class="modal" style="max-width:380px;">
+    <h3>🚫 Block Features</h3>
+    <p id="block-modal-name" style="font-size:14px;color:#888;margin-bottom:16px;"></p>
+    <div id="block-checklist" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeBlockModal()">Cancel</button>
+      <button class="modal-confirm" style="background:#9b59b6;" onclick="saveBlocks()">Save Blocks</button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Modal -->
 <div class="modal-overlay" id="delete-modal">
   <div class="modal">
@@ -477,6 +491,7 @@ async function loadQueue() {
       </div>
       <div class="qr-text" id="qrtext-${g.id}"></div>`;
     el.appendChild(div);
+    div.__guestData = g; // used by block modal
 
     if (g.app_token) {
       const url = `${BASE_URL}/app?token=${g.app_token}`;
@@ -530,7 +545,7 @@ async function loadGuests() {
     div.innerHTML = `
       <div class="guest-header">
         <div>
-          <div class="guest-name">${esc(g.first_name)} ${esc(g.last_name)}${g.is_actor ? ' <span class="badge-pill actor" style="font-size:11px;padding:2px 8px;vertical-align:middle;">🎬 Actor</span>' : ''}</div>
+          <div class="guest-name">${esc(g.first_name)} ${esc(g.last_name)}${g.is_actor ? ' <span class="badge-pill actor" style="font-size:11px;padding:2px 8px;vertical-align:middle;">🎬 Actor</span>' : ''}${(()=>{try{const b=g.blocks?JSON.parse(g.blocks):[];return b.length?` <span style="font-size:11px;font-weight:700;background:#9b59b6;color:#fff;border-radius:8px;padding:2px 7px;vertical-align:middle;">🚫 ${b.length} blocked</span>`:''}catch(e){return ''}})()}</div>
           ${g.seat ? `<div style="font-size:13px;color:#888;margin-top:2px;">📍 ${esc(g.seat)}</div>` : ''}
           ${g.badge ? `<div style="font-size:13px;font-weight:700;margin-top:2px;">🏅 ${esc(g.badge)}</div>` : ''}
         </div>
@@ -544,6 +559,7 @@ async function loadGuests() {
           <button class="btn small ${helpOff?'green':'orange'}" onclick="toggleHelp('${g.id}',${helpOff})" title="${helpOff?'Re-enable help button':'Disable help button'}">${helpOff?'Enable Help':'Disable Help'}</button>
           <button class="btn small ${accomEffective?'orange':'green'}" onclick="toggleAccomAccess('${g.id}',${accomEffective?1:0},${accomOn?1:0})" title="${accomEffective?'Disable accommodations for this guest':'Enable accommodations for this guest'}">${accomEffective?'Disable Accom':'Enable Accom'}</button>
           ${g.is_actor ? `<button class="btn small ${actorReqOff?'green':'orange'}" onclick="toggleActorReq('${g.id}',${actorReqOff})">${actorReqOff?'Enable Actor Req':'Disable Actor Req'}</button>` : ''}
+          <button class="btn small purple" onclick="openBlockModal('${g.id}','${esc(g.first_name)}')">🚫 Block</button>
           <button class="btn small red" onclick="openDeleteModal('${g.id}')">Delete</button>
           ${appUrl ? `<button class="btn small gray" onclick="copyLink('${appUrl}')">Copy Link</button>` : ''}
         </div>
@@ -632,6 +648,59 @@ async function confirmDelete() {
   if (!deleteTargetId) return;
   await fetch('/api/admin-guests', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:deleteTargetId})});
   closeModal(); loadGuests();
+}
+
+// ---- BLOCK MODAL ----
+let _blockTargetId = null;
+
+const BLOCK_OPTIONS = [
+  { key: 'help',           label: '🆘 Help Button',          desc: 'Hides the Call for Help button' },
+  { key: 'accommodations', label: '🛎️ Accommodations',        desc: 'Hides the accommodation request' },
+  { key: 'passes',         label: '🎟️ My Passes',             desc: 'Hides the entire passes section' },
+  { key: 'schedule',       label: '📅 Schedule',              desc: 'Hides the What\'s Happening section' },
+  { key: 'actor_request',  label: '🎬 Actor Special Request', desc: 'Hides actor request button' },
+  { key: 'notices',        label: '📢 Notices',               desc: 'Suppresses pop-up notices' },
+];
+
+function openBlockModal(guestId, firstName) {
+  _blockTargetId = guestId;
+  document.getElementById('block-modal-name').textContent = `Managing restrictions for ${firstName}`;
+
+  // Find current guest blocks
+  const guest = [...document.querySelectorAll('[id^="gc-"]')]
+    .map(el => el.__guestData)
+    .find(g => g && g.id === guestId);
+  let currentBlocks = [];
+  try { currentBlocks = guest?.blocks ? JSON.parse(guest.blocks) : []; } catch(e) {}
+
+  const list = document.getElementById('block-checklist');
+  list.innerHTML = BLOCK_OPTIONS.map(opt => `
+    <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:10px;background:#f8f8f8;border-radius:10px;">
+      <input type="checkbox" data-key="${opt.key}" ${currentBlocks.includes(opt.key)?'checked':''}
+        style="width:18px;height:18px;margin-top:2px;accent-color:#9b59b6;flex-shrink:0;cursor:pointer;">
+      <div>
+        <div style="font-size:15px;font-weight:700;">${opt.label}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">${opt.desc}</div>
+      </div>
+    </label>`).join('');
+
+  document.getElementById('block-modal').classList.add('open');
+}
+
+function closeBlockModal() {
+  document.getElementById('block-modal').classList.remove('open');
+  _blockTargetId = null;
+}
+
+async function saveBlocks() {
+  if (!_blockTargetId) return;
+  const checked = [...document.querySelectorAll('#block-checklist input[type=checkbox]')]
+    .filter(cb => cb.checked)
+    .map(cb => cb.dataset.key);
+  await fetch('/api/admin-guests', {method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ guestId: _blockTargetId, blocks: JSON.stringify(checked) })});
+  closeBlockModal();
+  loadGuests();
 }
 function copyLink(url) { navigator.clipboard.writeText(url).then(()=>alert('Copied!')).catch(()=>alert(url)); }
 
