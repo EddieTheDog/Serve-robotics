@@ -455,6 +455,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       loadCustomButtons();
       loadHelpReasons();
       pollLoop();
+      checkNotices(); // check immediately on load, don't wait 8s
     } catch(e) { showError(); }
   }
 
