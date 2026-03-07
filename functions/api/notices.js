@@ -1,9 +1,8 @@
 // GET ?token=xxx  → fetch unread notices for attendee
 // GET (no token)  → admin fetch all recent notices
-// POST            → send notice (admin)
-//   target: 'ALL' | 'badge:Eddie +' | 'badge:VIP' | 'badge:Staff' | 'badge:Press'
-//           | 'pass:Drink Pass' | 'actor' | 'guest:<id>'
-// PATCH           → dismiss a notice (attendee)
+// POST            → send notice (admin): { message, target, duration, action? }
+//   action: optional "poll:<id>" to open a poll when dismissed
+// PATCH           → dismiss a notice (attendee): { id, token }
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -15,15 +14,11 @@ export async function onRequestGet({ request, env }) {
     ).bind(token).first();
     if (!guest) return Response.json([]);
 
-    // Attendee sees: notices for them directly, ALL notices,
-    // badge-group notices matching their badge,
-    // pass-group notices matching their passes,
-    // and actor notices if they're an actor
     let passes = [];
     try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
 
     const { results: all } = await env.DB.prepare(`
-      SELECT id, message, duration, created_at, guest_id FROM notices
+      SELECT id, message, duration, action, created_at, guest_id FROM notices
       WHERE dismissed = 0
       ORDER BY created_at DESC
     `).all();
@@ -45,7 +40,7 @@ export async function onRequestGet({ request, env }) {
 
   // Admin: get all recent
   const { results } = await env.DB.prepare(`
-    SELECT id, message, duration, dismissed, created_at, guest_id FROM notices
+    SELECT id, message, duration, action, dismissed, created_at, guest_id FROM notices
     ORDER BY created_at DESC LIMIT 50
   `).all();
 
@@ -65,15 +60,15 @@ function labelForTarget(t) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const { message, target, duration } = await request.json();
+  const { message, target, duration, action } = await request.json();
   if (!message) return new Response('Missing message', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
   const dest = target || 'ALL';
   await env.DB.prepare(`
-    INSERT INTO notices (id, guest_id, message, duration, dismissed, created_at)
-    VALUES (?, ?, ?, ?, 0, ?)
-  `).bind(id, dest, message, duration ?? null, now).run();
+    INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
+    VALUES (?, ?, ?, ?, ?, 0, ?)
+  `).bind(id, dest, message, duration ?? null, action || '', now).run();
   return Response.json({ success: true, id });
 }
 
