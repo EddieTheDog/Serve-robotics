@@ -924,7 +924,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
 
   // ── Pass List & QR ──
-  const PASS_ICONS = { badge: '🎫', actor: '🎬', drink: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', parking: '🅿️' };
+  const PASS_ICONS = { badge: '🎫', actor: '🎬', drink: '🍹', photo: '📸', vip: '⭐', backstage: '🎭', meal: '🍽️', parking: '🅿️', bar: '🍹' };
   function passIcon(name) {
     const l = (name||'').toLowerCase();
     for (const [k,v] of Object.entries(PASS_ICONS)) if (l.includes(k)) return v;
