@@ -167,7 +167,6 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <div class="topbar">
   <h1>Admin — The Eddie's 2025</h1>
   <div class="topbar-right">
-    <button class="refresh-all-btn" id="lock-all-btn" onclick="lockAll()" style="background:#ff3b30;">🔒 Lock All</button>
     <button class="refresh-all-btn" id="refresh-all-btn" onclick="refreshAll()">📡 Refresh All</button>
     <span id="help-count" style="background:#ff3b30;color:#fff;border-radius:20px;padding:4px 12px;font-weight:700;font-size:14px;display:none;">⚠ Help!</span>
   </div>
@@ -198,6 +197,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <!-- GUESTS -->
 <div class="tab-content" id="tab-guests">
   <div class="section-label">All Attendees</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <button class="btn" style="flex:1;background:#ff3b30;" onclick="lockAll()">🔒 Lock All</button>
+    <button class="btn" style="flex:1;background:#34c759;" onclick="unlockAll()">🔓 Unlock All</button>
+  </div>
   <div id="guests-list"></div>
 </div>
 
@@ -696,17 +699,11 @@ async function toggleLock(id, isLocked) {
   loadGuests();
 }
 async function lockAll() {
-  if (!confirm('Lock ALL guests? Their apps will show a locked screen immediately.\n\nThis does not send any notifications — it just locks the app for everyone.')) return;
-  const btn = document.getElementById('lock-all-btn');
-  btn.textContent = '🔒 Locking...'; btn.disabled = true;
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({lockAll:true})});
-  await refreshAll();
-  // Get the total locked count from a fresh fetch
-  const countRes = await fetch('/api/admin-guests');
-  const allGuests = await countRes.json();
-  const total = allGuests.filter(g => g.locked == 1).length;
-  btn.textContent = `🔒 ${total} Locked`;
-  btn.disabled = false;
+  loadGuests();
+}
+async function unlockAll() {
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({lockAll:false})});
   loadGuests();
 }
 async function toggleHelp(id, helpOff) {
