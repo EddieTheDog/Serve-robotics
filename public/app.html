@@ -298,9 +298,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <div id="custom-buttons-wrap"></div>
 
+    <div id="schedule-wrap">
     <div class="section-label">What's Happening</div>
     <div class="card" id="schedule-card">
       <div class="schedule-item"><div class="schedule-dot"></div><div class="schedule-info"><span>Loading...</span></div></div>
+    </div>
     </div>
 
     <div class="section-label">Info</div>
@@ -312,8 +314,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <div id="custom-fields-info-wrap"></div>
 
+    <div id="passes-section-wrap">
     <div class="section-label" style="margin-top:24px;">My Passes</div>
     <div class="pass-list" id="pass-list"></div>
+    </div>
   </div>
 </div>
 
@@ -447,6 +451,16 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     // Actor request button — actors only, unless disabled
     const showActorReq = g.is_actor && !g.actor_request_disabled;
     document.getElementById('actor-req-wrap').style.display = showActorReq ? 'block' : 'none';
+
+    // Apply blocks — blocks override individual flags above
+    let blocks = [];
+    try { blocks = g.blocks ? JSON.parse(g.blocks) : []; } catch(e) {}
+    const blk = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+    if (blocks.includes('help'))           blk('help-wrap');
+    if (blocks.includes('accommodations')) blk('accom-wrap');
+    if (blocks.includes('actor_request'))  blk('actor-req-wrap');
+    if (blocks.includes('passes'))         blk('passes-section-wrap');
+    if (blocks.includes('schedule'))       blk('schedule-wrap');
     // Seat row
     const seatRow = document.getElementById('info-seat-row');
     if (g.seat) { seatRow.style.display='flex'; document.getElementById('info-seat').textContent = g.seat; }
