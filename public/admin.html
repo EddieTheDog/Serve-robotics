@@ -243,6 +243,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <option value="">— Select a poll —</option>
       </select>
     </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <label style="font-size:13px;font-weight:700;color:#888;white-space:nowrap;">Auto-remove after:</label>
+      <select id="new-btn-duration" style="flex:1;padding:10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
+        <option value="0">Never (keep until deleted)</option>
+        <option value="1800">30 minutes</option>
+        <option value="3600">1 hour</option>
+        <option value="7200">2 hours</option>
+        <option value="14400">4 hours</option>
+        <option value="28800">8 hours</option>
+        <option value="86400">24 hours</option>
+      </select>
+    </div>
     <button class="btn full" onclick="addButton()">+ Add Button</button>
   </div>
   <div id="buttons-list"></div>
@@ -265,9 +277,13 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       </div>
     </div>
     <button class="btn small gray" onclick="addPollOption()" style="margin-bottom:10px;">+ Add Option</button>
-    <label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#555;margin-bottom:12px;cursor:pointer;">
+    <label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#555;margin-bottom:8px;cursor:pointer;">
       <input type="checkbox" id="new-poll-multiple" style="width:18px;height:18px;accent-color:#000;cursor:pointer;">
       Allow multiple selections
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#555;margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="new-poll-show-results" checked style="width:18px;height:18px;accent-color:#000;cursor:pointer;">
+      Show results to guests after voting
     </label>
     <button class="btn full" onclick="createPoll()">+ Create Poll</button>
   </div>
@@ -476,6 +492,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">Cancel</button>
       <button class="modal-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Poll Results Modal -->
+<div class="modal-overlay" id="poll-results-modal" onclick="if(event.target===this)closePollResults()">
+  <div class="modal" style="max-width:420px;max-height:80vh;overflow-y:auto;">
+    <h3 id="poll-results-title" style="margin-bottom:6px;font-size:17px;line-height:1.3;"></h3>
+    <p id="poll-results-meta" style="font-size:13px;color:#888;margin-bottom:18px;"></p>
+    <div id="poll-results-bars"></div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="modal-cancel" onclick="closePollResults()">Close</button>
     </div>
   </div>
 </div>
@@ -871,6 +899,7 @@ function renderButtonsList() {
       <div style="flex:1;">
         <div class="ci-label">${esc(b.label)}</div>
         ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
+        ${b.expires_at ? `<div style="font-size:11px;color:#ff9500;margin-top:2px;">⏱ Expires ${new Date(b.expires_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>` : ''}
       </div>
       <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
     </div>`;
@@ -916,12 +945,15 @@ async function addButton() {
     if (!pollId) return alert('Select a poll first');
     action = 'poll:' + pollId;
   }
-  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action})});
+  const durSecs = parseInt(document.getElementById('new-btn-duration').value) || 0;
+  const expires_at = durSecs > 0 ? Date.now() + durSecs * 1000 : null;
+  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action, expires_at})});
   document.getElementById('new-btn-label').value = '';
   document.getElementById('new-btn-emoji').value = '';
   document.getElementById('new-btn-url').value = '';
   document.getElementById('new-btn-msg').value = '';
   document.getElementById('new-btn-type').value = 'none';
+  document.getElementById('new-btn-duration').value = '0';
   toggleBtnTypeField();
   loadButtons();
 }
@@ -949,14 +981,16 @@ async function loadPolls() {
   el.innerHTML = _polls.map(p => {
     const totalVotes = p.vote_count || 0;
     const activeLabel = p.active ? '<span style="color:#34c759;font-weight:700;">● Live</span>' : '<span style="color:#aaa;">Paused</span>';
+    const resultsLabel = p.show_results ? 'Results: Visible' : 'Results: Hidden';
     return `<div class="config-item" style="flex-direction:column;align-items:stretch;gap:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <div style="flex:1;">
           <div class="ci-label" style="font-size:15px;">${esc(p.question)}</div>
           <div style="font-size:12px;color:#888;margin-top:3px;">${totalVotes} vote${totalVotes!==1?'s':''} · ${p.allow_multiple?'Multi-choice':'Single choice'} · ${activeLabel}</div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
           <button class="btn small gray" onclick="togglePollActive('${p.id}',${p.active})">${p.active?'Pause':'Resume'}</button>
+          <button class="btn small gray" onclick="togglePollShowResults('${p.id}',${p.show_results??1})" style="font-size:11px;">${p.show_results??1?'Hide Results':'Show Results'}</button>
           <button class="btn small gray" onclick="openPollResults('${p.id}')">Results</button>
           <button class="btn small red" onclick="deletePoll('${p.id}')">Delete</button>
         </div>
@@ -964,7 +998,7 @@ async function loadPolls() {
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
         ${p.options.map((o,i) => `<span style="padding:4px 10px;background:#f0f0f0;border-radius:8px;font-size:13px;font-weight:600;">${esc(o)}</span>`).join('')}
       </div>
-      <div style="font-size:11px;color:#aaa;">ID: ${p.id} — use <code style="background:#f0f0f0;padding:1px 5px;border-radius:4px;">poll:${p.id}</code> in a notice action</div>
+      <div style="font-size:11px;color:#aaa;">ID: ${p.id} — use <code style="background:#f0f0f0;padding:1px 5px;border-radius:4px;">poll:${p.id}</code> in a notice · ${resultsLabel}</div>
     </div>`;
   }).join('');
 }
@@ -999,12 +1033,14 @@ async function createPoll() {
   const options = [...document.querySelectorAll('#poll-options-list .poll-opt-input')]
     .map(i => i.value.trim()).filter(Boolean);
   const allow_multiple = document.getElementById('new-poll-multiple').checked;
+  const show_results = document.getElementById('new-poll-show-results').checked;
   if (!question) return alert('Enter a question');
   if (options.length < 2) return alert('Need at least 2 options');
   await fetch('/api/polls', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ question, options, allow_multiple })});
+    body: JSON.stringify({ question, options, allow_multiple, show_results })});
   document.getElementById('new-poll-question').value = '';
   document.getElementById('new-poll-multiple').checked = false;
+  document.getElementById('new-poll-show-results').checked = true;
   // Reset options to two blanks
   const list = document.getElementById('poll-options-list');
   list.innerHTML = `<div class="poll-option-row" style="display:flex;gap:6px;"><input type="text" class="poll-opt-input" placeholder="Option 1" style="flex:1;padding:10px 12px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;"><button class="btn small gray" onclick="removePollOption(this)" style="flex-shrink:0;">✕</button></div>
@@ -1018,6 +1054,12 @@ async function togglePollActive(id, current) {
   loadPolls();
 }
 
+async function togglePollShowResults(id, current) {
+  await fetch('/api/polls', {method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id, show_results: current ? 0 : 1 })});
+  loadPolls();
+}
+
 async function deletePoll(id) {
   if (!confirm('Delete this poll and all its votes?')) return;
   await fetch('/api/polls', {method:'DELETE', headers:{'Content-Type':'application/json'},
@@ -1028,13 +1070,26 @@ async function deletePoll(id) {
 async function openPollResults(id) {
   const res = await fetch(`/api/polls?id=${id}`);
   const poll = await res.json();
-  const lines = poll.options.map((o, i) => {
+  document.getElementById('poll-results-title').textContent = poll.question;
+  document.getElementById('poll-results-meta').textContent =
+    `${poll.totalVoters} voter${poll.totalVoters!==1?'s':''} · ${poll.allow_multiple?'Multi-choice':'Single choice'} · ${poll.active?'Live':'Paused'}`;
+  const bars = document.getElementById('poll-results-bars');
+  bars.innerHTML = poll.options.map((o, i) => {
     const votes = poll.tallies[i];
-    const pct = poll.totalVoters ? Math.round(votes/poll.totalVoters*100) : 0;
-    return `${o}: ${votes} vote${votes!==1?'s':''} (${pct}%)`;
-  }).join('\n');
-  alert(`📊 ${poll.question}\n\nTotal voters: ${poll.totalVoters}\n\n${lines}`);
+    const pct = poll.totalVoters ? Math.round(votes / poll.totalVoters * 100) : 0;
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:5px;">
+        <span>${esc(o)}</span>
+        <span style="color:#888;">${votes} · ${pct}%</span>
+      </div>
+      <div style="height:10px;background:#f0f0f0;border-radius:6px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:#000;border-radius:6px;transition:width 0.4s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('poll-results-modal').classList.add('open');
 }
+function closePollResults() { document.getElementById('poll-results-modal').classList.remove('open'); }
 
 // ---- HELP REASONS ----
 async function loadReasons() {
