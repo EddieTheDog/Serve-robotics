@@ -167,6 +167,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <div class="topbar">
   <h1>Admin — The Eddie's 2025</h1>
   <div class="topbar-right">
+    <button class="refresh-all-btn" onclick="lockAll()" style="background:#ff3b30;">🔒 Lock All</button>
     <button class="refresh-all-btn" onclick="refreshAll()">📡 Refresh All</button>
     <span id="help-count" style="background:#ff3b30;color:#fff;border-radius:20px;padding:4px 12px;font-weight:700;font-size:14px;display:none;">⚠ Help!</span>
   </div>
@@ -243,17 +244,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <option value="">— Select a poll —</option>
       </select>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
-      <label style="font-size:13px;font-weight:700;color:#888;white-space:nowrap;">Auto-remove after:</label>
-      <select id="new-btn-duration" style="flex:1;padding:10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
-        <option value="0">Never (keep until deleted)</option>
-        <option value="1800">30 minutes</option>
-        <option value="3600">1 hour</option>
-        <option value="7200">2 hours</option>
-        <option value="14400">4 hours</option>
-        <option value="28800">8 hours</option>
-        <option value="86400">24 hours</option>
-      </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#888;display:block;margin-bottom:4px;">APPEARS AT (optional)</label>
+        <input type="datetime-local" id="new-btn-starts-at" style="width:100%;padding:9px 10px;font-size:13px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;background:#fff;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#888;display:block;margin-bottom:4px;">EXPIRES AT (optional)</label>
+        <input type="datetime-local" id="new-btn-expires-at" style="width:100%;padding:9px 10px;font-size:13px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;background:#fff;box-sizing:border-box;">
+      </div>
     </div>
     <button class="btn full" onclick="addButton()">+ Add Button</button>
   </div>
@@ -696,6 +695,15 @@ async function toggleLock(id, isLocked) {
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,locked:isLocked?0:1})});
   loadGuests();
 }
+async function lockAll() {
+  if (!confirm('Lock ALL guests? Their apps will show a locked screen immediately.\n\nThis does not send any notifications — it just locks the app for everyone.')) return;
+  const btn = document.querySelector('.topbar-right button[onclick="lockAll()"]');
+  if (btn) { btn.textContent = '🔒 Locking...'; btn.disabled = true; }
+  await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({lockAll:true})});
+  await refreshAll();
+  if (btn) { btn.textContent = '🔒 Lock All'; btn.disabled = false; }
+  loadGuests();
+}
 async function toggleHelp(id, helpOff) {
   await fetch('/api/admin-guests', {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId:id,help_disabled:helpOff?0:1})});
   loadGuests();
@@ -899,7 +907,8 @@ function renderButtonsList() {
       <div style="flex:1;">
         <div class="ci-label">${esc(b.label)}</div>
         ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
-        ${b.expires_at ? `<div style="font-size:11px;color:#ff9500;margin-top:2px;">⏱ Expires ${new Date(b.expires_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+        ${b.starts_at ? `<div style="font-size:11px;color:#007aff;margin-top:2px;">⏰ Appears ${new Date(b.starts_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+        ${b.expires_at ? `<div style="font-size:11px;color:#ff9500;margin-top:2px;">⏱ Expires ${new Date(b.expires_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
       </div>
       <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
     </div>`;
@@ -945,15 +954,19 @@ async function addButton() {
     if (!pollId) return alert('Select a poll first');
     action = 'poll:' + pollId;
   }
-  const durSecs = parseInt(document.getElementById('new-btn-duration').value) || 0;
-  const expires_at = durSecs > 0 ? Date.now() + durSecs * 1000 : null;
-  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action, expires_at})});
+  const startsAtVal = document.getElementById('new-btn-starts-at').value;
+  const expiresAtVal = document.getElementById('new-btn-expires-at').value;
+  const starts_at = startsAtVal ? new Date(startsAtVal).getTime() : null;
+  const expires_at = expiresAtVal ? new Date(expiresAtVal).getTime() : null;
+  if (expires_at && starts_at && expires_at <= starts_at) return alert('Expires At must be after Appears At');
+  await fetch('/api/buttons', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label, emoji, action, starts_at, expires_at})});
   document.getElementById('new-btn-label').value = '';
   document.getElementById('new-btn-emoji').value = '';
   document.getElementById('new-btn-url').value = '';
   document.getElementById('new-btn-msg').value = '';
   document.getElementById('new-btn-type').value = 'none';
-  document.getElementById('new-btn-duration').value = '0';
+  document.getElementById('new-btn-starts-at').value = '';
+  document.getElementById('new-btn-expires-at').value = '';
   toggleBtnTypeField();
   loadButtons();
 }
