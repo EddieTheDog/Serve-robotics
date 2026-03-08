@@ -902,67 +902,73 @@ function renderButtonsList() {
         : b.action.startsWith('poll:') ? '🗳️ Poll: ' + (pollsMap[b.action.slice(5)] || b.action.slice(5))
         : '🔗 ' + b.action)
       : '';
-    const now = Date.now();
-    const hasStarts = b.starts_at && b.starts_at > 0;
-    const hasExpires = b.expires_at && b.expires_at > 0;
-    const isScheduled = hasStarts || hasExpires;
-    const isPending = hasStarts && b.starts_at > now;
-    const isExpired = hasExpires && b.expires_at <= now;
 
-    const fmtTime = ts => new Date(ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-    const fmtDuration = ms => {
+    const now = Date.now();
+    const hasStarts  = b.starts_at  && b.starts_at  > 0;
+    const hasExpires = b.expires_at && b.expires_at > 0;
+    const isPending  = hasStarts  && b.starts_at  > now;
+    const isExpired  = hasExpires && b.expires_at <= now;
+    const isLive     = !isPending && !isExpired;
+
+    const fmt = ts => new Date(ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    const dur = ms => {
       const m = Math.round(Math.abs(ms) / 60000);
       if (m < 60) return `${m}m`;
       const h = Math.floor(m / 60), rem = m % 60;
       return rem ? `${h}h ${rem}m` : `${h}h`;
     };
+    const nudge = (id, field, delta) => `<button class="btn small gray" onclick="adjustBtnTime('${id}','${field}',${delta})">${delta>0?'+':''}${delta}m</button>`;
 
+    // Status line — only shown for pending/expiring/expired
     let statusLine = '';
     if (isPending) {
-      statusLine = `<div style="font-size:11px;color:#007aff;font-weight:700;margin-top:3px;">Not live yet · in ${fmtDuration(b.starts_at - now)}${hasExpires ? ' · ends ' + fmtTime(b.expires_at) : ''}</div>`;
+      statusLine = `<div style="font-size:11px;color:#007aff;font-weight:700;margin-top:3px;">Not live yet · in ${dur(b.starts_at - now)}${hasExpires ? ' · ends ' + fmt(b.expires_at) : ''}</div>`;
     } else if (isExpired) {
-      statusLine = `<div style="font-size:11px;color:#aaa;margin-top:3px;">Expired · ${fmtTime(b.expires_at)}</div>`;
-    } else if (hasExpires) {
-      statusLine = `<div style="font-size:11px;color:#ff9500;margin-top:3px;">Ends in ${fmtDuration(b.expires_at - now)} · ${fmtTime(b.expires_at)}</div>`;
+      statusLine = `<div style="font-size:11px;color:#aaa;margin-top:3px;">Expired · ${fmt(b.expires_at)}</div>`;
+    } else if (isLive && hasExpires) {
+      statusLine = `<div style="font-size:11px;color:#ff9500;margin-top:3px;">Ends in ${dur(b.expires_at - now)} · ${fmt(b.expires_at)}</div>`;
     }
 
-    const schedBlock = isScheduled ? `
-      <div class="btn-schedule-block" id="sched-${b.id}">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Scheduling</div>
-        ${hasStarts ? `
-        <div style="margin-bottom:8px;">
-          <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px;">Appears at · ${fmtTime(b.starts_at)}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',-30)">−30m</button>
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',-10)">−10m</button>
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',10)">+10m</button>
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',30)">+30m</button>
-            <button class="btn small" style="background:#007aff;color:#fff;" onclick="setBtnTimeNow('${b.id}','starts_at')">Show Now</button>
-            <button class="btn small gray" onclick="clearBtnTime('${b.id}','starts_at')">✕ Remove</button>
-          </div>
-        </div>` : `
-        <div style="margin-bottom:8px;">
-          <button class="btn small gray" onclick="setBtnTimeNow('${b.id}','starts_at')">+ Set Appears At</button>
-        </div>`}
-        ${hasExpires ? `
-        <div>
-          <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px;">Expires at · ${fmtTime(b.expires_at)}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',-30)">−30m</button>
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',-10)">−10m</button>
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',10)">+10m</button>
-            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',30)">+30m</button>
-            <button class="btn small gray" onclick="clearBtnTime('${b.id}','expires_at')">✕ Remove</button>
-          </div>
-        </div>` : `
-        <div>
-          <button class="btn small gray" onclick="addBtnExpiry('${b.id}')">+ Set Expires At</button>
-        </div>`}
-      </div>` : '';
+    // Bottom panel — what controls appear depends entirely on state
+    let panel = '';
 
-    // Only show Schedule button for pending buttons (not yet live) or buttons with no timing
-    const showScheduleBtn = !isExpired && (isPending || isScheduled || !hasStarts);
-    const schedBtnLabel = isScheduled ? '⏰' : '⏰ Schedule';
+    if (isPending) {
+      // Full scheduling controls
+      panel = `<div class="btn-schedule-block">
+        <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">Appears at · ${fmt(b.starts_at)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          ${nudge(b.id,'starts_at',-30)}${nudge(b.id,'starts_at',-10)}${nudge(b.id,'starts_at',10)}${nudge(b.id,'starts_at',30)}
+          <button class="btn small" style="background:#007aff;color:#fff;" onclick="setBtnTimeNow('${b.id}','starts_at')">Show Now</button>
+          <button class="btn small gray" onclick="cancelBtnSchedule('${b.id}')">Cancel Schedule</button>
+        </div>
+        ${hasExpires
+          ? `<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">Expires at · ${fmt(b.expires_at)}</div>
+             <div style="display:flex;gap:6px;flex-wrap:wrap;">
+               ${nudge(b.id,'expires_at',-30)}${nudge(b.id,'expires_at',-10)}${nudge(b.id,'expires_at',10)}${nudge(b.id,'expires_at',30)}
+               <button class="btn small gray" onclick="clearBtnTime('${b.id}','expires_at')">✕ No expiry</button>
+             </div>`
+          : `<button class="btn small gray" onclick="addBtnExpiry('${b.id}')">+ Add expiry time</button>`
+        }
+      </div>`;
+    } else if (isLive && hasExpires) {
+      // Live with expiry — only expiry controls
+      panel = `<div class="btn-schedule-block">
+        <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">Expires at · ${fmt(b.expires_at)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${nudge(b.id,'expires_at',-30)}${nudge(b.id,'expires_at',-10)}${nudge(b.id,'expires_at',10)}${nudge(b.id,'expires_at',30)}
+          <button class="btn small gray" onclick="clearBtnTime('${b.id}','expires_at')">✕ No expiry</button>
+        </div>
+      </div>`;
+    }
+    // isLive + no expiry → no panel
+    // isExpired → no panel
+
+    // Right-side action buttons
+    let actions = `<button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>`;
+    if (isLive && !hasExpires && !isExpired) {
+      // Always-on live button — offer scheduling (which sets a future starts_at to delay hiding it makes no sense, but offer expiry)
+      actions = `<button class="btn small gray" onclick="addBtnExpiry('${b.id}')">Set Expiry</button>` + actions;
+    }
 
     return `<div class="config-item" id="btn-row-${b.id}" style="flex-direction:column;align-items:stretch;gap:0;">
       <div style="display:flex;align-items:center;gap:12px;">
@@ -976,12 +982,9 @@ function renderButtonsList() {
           ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
           ${statusLine}
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-          ${showScheduleBtn ? `<button class="btn small gray" onclick="toggleBtnSchedule('${b.id}')">${schedBtnLabel}</button>` : ''}
-          <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
-        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">${actions}</div>
       </div>
-      ${schedBlock}
+      ${panel}
     </div>`;
   }).join('');
 }
@@ -989,16 +992,18 @@ function renderButtonsList() {
 function toggleBtnSchedule(id) {
   const b = buttonsList.find(x => x.id === id);
   if (!b) return;
-  const existing = document.getElementById('sched-' + id);
-  if (existing) {
-    // Already open — just toggle visibility
-    existing.style.display = existing.style.display === 'none' ? 'block' : 'none';
-    return;
-  }
-  // No schedule yet — set starts_at to +1 hour from now as a starting point
   const starts_at = Date.now() + 60 * 60 * 1000;
   b.starts_at = starts_at;
   fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, starts_at})});
+  renderButtonsList();
+}
+
+async function cancelBtnSchedule(id) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  b.starts_at = null;
+  b.expires_at = null;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, starts_at: null, expires_at: null})});
   renderButtonsList();
 }
 
@@ -1030,7 +1035,6 @@ async function clearBtnTime(id, field) {
 async function addBtnExpiry(id) {
   const b = buttonsList.find(x => x.id === id);
   if (!b) return;
-  // Default: expires 1 hour from now (or 1 hour after starts_at if set in future)
   const base = (b.starts_at && b.starts_at > Date.now()) ? b.starts_at : Date.now();
   b.expires_at = base + 60 * 60 * 1000;
   await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, expires_at: b.expires_at})});
