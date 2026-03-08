@@ -882,19 +882,25 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   }
 
   // Notices
+  const _seenNoticeIds = new Set(); // tracks notices shown this session — never show same notice twice
+
   async function checkNotices() {
     if (!token) return;
     try {
       const res = await fetch(`/api/notices?token=${encodeURIComponent(token)}`);
       const notices = await res.json();
-      if (notices.length > 0 && notices[0].id !== currentNoticeId) showNotice(notices[0]);
+      // Find the first notice we haven't already shown this session
+      const next = notices.find(n => !_seenNoticeIds.has(n.id));
+      if (next && !document.getElementById('notice-overlay').classList.contains('open')) {
+        showNotice(next);
+      }
     } catch(e) {}
   }
   function showNotice(notice) {
     currentNoticeId = notice.id;
+    _seenNoticeIds.add(notice.id); // mark as seen immediately — won't re-show on next poll
     _pendingNoticeAction = (notice.action && notice.action.startsWith('poll:')) ? notice.action.slice(5) : null;
     document.getElementById('notice-message').textContent = notice.message;
-    // Show poll badge on notice if it has a poll attached
     const hasAction = !!_pendingNoticeAction;
     document.getElementById('notice-ok-btn').textContent = hasAction ? 'OK — Vote Now 🗳️' : 'OK';
     document.getElementById('notice-overlay').classList.add('open');
@@ -912,11 +918,15 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   async function dismissNotice() {
     document.getElementById('notice-overlay').classList.remove('open');
     if (!currentNoticeId) return;
-    try { await fetch('/api/notices', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentNoticeId, token})}); } catch(e) {}
+    const idToDismiss = currentNoticeId;
+    currentNoticeId = null;
     const actionPollId = _pendingNoticeAction;
     _pendingNoticeAction = null;
-    currentNoticeId = null;
+    // Record dismissal in DB so it never comes back, even after full page refresh
+    try { await fetch('/api/notices', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:idToDismiss, token})}); } catch(e) {}
     if (actionPollId) openPoll(actionPollId);
+    // Check if there are more queued notices
+    setTimeout(checkNotices, 500);
   }
 
   // Poll loop
