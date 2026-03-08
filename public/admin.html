@@ -366,6 +366,16 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <option value="60">60 seconds</option>
       </select>
     </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <label style="font-size:13px;font-weight:700;color:#888;white-space:nowrap;">Expires after</label>
+      <select id="notice-stale-after" style="flex:1;padding:10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
+        <option value="300000">5 minutes</option>
+        <option value="900000" selected>15 minutes</option>
+        <option value="1800000">30 minutes</option>
+        <option value="3600000">1 hour</option>
+        <option value="0">Never expires</option>
+      </select>
+    </div>
     <div id="notice-target-preview" style="font-size:13px;color:#007aff;font-weight:700;margin-bottom:10px;"></div>
     <button class="btn full" onclick="sendNotice()">Send Notice</button>
   </div>
@@ -1421,6 +1431,8 @@ async function loadNotices() {
 async function sendNotice() {
   const message = document.getElementById('notice-message-input').value.trim();
   const duration = parseInt(document.getElementById('notice-duration').value) || 0;
+  const staleAfterEl = document.getElementById('notice-stale-after');
+  const stale_after = staleAfterEl ? (parseInt(staleAfterEl.value) || 0) : 900000;
   const pollId = document.getElementById('notice-poll-select')?.value || '';
   const action = pollId ? `poll:${pollId}` : '';
   if (!message) return alert('Message required');
@@ -1428,7 +1440,7 @@ async function sendNotice() {
   const btn = event.target;
   btn.textContent = 'Sending...'; btn.disabled = true;
   await fetch('/api/notices', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ message, target: noticeTarget, duration, action })});
+    body: JSON.stringify({ message, target: noticeTarget, duration, action, stale_after })});
   document.getElementById('notice-message-input').value = '';
   if (document.getElementById('notice-poll-select')) document.getElementById('notice-poll-select').value = '';
   btn.textContent = 'Send Notice'; btn.disabled = false;
