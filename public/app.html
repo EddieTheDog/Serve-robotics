@@ -933,7 +933,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   async function pollLoop() {
     setInterval(async () => {
       try {
-        const rf = await (await fetch('/api/refresh')).json();
+        const rf = await (await fetch(`/api/refresh?token=${encodeURIComponent(token)}`)).json();
         if (lastRefreshSignal === null) { lastRefreshSignal = rf.signal; }
         else if (rf.signal !== lastRefreshSignal) {
           lastRefreshSignal = rf.signal;
