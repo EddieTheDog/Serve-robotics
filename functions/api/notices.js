@@ -17,14 +17,16 @@ export async function onRequestGet({ request, env }) {
     try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
 
     // Only show notices created after this guest account was created
-    // Prevents new guests from seeing a backlog of old notices
+    // Prevents new guests seeing a backlog of old notices
     const guestCreatedAt = guest.created_at || 0;
+    const DEFAULT_STALE_MS = 30 * 60 * 1000; // 30 min default if stale_after not set
+    const now = Date.now();
 
     // Fetch undismissed notices — try per-guest dismissal table first, fall back to global flag
     let all = [];
     try {
       const { results } = await env.DB.prepare(`
-        SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
+        SELECT n.id, n.message, n.duration, n.stale_after, n.action, n.created_at, n.guest_id
         FROM notices n
         LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
         WHERE n.dismissed = 0 AND nd.notice_id IS NULL AND n.created_at > ?
@@ -32,15 +34,25 @@ export async function onRequestGet({ request, env }) {
       `).bind(guest.id, guestCreatedAt).all();
       all = results;
     } catch(e) {
-      // notice_dismissals table may not exist yet — fall back to global dismissed flag only
-      const { results } = await env.DB.prepare(`
-        SELECT id, message, duration, action, created_at, guest_id
-        FROM notices
-        WHERE dismissed = 0 AND created_at > ?
-        ORDER BY created_at DESC
-      `).bind(guestCreatedAt).all();
-      all = results;
+      // notice_dismissals or stale_after column may not exist yet
+      try {
+        const { results } = await env.DB.prepare(`
+          SELECT id, message, duration, action, created_at, guest_id
+          FROM notices
+          WHERE dismissed = 0 AND created_at > ?
+          ORDER BY created_at DESC
+        `).bind(guestCreatedAt).all();
+        all = results;
+      } catch(e2) {
+        all = [];
+      }
     }
+
+    // Filter out stale notices — if nobody had the app open, they missed it
+    all = all.filter(n => {
+      const staleMs = (n.stale_after != null && n.stale_after > 0) ? n.stale_after : DEFAULT_STALE_MS;
+      return now < n.created_at + staleMs;
+    });
 
     const mine = all.filter(n => {
       if (n.guest_id === 'ALL') return true;
@@ -97,23 +109,31 @@ function labelForTarget(t) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const { message, target, duration, action } = await request.json();
+  const { message, target, duration, action, stale_after } = await request.json();
   if (!message) return new Response('Missing message', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
   const dest = target || 'ALL';
+  const staleMs = stale_after ?? (30 * 60 * 1000); // default 30 min
 
-  // Try inserting with action column; fall back if column doesn't exist yet
+  // Try inserting with stale_after + action columns; fall back gracefully
   try {
     await env.DB.prepare(`
-      INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
-      VALUES (?, ?, ?, ?, ?, 0, ?)
-    `).bind(id, dest, message, duration ?? null, action || '', now).run();
+      INSERT INTO notices (id, guest_id, message, duration, action, stale_after, dismissed, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+    `).bind(id, dest, message, duration ?? null, action || '', staleMs, now).run();
   } catch(e) {
-    await env.DB.prepare(`
-      INSERT INTO notices (id, guest_id, message, duration, dismissed, created_at)
-      VALUES (?, ?, ?, ?, 0, ?)
-    `).bind(id, dest, message, duration ?? null, now).run();
+    try {
+      await env.DB.prepare(`
+        INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
+        VALUES (?, ?, ?, ?, ?, 0, ?)
+      `).bind(id, dest, message, duration ?? null, action || '', now).run();
+    } catch(e2) {
+      await env.DB.prepare(`
+        INSERT INTO notices (id, guest_id, message, duration, dismissed, created_at)
+        VALUES (?, ?, ?, ?, 0, ?)
+      `).bind(id, dest, message, duration ?? null, now).run();
+    }
   }
 
   return Response.json({ success: true, id });
