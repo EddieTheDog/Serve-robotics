@@ -16,43 +16,47 @@ export async function onRequestGet({ request, env }) {
     let passes = [];
     try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
 
-    // Only show notices created after this guest account was created
-    // Prevents new guests seeing a backlog of old notices
     const guestCreatedAt = guest.created_at || 0;
-    const DEFAULT_STALE_MS = 30 * 60 * 1000; // 30 min default if stale_after not set
     const now = Date.now();
 
-    // Fetch undismissed notices — try per-guest dismissal table first, fall back to global flag
+    // Fetch notices that:
+    // 1. Haven't been globally dismissed
+    // 2. Haven't been dismissed by this guest specifically
+    // 3. Were created after this guest's account (prevents backlog for new users)
+    // 4. Are still within their delivery window (stale_after) — so late-openers miss time-sensitive notices
     let all = [];
     try {
       const { results } = await env.DB.prepare(`
         SELECT n.id, n.message, n.duration, n.stale_after, n.action, n.created_at, n.guest_id
         FROM notices n
         LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
-        WHERE n.dismissed = 0 AND nd.notice_id IS NULL AND n.created_at > ?
+        WHERE n.dismissed = 0
+          AND nd.notice_id IS NULL
+          AND n.created_at > ?
+          AND (n.stale_after = 0 OR n.stale_after IS NULL OR (n.created_at + n.stale_after) > ?)
         ORDER BY n.created_at DESC
-      `).bind(guest.id, guestCreatedAt).all();
+      `).bind(guest.id, guestCreatedAt, now).all();
       all = results;
     } catch(e) {
-      // notice_dismissals or stale_after column may not exist yet
+      // Fallback if stale_after column or notice_dismissals table doesn't exist yet
       try {
         const { results } = await env.DB.prepare(`
+          SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
+          FROM notices n
+          LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
+          WHERE n.dismissed = 0 AND nd.notice_id IS NULL AND n.created_at > ?
+          ORDER BY n.created_at DESC
+        `).bind(guest.id, guestCreatedAt).all();
+        all = results;
+      } catch(e2) {
+        const { results } = await env.DB.prepare(`
           SELECT id, message, duration, action, created_at, guest_id
-          FROM notices
-          WHERE dismissed = 0 AND created_at > ?
+          FROM notices WHERE dismissed = 0 AND created_at > ?
           ORDER BY created_at DESC
         `).bind(guestCreatedAt).all();
         all = results;
-      } catch(e2) {
-        all = [];
       }
     }
-
-    // Filter out stale notices — if nobody had the app open, they missed it
-    all = all.filter(n => {
-      const staleMs = (n.stale_after != null && n.stale_after > 0) ? n.stale_after : DEFAULT_STALE_MS;
-      return now < n.created_at + staleMs;
-    });
 
     const mine = all.filter(n => {
       if (n.guest_id === 'ALL') return true;
