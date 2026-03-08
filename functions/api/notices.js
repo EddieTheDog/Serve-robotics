@@ -17,45 +17,27 @@ export async function onRequestGet({ request, env }) {
     try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
 
     const guestCreatedAt = guest.created_at || 0;
-    const now = Date.now();
 
-    // Fetch notices that:
-    // 1. Haven't been globally dismissed
-    // 2. Haven't been dismissed by this guest specifically
-    // 3. Were created after this guest's account (prevents backlog for new users)
-    // 4. Are still within their delivery window (stale_after) — so late-openers miss time-sensitive notices
+    // Fetch notices not yet dismissed by this guest, created after their account
     let all = [];
     try {
       const { results } = await env.DB.prepare(`
-        SELECT n.id, n.message, n.duration, n.stale_after, n.action, n.created_at, n.guest_id
+        SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
         FROM notices n
         LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
         WHERE n.dismissed = 0
           AND nd.notice_id IS NULL
           AND n.created_at > ?
-          AND (n.stale_after = 0 OR n.stale_after IS NULL OR (n.created_at + n.stale_after) > ?)
         ORDER BY n.created_at DESC
-      `).bind(guest.id, guestCreatedAt, now).all();
+      `).bind(guest.id, guestCreatedAt).all();
       all = results;
     } catch(e) {
-      // Fallback if stale_after column or notice_dismissals table doesn't exist yet
-      try {
-        const { results } = await env.DB.prepare(`
-          SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
-          FROM notices n
-          LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
-          WHERE n.dismissed = 0 AND nd.notice_id IS NULL AND n.created_at > ?
-          ORDER BY n.created_at DESC
-        `).bind(guest.id, guestCreatedAt).all();
-        all = results;
-      } catch(e2) {
-        const { results } = await env.DB.prepare(`
-          SELECT id, message, duration, action, created_at, guest_id
-          FROM notices WHERE dismissed = 0 AND created_at > ?
-          ORDER BY created_at DESC
-        `).bind(guestCreatedAt).all();
-        all = results;
-      }
+      const { results } = await env.DB.prepare(`
+        SELECT id, message, duration, action, created_at, guest_id
+        FROM notices WHERE dismissed = 0 AND created_at > ?
+        ORDER BY created_at DESC
+      `).bind(guestCreatedAt).all();
+      all = results;
     }
 
     const mine = all.filter(n => {
@@ -113,31 +95,60 @@ function labelForTarget(t) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const { message, target, duration, action, stale_after } = await request.json();
+  const { message, target, duration, action } = await request.json();
   if (!message) return new Response('Missing message', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
   const dest = target || 'ALL';
-  const staleMs = stale_after ?? (30 * 60 * 1000); // default 30 min
+  const ACTIVE_WINDOW = 2 * 60 * 1000; // 2 minutes = "currently active"
 
-  // Try inserting with stale_after + action columns; fall back gracefully
+  // Insert the notice
   try {
     await env.DB.prepare(`
-      INSERT INTO notices (id, guest_id, message, duration, action, stale_after, dismissed, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, 0, ?)
-    `).bind(id, dest, message, duration ?? null, action || '', staleMs, now).run();
+      INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?)
+    `).bind(id, dest, message, duration ?? null, action || '', now).run();
   } catch(e) {
-    try {
-      await env.DB.prepare(`
-        INSERT INTO notices (id, guest_id, message, duration, action, dismissed, created_at)
-        VALUES (?, ?, ?, ?, ?, 0, ?)
-      `).bind(id, dest, message, duration ?? null, action || '', now).run();
-    } catch(e2) {
-      await env.DB.prepare(`
-        INSERT INTO notices (id, guest_id, message, duration, dismissed, created_at)
-        VALUES (?, ?, ?, ?, 0, ?)
-      `).bind(id, dest, message, duration ?? null, now).run();
+    await env.DB.prepare(`
+      INSERT INTO notices (id, guest_id, message, duration, dismissed, created_at)
+      VALUES (?, ?, ?, ?, 0, ?)
+    `).bind(id, dest, message, duration ?? null, now).run();
+  }
+
+  // Pre-dismiss for all guests who are NOT currently active
+  // Active = last_seen within the past 2 minutes
+  // This means only guests with the app open right now will ever see it
+  try {
+    const { results: allGuests } = await env.DB.prepare(`
+      SELECT id, badge, is_actor, passes, last_seen FROM guests WHERE locked = 0
+    `).all();
+
+    const inactive = allGuests.filter(g => {
+      if (!g.last_seen || (now - g.last_seen) > ACTIVE_WINDOW) return true;
+      return false;
+    });
+
+    // Also filter by target — no point pre-dismissing guests who wouldn't see it anyway
+    const targeted = inactive.filter(g => {
+      if (dest === 'ALL') return true;
+      if (dest === 'actor') return !!g.is_actor;
+      if (dest.startsWith('badge:')) return g.badge === dest.slice(6);
+      if (dest.startsWith('pass:')) {
+        try { const p = JSON.parse(g.passes || '[]'); return p.includes(dest.slice(5)); } catch(e) { return false; }
+      }
+      if (dest.startsWith('guest:')) return g.id === dest.slice(6);
+      return false;
+    });
+
+    if (targeted.length > 0) {
+      const stmts = targeted.map(g =>
+        env.DB.prepare(`INSERT OR IGNORE INTO notice_dismissals (notice_id, guest_id, dismissed_at) VALUES (?, ?, ?)`)
+          .bind(id, g.id, now)
+      );
+      await env.DB.batch(stmts);
     }
+  } catch(e) {
+    // notice_dismissals table may not exist — safe to ignore, guests will see notice
   }
 
   return Response.json({ success: true, id });
