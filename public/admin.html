@@ -94,6 +94,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .config-item { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .config-item .ci-emoji { font-size: 22px; }
 .config-item .ci-label { flex: 1; font-size: 16px; font-weight: 600; }
+.btn-schedule-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
 .add-form { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 .add-form input { width: 100%; padding: 10px 14px; font-size: 15px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; outline: none; font-family: inherit; }
 .add-form input:focus { border-color: #000; }
@@ -901,21 +902,139 @@ function renderButtonsList() {
         : b.action.startsWith('poll:') ? '🗳️ Poll: ' + (pollsMap[b.action.slice(5)] || b.action.slice(5))
         : '🔗 ' + b.action)
       : '';
-    return `<div class="config-item" id="btn-row-${b.id}">
-      <div style="display:flex;flex-direction:column;gap:2px;margin-right:8px;">
-        <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},-1)" ${i===0?'disabled':''}>↑</button>
-        <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},1)" ${i===buttonsList.length-1?'disabled':''}>↓</button>
+    const now = Date.now();
+    const hasStarts = b.starts_at && b.starts_at > 0;
+    const hasExpires = b.expires_at && b.expires_at > 0;
+    const isScheduled = hasStarts || hasExpires;
+    const isLive = !hasStarts || b.starts_at <= now;
+    const isExpired = hasExpires && b.expires_at <= now;
+
+    const fmtTime = ts => new Date(ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    const fmtDuration = (ms) => {
+      const m = Math.round(ms / 60000);
+      if (m < 60) return `${m}m`;
+      const h = Math.floor(m / 60), rem = m % 60;
+      return rem ? `${h}h ${rem}m` : `${h}h`;
+    };
+
+    let statusLine = '';
+    if (isExpired) {
+      statusLine = `<div style="font-size:11px;color:#ff3b30;font-weight:700;margin-top:3px;">● Expired ${fmtTime(b.expires_at)}</div>`;
+    } else if (!isLive) {
+      const wait = b.starts_at - now;
+      statusLine = `<div style="font-size:11px;color:#007aff;margin-top:3px;">⏰ Appears in ${fmtDuration(wait)} · ${fmtTime(b.starts_at)}</div>`;
+    } else if (hasExpires) {
+      const left = b.expires_at - now;
+      statusLine = `<div style="font-size:11px;color:#ff9500;margin-top:3px;">● Live · expires in ${fmtDuration(left)} · ${fmtTime(b.expires_at)}</div>`;
+    } else {
+      statusLine = `<div style="font-size:11px;color:#34c759;margin-top:3px;">● Live · no expiry</div>`;
+    }
+
+    const schedBlock = isScheduled ? `
+      <div class="btn-schedule-block" id="sched-${b.id}">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Scheduling</div>
+        ${hasStarts ? `
+        <div style="margin-bottom:8px;">
+          <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px;">Appears at · ${fmtTime(b.starts_at)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',-10)">−10m</button>
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',-30)">−30m</button>
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',30)">+30m</button>
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','starts_at',10)">+10m</button>
+            <button class="btn small" style="background:#007aff;color:#fff;" onclick="setBtnTimeNow('${b.id}','starts_at')">Show Now</button>
+            <button class="btn small gray" onclick="clearBtnTime('${b.id}','starts_at')">✕ Remove</button>
+          </div>
+        </div>` : `
+        <div style="margin-bottom:8px;">
+          <button class="btn small gray" onclick="setBtnTimeNow('${b.id}','starts_at')">+ Set Appears At</button>
+        </div>`}
+        ${hasExpires ? `
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px;">Expires at · ${fmtTime(b.expires_at)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',-10)">−10m</button>
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',-30)">−30m</button>
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',30)">+30m</button>
+            <button class="btn small gray" onclick="adjustBtnTime('${b.id}','expires_at',10)">+10m</button>
+            <button class="btn small gray" onclick="clearBtnTime('${b.id}','expires_at')">✕ Remove</button>
+          </div>
+        </div>` : `
+        <div>
+          <button class="btn small gray" onclick="addBtnExpiry('${b.id}')">+ Set Expires At</button>
+        </div>`}
+      </div>` : '';
+
+    return `<div class="config-item" id="btn-row-${b.id}" style="flex-direction:column;align-items:stretch;gap:0;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},-1)" ${i===0?'disabled':''}>↑</button>
+          <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},1)" ${i===buttonsList.length-1?'disabled':''}>↓</button>
+        </div>
+        <span class="ci-emoji">${esc(b.emoji)}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="ci-label">${esc(b.label)}</div>
+          ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
+          ${statusLine}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button class="btn small gray" onclick="toggleBtnSchedule('${b.id}')">${isScheduled ? '⏰' : '⏰ Schedule'}</button>
+          <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
+        </div>
       </div>
-      <span class="ci-emoji">${esc(b.emoji)}</span>
-      <div style="flex:1;">
-        <div class="ci-label">${esc(b.label)}</div>
-        ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
-        ${b.starts_at ? `<div style="font-size:11px;color:#007aff;margin-top:2px;">⏰ Appears ${new Date(b.starts_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-        ${b.expires_at ? `<div style="font-size:11px;color:#ff9500;margin-top:2px;">⏱ Expires ${new Date(b.expires_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-      </div>
-      <button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>
+      ${schedBlock}
     </div>`;
   }).join('');
+}
+
+function toggleBtnSchedule(id) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  const existing = document.getElementById('sched-' + id);
+  if (existing) {
+    // Already open — just toggle visibility
+    existing.style.display = existing.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+  // No schedule yet — set starts_at to +1 hour from now as a starting point
+  const starts_at = Date.now() + 60 * 60 * 1000;
+  b.starts_at = starts_at;
+  fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, starts_at})});
+  renderButtonsList();
+}
+
+async function adjustBtnTime(id, field, deltaMinutes) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  const current = b[field] || Date.now();
+  b[field] = current + deltaMinutes * 60 * 1000;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, [field]: b[field]})});
+  renderButtonsList();
+}
+
+async function setBtnTimeNow(id, field) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  b[field] = Date.now();
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, [field]: b[field]})});
+  renderButtonsList();
+}
+
+async function clearBtnTime(id, field) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  b[field] = null;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, [field]: null})});
+  renderButtonsList();
+}
+
+async function addBtnExpiry(id) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  // Default: expires 1 hour from now (or 1 hour after starts_at if set in future)
+  const base = (b.starts_at && b.starts_at > Date.now()) ? b.starts_at : Date.now();
+  b.expires_at = base + 60 * 60 * 1000;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, expires_at: b.expires_at})});
+  renderButtonsList();
 }
 async function moveButton(index, direction) {
   const newIndex = index + direction;
