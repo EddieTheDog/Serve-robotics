@@ -896,30 +896,33 @@ async function loadButtons() {
 function renderButtonsList() {
   const el = document.getElementById('buttons-list');
   if (!buttonsList.length) { el.innerHTML = '<div class="empty">No custom buttons yet. Add one above.</div>'; return; }
-  el.innerHTML = buttonsList.map((b, i) => {
+
+  const now = Date.now();
+  const fmt = ts => new Date(ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  const dur = ms => {
+    const m = Math.round(Math.abs(ms) / 60000);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60), rem = m % 60;
+    return rem ? `${h}h ${rem}m` : `${h}h`;
+  };
+  const nudge = (id, field, delta) => `<button class="btn small gray" onclick="adjustBtnTime('${id}','${field}',${delta})">${delta>0?'+':''}${delta}m</button>`;
+
+  const active  = buttonsList.filter(b => !(b.expires_at && b.expires_at > 0 && b.expires_at <= now));
+  const expired = buttonsList.filter(b =>   b.expires_at && b.expires_at > 0 && b.expires_at <= now);
+
+  function renderCard(b, i, arr) {
     const actionDesc = b.action && b.action !== 'none'
       ? (b.action.startsWith('msg:') ? '💬 ' + b.action.slice(4)
         : b.action.startsWith('poll:') ? '🗳️ Poll: ' + (pollsMap[b.action.slice(5)] || b.action.slice(5))
         : '🔗 ' + b.action)
       : '';
 
-    const now = Date.now();
     const hasStarts  = b.starts_at  && b.starts_at  > 0;
     const hasExpires = b.expires_at && b.expires_at > 0;
     const isPending  = hasStarts  && b.starts_at  > now;
     const isExpired  = hasExpires && b.expires_at <= now;
     const isLive     = !isPending && !isExpired;
 
-    const fmt = ts => new Date(ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-    const dur = ms => {
-      const m = Math.round(Math.abs(ms) / 60000);
-      if (m < 60) return `${m}m`;
-      const h = Math.floor(m / 60), rem = m % 60;
-      return rem ? `${h}h ${rem}m` : `${h}h`;
-    };
-    const nudge = (id, field, delta) => `<button class="btn small gray" onclick="adjustBtnTime('${id}','${field}',${delta})">${delta>0?'+':''}${delta}m</button>`;
-
-    // Status line — only shown for pending/expiring/expired
     let statusLine = '';
     if (isPending) {
       statusLine = `<div style="font-size:11px;color:#007aff;font-weight:700;margin-top:3px;">Not live yet · in ${dur(b.starts_at - now)}${hasExpires ? ' · ends ' + fmt(b.expires_at) : ''}</div>`;
@@ -929,11 +932,8 @@ function renderButtonsList() {
       statusLine = `<div style="font-size:11px;color:#ff9500;margin-top:3px;">Ends in ${dur(b.expires_at - now)} · ${fmt(b.expires_at)}</div>`;
     }
 
-    // Bottom panel — what controls appear depends entirely on state
     let panel = '';
-
     if (isPending) {
-      // Full scheduling controls
       panel = `<div class="btn-schedule-block">
         <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">Appears at · ${fmt(b.starts_at)}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
@@ -951,7 +951,6 @@ function renderButtonsList() {
         }
       </div>`;
     } else if (isLive && hasExpires) {
-      // Live with expiry — only expiry controls
       panel = `<div class="btn-schedule-block">
         <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">Expires at · ${fmt(b.expires_at)}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -959,14 +958,17 @@ function renderButtonsList() {
           <button class="btn small gray" onclick="clearBtnTime('${b.id}','expires_at')">✕ No expiry</button>
         </div>
       </div>`;
+    } else if (isExpired) {
+      panel = `<div class="btn-schedule-block">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn small gray" onclick="reviveBtnNow('${b.id}')">Make Live Now</button>
+          <button class="btn small gray" onclick="reviveBtnSchedule('${b.id}')">Reschedule</button>
+        </div>
+      </div>`;
     }
-    // isLive + no expiry → no panel
-    // isExpired → no panel
 
-    // Right-side action buttons
     let actions = `<button class="btn small red" onclick="deleteButton('${b.id}')">Remove</button>`;
-    if (isLive && !hasExpires && !isExpired) {
-      // Always-on live button — offer scheduling (which sets a future starts_at to delay hiding it makes no sense, but offer expiry)
+    if (isLive && !hasExpires) {
       actions = `<button class="btn small gray" onclick="addBtnExpiry('${b.id}')">Set Expiry</button>` + actions;
     }
 
@@ -974,7 +976,7 @@ function renderButtonsList() {
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="display:flex;flex-direction:column;gap:2px;">
           <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},-1)" ${i===0?'disabled':''}>↑</button>
-          <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},1)" ${i===buttonsList.length-1?'disabled':''}>↓</button>
+          <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="moveButton(${i},1)" ${i===arr.length-1?'disabled':''}>↓</button>
         </div>
         <span class="ci-emoji">${esc(b.emoji)}</span>
         <div style="flex:1;min-width:0;">
@@ -986,7 +988,16 @@ function renderButtonsList() {
       </div>
       ${panel}
     </div>`;
-  }).join('');
+  }
+
+  let html = active.map((b, i) => renderCard(b, i, active)).join('');
+
+  if (expired.length) {
+    html += `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#bbb;margin:20px 0 10px 4px;">Expired</div>`;
+    html += expired.map((b, i) => renderCard(b, i, expired)).join('');
+  }
+
+  el.innerHTML = html;
 }
 
 function toggleBtnSchedule(id) {
@@ -1004,6 +1015,26 @@ async function cancelBtnSchedule(id) {
   b.starts_at = null;
   b.expires_at = null;
   await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, starts_at: null, expires_at: null})});
+  renderButtonsList();
+}
+
+async function reviveBtnNow(id) {
+  // Clear expiry so button goes live immediately with no end time
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  b.starts_at = null;
+  b.expires_at = null;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, starts_at: null, expires_at: null})});
+  renderButtonsList();
+}
+
+async function reviveBtnSchedule(id) {
+  // Set a new starts_at 1 hour from now, clear old expiry
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  b.starts_at = Date.now() + 60 * 60 * 1000;
+  b.expires_at = null;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, starts_at: b.starts_at, expires_at: null})});
   renderButtonsList();
 }
 
