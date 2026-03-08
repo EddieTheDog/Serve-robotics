@@ -9,12 +9,16 @@ export async function onRequestGet({ request, env }) {
 
   if (token) {
     const guest = await env.DB.prepare(
-      `SELECT id, badge, is_actor, passes FROM guests WHERE app_token = ?`
+      `SELECT id, badge, is_actor, passes, created_at FROM guests WHERE app_token = ?`
     ).bind(token).first();
     if (!guest) return Response.json([]);
 
     let passes = [];
     try { passes = guest.passes ? JSON.parse(guest.passes) : []; } catch(e) {}
+
+    // Only show notices created after this guest account was created
+    // Prevents new guests from seeing a backlog of old notices
+    const guestCreatedAt = guest.created_at || 0;
 
     // Fetch undismissed notices — try per-guest dismissal table first, fall back to global flag
     let all = [];
@@ -23,18 +27,18 @@ export async function onRequestGet({ request, env }) {
         SELECT n.id, n.message, n.duration, n.action, n.created_at, n.guest_id
         FROM notices n
         LEFT JOIN notice_dismissals nd ON nd.notice_id = n.id AND nd.guest_id = ?
-        WHERE n.dismissed = 0 AND nd.notice_id IS NULL
+        WHERE n.dismissed = 0 AND nd.notice_id IS NULL AND n.created_at > ?
         ORDER BY n.created_at DESC
-      `).bind(guest.id).all();
+      `).bind(guest.id, guestCreatedAt).all();
       all = results;
     } catch(e) {
       // notice_dismissals table may not exist yet — fall back to global dismissed flag only
       const { results } = await env.DB.prepare(`
         SELECT id, message, duration, action, created_at, guest_id
         FROM notices
-        WHERE dismissed = 0
+        WHERE dismissed = 0 AND created_at > ?
         ORDER BY created_at DESC
-      `).all();
+      `).bind(guestCreatedAt).all();
       all = results;
     }
 
