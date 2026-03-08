@@ -1,13 +1,25 @@
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const isAdmin = url.searchParams.get('admin') === '1';
   const now = Date.now();
-  const { results } = await env.DB.prepare(`
-    SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at
-    FROM custom_buttons
-    WHERE visible = 1
-      AND (starts_at IS NULL OR starts_at = 0 OR starts_at <= ?)
-      AND (expires_at IS NULL OR expires_at = 0 OR expires_at > ?)
-    ORDER BY sort_order ASC
-  `).bind(now, now).all();
+
+  let query, binds;
+  if (isAdmin) {
+    // Admin sees all visible buttons regardless of timing
+    query = `SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at
+             FROM custom_buttons WHERE visible = 1 ORDER BY sort_order ASC`;
+    binds = [];
+  } else {
+    query = `SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at
+             FROM custom_buttons
+             WHERE visible = 1
+               AND (starts_at IS NULL OR starts_at = 0 OR starts_at <= ?)
+               AND (expires_at IS NULL OR expires_at = 0 OR expires_at > ?)
+             ORDER BY sort_order ASC`;
+    binds = [now, now];
+  }
+
+  const { results } = await env.DB.prepare(query).bind(...binds).all();
   return Response.json(results);
 }
 
