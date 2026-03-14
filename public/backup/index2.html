@@ -20,113 +20,60 @@ body {
   align-items:center; justify-content:center;
 }
 
-/* ── OUTER SHELL ── */
 #shell {
-  width:100%; max-width:480px;
-  min-height:100vh;
-  display:flex; flex-direction:column;
-  background:#000;
+  width:100%; max-width:480px; min-height:100vh;
+  display:flex; flex-direction:column; background:#000;
 }
 
-/* ── HEADER ── */
-.kiosk-header {
-  padding:52px 28px 28px;
-  border-bottom:1px solid #1a1a1a;
-  flex-shrink:0;
-}
-.kiosk-header-event {
-  font-size:11px; font-weight:700;
-  letter-spacing:2px; text-transform:uppercase;
-  color:#555; margin-bottom:6px;
-}
-.kiosk-header-title {
-  font-size:34px; font-weight:800;
-  letter-spacing:-0.5px; line-height:1.05;
-  color:#fff;
-}
-.kiosk-header-title span {
-  color:#555;
-}
+/* HEADER */
+.kiosk-header { padding:52px 28px 28px; border-bottom:1px solid #1a1a1a; flex-shrink:0; }
+.kiosk-header-event { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#555; margin-bottom:6px; }
+.kiosk-header-title { font-size:34px; font-weight:800; letter-spacing:-0.5px; line-height:1.05; color:#fff; }
+.kiosk-header-title span { color:#555; }
 
-/* ── MAIN CONTENT AREA ── */
-#main-content {
-  flex:1; display:flex; flex-direction:column;
-  justify-content:flex-start; padding:40px 28px 28px;
-}
+/* MAIN CONTENT */
+#main-content { flex:1; display:flex; flex-direction:column; justify-content:flex-start; padding:40px 28px 28px; }
 
-/* ── STEP LABEL ── */
-.step-eyebrow {
-  font-size:11px; font-weight:700;
-  letter-spacing:2px; text-transform:uppercase;
-  color:#555; margin-bottom:20px;
-}
+/* STEP EYEBROW */
+.step-eyebrow { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#555; margin-bottom:20px; }
 
-/* ── FAKE INPUTS ── */
+/* INPUTS */
 .input-group { margin-bottom:16px; }
-.input-label {
-  font-size:11px; font-weight:700;
-  letter-spacing:1.5px; text-transform:uppercase;
-  color:#555; margin-bottom:8px; display:block;
-}
+.input-label { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#555; margin-bottom:8px; display:block; }
 .fake-input {
-  width:100%; height:56px;
-  background:#111; border:1.5px solid #2a2a2a;
-  border-radius:14px;
-  display:flex; align-items:center;
+  width:100%; height:56px; background:#111; border:1.5px solid #2a2a2a;
+  border-radius:14px; display:flex; align-items:center;
   padding:0 18px; font-size:19px; font-weight:500;
-  color:#fff; overflow-x:auto; white-space:nowrap;
-  transition:border-color 0.15s;
+  color:#fff; overflow-x:auto; white-space:nowrap; transition:border-color 0.15s;
 }
-.fake-input.active {
-  border-color:#fff;
-}
-.fake-input[data-placeholder]::before {
-  content:attr(data-placeholder); color:#333;
-  pointer-events:none; font-weight:400;
-}
+.fake-input.active { border-color:#fff; }
+.fake-input[data-placeholder]::before { content:attr(data-placeholder); color:#333; pointer-events:none; font-weight:400; }
 .fake-input.has-content::before { display:none; }
-.fake-input .cursor {
-  width:2px; height:1.2em; background:#fff;
-  animation:blink 1s step-start infinite;
-  margin-left:1px; flex-shrink:0;
-}
+.fake-input .cursor { width:2px; height:1.2em; background:#fff; animation:blink 1s step-start infinite; margin-left:1px; flex-shrink:0; }
 @keyframes blink { 0%,50%,100%{opacity:1} 25%,75%{opacity:0} }
 
-/* ── NEXT BUTTON ── */
+/* NEXT BUTTON */
 #next-btn {
   width:100%; height:56px; margin-top:8px;
-  background:#fff; color:#000;
-  border:none; border-radius:14px;
-  font-size:15px; font-weight:800;
-  letter-spacing:2px; text-transform:uppercase;
-  cursor:pointer; font-family:inherit;
-  transition:opacity 0.15s;
+  background:#fff; color:#000; border:none; border-radius:14px;
+  font-size:15px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+  cursor:pointer; font-family:inherit; transition:opacity 0.15s;
 }
 #next-btn:active { opacity:0.7; }
 
-/* ── KEYBOARD ── */
+/* KEYBOARD */
 #custom-keyboard {
   position:fixed; bottom:0; left:0; right:0;
   background:#111; border-top:1px solid #222;
   padding:0 4px 20px; display:flex;
-  flex-direction:column; gap:6px; z-index:1000;
-  transition:none;
+  flex-direction:column; gap:6px; z-index:100;
 }
-#kb-handle {
-  width:100%; padding:8px 0 4px;
-  display:flex; align-items:center; justify-content:center;
-  cursor:ns-resize; flex-shrink:0; touch-action:none;
-}
-#kb-handle-bar {
-  width:36px; height:4px; background:#333;
-  border-radius:2px;
-}
+#kb-handle { width:100%; padding:8px 0 4px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; flex-shrink:0; touch-action:none; }
+#kb-handle-bar { width:36px; height:4px; background:#333; border-radius:2px; }
 .keyboard-row { display:flex; justify-content:stretch; gap:5px; padding:0 4px; }
 .key-btn {
-  flex:1; height:46px;
-  background:#2c2c2e; color:#fff;
-  border:none; border-radius:10px;
-  font-size:18px; font-weight:600;
+  flex:1; height:46px; background:#2c2c2e; color:#fff;
+  border:none; border-radius:10px; font-size:18px; font-weight:600;
   cursor:pointer; font-family:inherit;
   display:flex; align-items:center; justify-content:center;
   transition:background 0.08s; min-width:0;
@@ -134,78 +81,20 @@ body {
 .key-btn:active { background:#444; }
 .key-btn.wide { font-size:13px; letter-spacing:0.5px; }
 
-/* ── FULLSCREEN / PWA BTN ── */
-#fullscreen-btn {
-  position:fixed; top:16px; right:16px;
-  width:34px; height:34px;
-  background:#1a1a1a; color:#555;
-  border:none; border-radius:8px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:10px; font-weight:700; letter-spacing:0;
-  cursor:pointer; z-index:2000; font-family:inherit;
-  text-align:center; line-height:1.2; padding:0 3px;
-}
-
-/* PWA install prompt overlay */
-#pwa-prompt {
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,0.85); z-index:9999;
-  align-items:flex-end; justify-content:center;
-  padding-bottom:24px;
-}
-#pwa-prompt.show { display:flex; }
-#pwa-card {
-  background:#1a1a1a; border:1px solid #333;
-  border-radius:20px; padding:28px 24px;
-  width:calc(100% - 32px); max-width:420px;
-  text-align:center;
-}
-#pwa-card h3 { font-size:18px; font-weight:800; color:#fff; margin-bottom:8px; }
-#pwa-card p  { font-size:14px; color:#888; line-height:1.5; margin-bottom:20px; }
-#pwa-card .pwa-step {
-  background:#111; border-radius:12px; padding:12px 16px;
-  margin-bottom:10px; font-size:13px; color:#ccc;
-  text-align:left; display:flex; align-items:center; gap:12px;
-}
-#pwa-card .pwa-step-num {
-  width:24px; height:24px; border-radius:50%;
-  background:#333; color:#fff; font-size:11px; font-weight:800;
-  display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-#pwa-close {
-  margin-top:16px; width:100%; padding:14px;
-  background:#fff; color:#000; border:none; border-radius:12px;
-  font-size:15px; font-weight:800; letter-spacing:1px; cursor:pointer;
-  font-family:inherit;
-}
-
-/* ── CAMERA SCREEN ── */
-.camera-desc {
-  font-size:15px; font-weight:400; color:#555; line-height:1.5;
-  margin-bottom:24px;
-}
+/* CAMERA SCREEN */
 #form-step-2 { display:none; }
-.camera-eyebrow {
-  font-size:11px; font-weight:700;
-  letter-spacing:2px; text-transform:uppercase;
-  color:#555; margin-bottom:20px;
-}
+.camera-eyebrow { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#555; margin-bottom:12px; }
+.camera-desc { font-size:15px; font-weight:400; color:#555; line-height:1.5; margin-bottom:24px; }
 .camera-wrap {
-  width:100%; max-width:280px;
-  height:280px;
-  margin:0 auto 20px;
-  border-radius:20px; overflow:hidden;
-  border:2px solid #2a2a2a; position:relative;
-  background:#111;
+  width:100%; max-width:280px; height:280px; margin:0 auto 20px;
+  border-radius:20px; overflow:hidden; border:2px solid #2a2a2a;
+  position:relative; background:#111;
 }
 #video { width:100%; height:100%; object-fit:cover; display:block; }
-.camera-corners {
-  position:absolute; inset:0; pointer-events:none;
-}
+.camera-corners { position:absolute; inset:0; pointer-events:none; }
 .camera-corners::before, .camera-corners::after,
 .camera-corners span::before, .camera-corners span::after {
-  content:''; position:absolute;
-  width:22px; height:22px;
+  content:''; position:absolute; width:22px; height:22px;
   border-color:#fff; border-style:solid; border-radius:3px;
 }
 .camera-corners::before  { top:14px;    left:14px;   border-width:3px 0 0 3px; }
@@ -214,79 +103,48 @@ body {
 .camera-corners span::after  { bottom:14px; right:14px;  border-width:0 3px 3px 0; }
 #camera-msg {
   position:absolute; bottom:0; left:0; right:0;
-  background:rgba(0,0,0,0.7);
-  padding:10px; font-size:13px; font-weight:600;
-  letter-spacing:0.5px; text-align:center;
-  color:#fff;
+  background:rgba(0,0,0,0.7); padding:10px;
+  font-size:13px; font-weight:600; letter-spacing:0.5px; text-align:center; color:#fff;
+}
+#camera-error {
+  display:none; position:absolute; inset:0; background:#111;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; padding:20px; text-align:center;
+}
+#camera-error-msg { font-size:13px; color:#888; line-height:1.5; }
+.retry-btn {
+  padding:10px 20px; font-size:13px; background:#fff; color:#000;
+  border-radius:10px; border:none; font-weight:700; letter-spacing:1px;
+  cursor:pointer; font-family:inherit; display:inline-block; width:auto; margin:0;
 }
 
-/* ── WAITING SCREEN ── */
+/* WAITING SCREEN */
 #waiting { display:none; }
-.waiting-content {
-  display:flex; flex-direction:column;
-  align-items:flex-start; gap:36px;
-  animation:fadeUp 0.45s ease both;
-}
+.waiting-content { display:flex; flex-direction:column; align-items:flex-start; gap:36px; animation:fadeUp 0.45s ease both; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.waiting-eyebrow { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#555; margin-bottom:10px; display:block; }
+.waiting-name-line { font-size:42px; font-weight:800; letter-spacing:-1px; line-height:1.0; color:#fff; display:block; }
+.waiting-tagline { font-size:15px; font-weight:500; color:#555; margin-top:10px; display:block; min-height:20px; }
 
-.waiting-greeting-block { }
-.waiting-eyebrow {
-  font-size:11px; font-weight:700;
-  letter-spacing:2px; text-transform:uppercase;
-  color:#555; margin-bottom:10px; display:block;
-}
-.waiting-name-line {
-  font-size:42px; font-weight:800;
-  letter-spacing:-1px; line-height:1.0;
-  color:#fff; display:block;
-}
-.waiting-tagline {
-  font-size:15px; font-weight:500;
-  color:#555; margin-top:10px; display:block;
-  min-height:20px;
-}
-
-/* ── PROGRESS TRACK ── */
-.progress-track {
-  display:flex; align-items:center; width:100%; gap:0;
-}
+/* PROGRESS TRACK */
+.progress-track { display:flex; align-items:center; width:100%; }
 .prog-node { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; }
 .prog-circle {
   width:36px; height:36px; border-radius:50%;
   border:1.5px solid #2a2a2a; background:#111;
   display:flex; align-items:center; justify-content:center;
-  font-size:13px; font-weight:800; color:#444;
-  transition:all 0.4s ease;
+  font-size:13px; font-weight:800; color:#444; transition:all 0.4s ease;
 }
-.prog-circle.done {
-  background:#fff; border-color:#fff; color:#000;
-  box-shadow:0 0 0 4px rgba(255,255,255,0.08);
-}
-.prog-circle.active {
-  border-color:#444; color:#777;
-}
-.prog-label {
-  font-size:9px; font-weight:700; letter-spacing:1px;
-  text-transform:uppercase; color:#333;
-  transition:color 0.4s; white-space:nowrap;
-}
+.prog-circle.done { background:#fff; border-color:#fff; color:#000; box-shadow:0 0 0 4px rgba(255,255,255,0.08); }
+.prog-circle.active { border-color:#444; color:#777; }
+.prog-label { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#333; transition:color 0.4s; white-space:nowrap; }
 .prog-label.done { color:#666; }
 .prog-label.active { color:#555; }
-
-.prog-line-wrap {
-  flex:1; height:1.5px; position:relative;
-  background:#1e1e1e; overflow:hidden;
-  margin-bottom:24px;
-}
-.prog-line-fill {
-  position:absolute; inset:0; background:#fff;
-  transform:scaleX(0); transform-origin:left;
-  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);
-}
+.prog-line-wrap { flex:1; height:1.5px; position:relative; background:#1e1e1e; overflow:hidden; margin-bottom:24px; }
+.prog-line-fill { position:absolute; inset:0; background:#fff; transform:scaleX(0); transform-origin:left; transition:transform 0.6s cubic-bezier(0.4,0,0.2,1); }
 .prog-line-fill.filled { transform:scaleX(1); }
 .prog-line-fill::after {
-  content:''; position:absolute;
-  top:0; bottom:0; left:-80px; width:80px;
+  content:''; position:absolute; top:0; bottom:0; left:-80px; width:80px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,0.7) 50%,transparent);
   animation-name:glint; animation-timing-function:ease-in-out; animation-play-state:paused;
 }
@@ -295,51 +153,89 @@ body {
 #pline2.filled::after { animation-duration:0.7s; animation-iteration-count:1; }
 @keyframes glint { 0%{left:-80px} 100%{left:110%} }
 
-/* ── D BUTTON ── */
+/* CONTROL BUTTONS — fullscreen + settings, fixed top-right, very high z-index */
+#ctrl-btns {
+  position:fixed; top:16px; right:16px;
+  display:flex; gap:8px;
+  z-index:99999; /* above everything */
+}
+.ctrl-btn {
+  width:38px; height:38px;
+  background:#1a1a1a; color:#666;
+  border:1px solid #2a2a2a; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; cursor:pointer;
+  /* No width:100% override — these are fixed small buttons */
+  width:38px; padding:0; margin:0; letter-spacing:0;
+  font-family:inherit; font-weight:400;
+  -webkit-appearance:none; appearance:none;
+  transition:background 0.1s;
+}
+.ctrl-btn:active { background:#2a2a2a; }
+
+/* D / DOTS */
 #dismiss-trigger {
   position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
   width:30px; height:30px; border-radius:8px;
-  background:#1a1a1a; color:#333;
-  border:1px solid #2a2a2a;
-  font-size:11px; font-weight:700; letter-spacing:1px;
-  font-family:inherit; cursor:pointer;
-  display:none; align-items:center; justify-content:center;
-  z-index:100;
+  background:#1a1a1a; color:#333; border:1px solid #2a2a2a;
+  font-size:11px; font-weight:700; letter-spacing:1px; font-family:inherit;
+  cursor:pointer; display:none; align-items:center; justify-content:center;
+  z-index:99999; padding:0; margin:0;
 }
 #dismiss-trigger:active { background:#2a2a2a; }
-
-/* ── DOTS DRAWER ── */
 #dots-drawer {
   position:fixed; bottom:58px; left:50%; transform:translateX(-50%);
   background:#111; border:1px solid #2a2a2a; border-radius:16px;
   display:flex; gap:12px; align-items:center;
   overflow:hidden; max-height:0; opacity:0; padding:0 18px;
   transition:max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease;
-  z-index:99;
+  z-index:99999;
 }
 #dots-drawer.open { max-height:72px; opacity:1; padding:14px 18px; }
-.dot-btn {
-  width:36px; height:36px; border-radius:50%;
-  background:#1e1e1e; border:1.5px solid #2a2a2a;
-  cursor:pointer; display:block; margin:0; padding:0;
-  transition:background 0.12s;
-}
+.dot-btn { width:36px; height:36px; border-radius:50%; background:#1e1e1e; border:1.5px solid #2a2a2a; cursor:pointer; display:block; margin:0; padding:0; transition:background 0.12s; }
 .dot-btn:active { background:#fff; border-color:#fff; }
+
+/* CAMERA SETTINGS PANEL */
+#cam-panel {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.88); z-index:99998;
+  align-items:flex-end; justify-content:center; padding:0 0 24px;
+}
+#cam-panel.show { display:flex; }
+#cam-card {
+  background:#1a1a1a; border:1px solid #2a2a2a; border-radius:20px;
+  padding:24px; width:calc(100% - 32px); max-width:420px;
+}
+#cam-card h3 { font-size:16px; font-weight:800; color:#fff; margin-bottom:6px; }
+#cam-card p  { font-size:13px; color:#555; margin-bottom:18px; line-height:1.4; }
+.cam-option {
+  width:100%; padding:14px 16px; background:#111;
+  border:1.5px solid #2a2a2a; border-radius:12px;
+  color:#fff; font-size:14px; font-weight:600;
+  text-align:left; cursor:pointer; margin-bottom:10px;
+  font-family:inherit; display:flex; align-items:center; gap:10px;
+  letter-spacing:0; text-transform:none;
+}
+.cam-option:active { background:#222; }
+.cam-option.selected { border-color:#fff; }
+.cam-option .cam-dot { width:8px; height:8px; border-radius:50%; background:#2a2a2a; flex-shrink:0; }
+.cam-option.selected .cam-dot { background:#fff; }
+#cam-close {
+  margin-top:6px; width:100%; padding:14px; background:#fff; color:#000;
+  border:none; border-radius:12px; font-size:14px; font-weight:800;
+  letter-spacing:1px; cursor:pointer; font-family:inherit;
+}
 </style>
 </head>
 <body>
-
 <div id="shell">
-
-  <!-- HEADER — always visible -->
   <div class="kiosk-header">
     <div class="kiosk-header-event">The Eddie's Awards</div>
     <div class="kiosk-header-title">Check-In <span>2025</span></div>
   </div>
 
-  <!-- STEP 1: Name entry -->
   <div id="main-content">
-
+    <!-- STEP 1 -->
     <div id="form-step-1">
       <div class="step-eyebrow">Step 1 of 2 — Enter your name</div>
       <div class="input-group">
@@ -350,10 +246,10 @@ body {
         <label class="input-label">Last Name</label>
         <div id="last" class="fake-input" data-placeholder="e.g. Johnson"></div>
       </div>
-      <button id="next-btn">Continue →</button>
+      <button id="next-btn">Continue</button>
     </div>
 
-    <!-- STEP 2: QR Scan -->
+    <!-- STEP 2 -->
     <div id="form-step-2">
       <div class="camera-eyebrow">Step 2 of 2 — Scan your QR code</div>
       <p class="camera-desc">Take out the ticket emailed to you and hold the QR code up to the camera below.</p>
@@ -361,65 +257,53 @@ body {
         <video id="video" playsinline autoplay muted></video>
         <div class="camera-corners"><span></span></div>
         <div id="camera-msg">Hold steady to scan</div>
-        <div id="camera-error" style="display:none;position:absolute;inset:0;background:#111;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;">
-          <div style="font-size:28px;">📷</div>
-          <div id="camera-error-msg" style="font-size:13px;color:#888;text-align:center;line-height:1.4;">Camera unavailable</div>
-          <button onclick="retryCamera()" style="width:auto;padding:10px 20px;font-size:13px;background:#fff;color:#000;border-radius:10px;border:none;font-weight:700;letter-spacing:1px;margin-top:4px;">Retry</button>
+        <div id="camera-error">
+          <div style="font-size:28px">📷</div>
+          <div id="camera-error-msg">Camera unavailable</div>
+          <button class="retry-btn" onclick="retryCamera()">Retry</button>
         </div>
       </div>
     </div>
 
-    <!-- STEP 3: Waiting -->
+    <!-- STEP 3 -->
     <div id="waiting">
       <div class="waiting-content">
-        <div class="waiting-greeting-block">
+        <div>
           <span class="waiting-eyebrow" id="waiting-eyebrow">Checking you in</span>
           <span class="waiting-name-line" id="waiting-name-line">Welcome</span>
           <span class="waiting-tagline" id="waiting-tagline">Please wait one minute</span>
         </div>
-
         <div class="progress-track">
           <div class="prog-node">
             <div class="prog-circle done" id="pc1">✓</div>
-            <div class="prog-label done"  id="pl1">Name</div>
+            <div class="prog-label done" id="pl1">Name</div>
           </div>
           <div class="prog-line-wrap"><div class="prog-line-fill" id="pline1"></div></div>
           <div class="prog-node">
             <div class="prog-circle" id="pc2">2</div>
-            <div class="prog-label"  id="pl2">QR Code</div>
+            <div class="prog-label" id="pl2">QR Code</div>
           </div>
           <div class="prog-line-wrap"><div class="prog-line-fill" id="pline2"></div></div>
           <div class="prog-node">
             <div class="prog-circle" id="pc3">3</div>
-            <div class="prog-label"  id="pl3">Name Tag</div>
+            <div class="prog-label" id="pl3">Name Tag</div>
           </div>
         </div>
-
       </div>
     </div>
-
-  </div><!-- /main-content -->
-</div><!-- /shell -->
-
-<!-- PWA install prompt -->
-<div id="pwa-prompt">
-  <div id="pwa-card">
-    <h3>Add to Home Screen</h3>
-    <p>For the best kiosk experience, add this page to your iPad's Home Screen. It will open full-screen with no browser controls.</p>
-    <div class="pwa-step"><div class="pwa-step-num">1</div>Tap the <strong style="color:#fff">Share button</strong> ↑ in Safari's toolbar</div>
-    <div class="pwa-step"><div class="pwa-step-num">2</div>Tap <strong style="color:#fff">Add to Home Screen</strong></div>
-    <div class="pwa-step"><div class="pwa-step-num">3</div>Tap <strong style="color:#fff">Add</strong> — then open the new icon</div>
-    <button id="pwa-close" onclick="document.getElementById('pwa-prompt').classList.remove('show')">Got it</button>
   </div>
 </div>
 
-<!-- Keyboard -->
+<!-- Control buttons — rendered completely outside #shell to avoid stacking context issues -->
+<div id="ctrl-btns">
+  <button class="ctrl-btn" id="cam-btn" title="Camera settings" onclick="openCamPanel()">⚙️</button>
+  <button class="ctrl-btn" id="fs-btn" title="Fullscreen" onclick="doFullscreen()">⛶</button>
+</div>
+
+<!-- Keyboard — also outside #shell -->
 <div id="custom-keyboard"></div>
 
-<!-- Fullscreen toggle -->
-<button id="fullscreen-btn">⛶</button>
-
-<!-- Hidden dismiss trigger -->
+<!-- D dismiss button + dots -->
 <button id="dismiss-trigger" onclick="toggleDotsDrawer()">D</button>
 <div id="dots-drawer">
   <button class="dot-btn" onclick="dotClick(0)"></button>
@@ -427,28 +311,44 @@ body {
   <button class="dot-btn" onclick="dotClick(2)"></button>
 </div>
 
+<!-- Camera settings panel -->
+<div id="cam-panel">
+  <div id="cam-card">
+    <h3>Camera</h3>
+    <p id="cam-panel-desc">Tap a camera to use it for QR scanning.</p>
+    <div id="cam-list"></div>
+    <button id="cam-close" onclick="closeCamPanel()">Done</button>
+  </div>
+</div>
+
 <script>
-let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData='', firstName='';
+'use strict';
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let guestId=null, pollTimer=null, dotStep=0, declineActive=false;
+let scannedData='', firstName='';
+let selectedDeviceId=null; // chosen camera device ID
+let scanActive=false;
+let activeBox=null;
 
 const boxes=[document.getElementById('first'), document.getElementById('last')];
 const keyboard=document.getElementById('custom-keyboard');
-const fsBtn=document.getElementById('fullscreen-btn');
 const nextBtn=document.getElementById('next-btn');
-let activeBox=null;
+const fsBtn=document.getElementById('fs-btn');
+const camBtn=document.getElementById('cam-btn');
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
+const KB_DEFAULT_H=46;
+let kbKeyH=KB_DEFAULT_H;
+
 const rows=[
   ['q','w','e','r','t','y','u','i','o','p'],
   ['a','s','d','f','g','h','j','k','l'],
   ['z','x','c','v','b','n','m','DEL',' ']
 ];
 
-const KB_DEFAULT_KEY_HEIGHT = 46; // px
-let kbKeyHeight = KB_DEFAULT_KEY_HEIGHT;
-
 function buildKeyboard(){
   keyboard.innerHTML='';
-  // Drag handle
   const handle=document.createElement('div'); handle.id='kb-handle';
   const bar=document.createElement('div'); bar.id='kb-handle-bar';
   handle.appendChild(bar); keyboard.appendChild(handle);
@@ -459,13 +359,29 @@ function buildKeyboard(){
       const btn=document.createElement('button'); btn.className='key-btn';
       if(key==='DEL'||key===' ') btn.classList.add('wide');
       btn.textContent=key===' '?'space':key==='DEL'?'del':key;
-      btn.style.height=kbKeyHeight+'px';
+      btn.style.height=kbKeyH+'px';
       btn.onpointerdown=e=>{e.preventDefault();insertKey(key);};
       div.appendChild(btn);
     });
     keyboard.appendChild(div);
   });
   keyboard.style.display='flex';
+}
+
+function attachKbResize(handle){
+  let sy=0, sh=0, drag=false;
+  handle.addEventListener('touchstart',e=>{drag=true;sy=e.touches[0].clientY;sh=kbKeyH;e.preventDefault();},{passive:false});
+  handle.addEventListener('touchmove',e=>{
+    if(!drag)return;
+    const d=sy-e.touches[0].clientY;
+    kbKeyH=Math.round(Math.max(36,Math.min(72,sh+d*0.4)));
+    keyboard.querySelectorAll('.key-btn').forEach(b=>b.style.height=kbKeyH+'px');
+    e.preventDefault();
+  },{passive:false});
+  handle.addEventListener('touchend',()=>drag=false);
+  handle.addEventListener('mousedown',e=>{drag=true;sy=e.clientY;sh=kbKeyH;});
+  document.addEventListener('mousemove',e=>{if(!drag)return;const d=sy-e.clientY;kbKeyH=Math.round(Math.max(36,Math.min(72,sh+d*0.4)));keyboard.querySelectorAll('.key-btn').forEach(b=>b.style.height=kbKeyH+'px');});
+  document.addEventListener('mouseup',()=>drag=false);
 }
 
 function setActiveBox(box){
@@ -476,84 +392,139 @@ function setActiveBox(box){
 }
 
 function insertKey(key){
-  if(!activeBox) return;
+  if(!activeBox)return;
   let v=activeBox.textContent.replace(/\u200B/g,'');
   if(key==='DEL') v=v.slice(0,-1);
   else if(key===' ') v+=' ';
   else v+=key;
   activeBox.textContent=v;
-  const oc=activeBox.querySelector('.cursor'); if(oc)oc.remove();
-  const nc=document.createElement('div'); nc.className='cursor'; activeBox.appendChild(nc);
+  const oc=activeBox.querySelector('.cursor');if(oc)oc.remove();
+  const nc=document.createElement('div');nc.className='cursor';activeBox.appendChild(nc);
   activeBox.classList.toggle('has-content',v.length>0);
-  // Auto-advance to last name after first is non-empty
-  if(activeBox===boxes[0]&&key!=='DEL'&&v.length===1) {}
 }
 
 boxes.forEach(b=>b.addEventListener('click',()=>setActiveBox(b)));
-
-// Block hardware kb
 document.addEventListener('keydown',e=>e.preventDefault());
 document.addEventListener('keypress',e=>e.preventDefault());
 document.addEventListener('input',e=>e.preventDefault());
 
-// ── FULLSCREEN / PWA KIOSK MODE ──────────────────────────────────────────────
-const isStandalone = window.navigator.standalone === true ||
-                     window.matchMedia('(display-mode: standalone)').matches;
-
-function tryFullscreen(){
-  const el = document.documentElement;
-  if(el.requestFullscreen){ el.requestFullscreen().catch(()=>{}); return; }
-  if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); return; }
-  // iPad Safari — show PWA install instructions instead
-  document.getElementById('pwa-prompt').classList.add('show');
-}
-
-fsBtn.addEventListener('click', tryFullscreen);
-
-// Update button state
-function updateFsBtn(){
-  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  if(isStandalone || isFs){
-    fsBtn.style.display='none';
-  } else {
-    fsBtn.style.display='flex';
-    fsBtn.textContent=isFs?'↙':'⛶';
+// ── FULLSCREEN ────────────────────────────────────────────────────────────────
+function doFullscreen(){
+  const el=document.documentElement;
+  const req=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+  if(req){
+    req.call(el).catch(()=>{});
   }
 }
-document.addEventListener('fullscreenchange', updateFsBtn);
-document.addEventListener('webkitfullscreenchange', updateFsBtn);
-window.addEventListener('load', updateFsBtn);
 
-// Long-press on Continue button triggers fullscreen attempt
+function updateFsBtnVisibility(){
+  const inFs=!!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement);
+  const standalone=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  fsBtn.style.display=(inFs||standalone)?'none':'flex';
+}
+
+document.addEventListener('fullscreenchange',updateFsBtnVisibility);
+document.addEventListener('webkitfullscreenchange',updateFsBtnVisibility);
+document.addEventListener('mozfullscreenchange',updateFsBtnVisibility);
+window.addEventListener('load',updateFsBtnVisibility);
+
+// Long-press Continue = fullscreen
 let nextHold=null;
-nextBtn.addEventListener('pointerdown',()=>{nextHold=setTimeout(()=>tryFullscreen(),1200);});
+nextBtn.addEventListener('pointerdown',()=>{nextHold=setTimeout(doFullscreen,1200);});
 nextBtn.addEventListener('pointerup',()=>clearTimeout(nextHold));
 nextBtn.addEventListener('pointerleave',()=>clearTimeout(nextHold));
 
+// ── CAMERA PERMISSION + SETTINGS ─────────────────────────────────────────────
+let cameraDevices=[];
+
+async function requestCameraPermission(){
+  // Silently request permission on load so enumeration works
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({video:true});
+    stream.getTracks().forEach(t=>t.stop());
+  } catch(e){}
+  await enumerateCameras();
+}
+
+async function enumerateCameras(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices){return;}
+  try {
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    cameraDevices=devices.filter(d=>d.kind==='videoinput');
+    // Default: prefer back camera
+    if(!selectedDeviceId){
+      const back=cameraDevices.find(d=>d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('rear')||d.label.toLowerCase().includes('environment'));
+      selectedDeviceId=(back||cameraDevices[0])||null;
+      if(selectedDeviceId) selectedDeviceId=selectedDeviceId.deviceId;
+    }
+  } catch(e){}
+}
+
+function openCamPanel(){
+  const list=document.getElementById('cam-list');
+  const desc=document.getElementById('cam-panel-desc');
+  list.innerHTML='';
+
+  if(cameraDevices.length===0){
+    desc.textContent='No cameras found. Grant camera permission first.';
+    // Try requesting now
+    navigator.mediaDevices.getUserMedia({video:true}).then(s=>{
+      s.getTracks().forEach(t=>t.stop());
+      enumerateCameras().then(()=>openCamPanel());
+    }).catch(()=>{});
+  } else {
+    desc.textContent='Choose which camera to use for QR scanning.';
+    cameraDevices.forEach((dev,i)=>{
+      const label=dev.label||('Camera '+(i+1));
+      const btn=document.createElement('button');
+      btn.className='cam-option'+(dev.deviceId===selectedDeviceId?' selected':'');
+      btn.innerHTML='<div class="cam-dot"></div>'+label;
+      btn.onclick=()=>{
+        selectedDeviceId=dev.deviceId;
+        list.querySelectorAll('.cam-option').forEach(b=>b.classList.remove('selected'));
+        list.querySelectorAll('.cam-dot').forEach(d=>d.style.background='#2a2a2a');
+        btn.classList.add('selected');
+        btn.querySelector('.cam-dot').style.background='#fff';
+      };
+      list.appendChild(btn);
+    });
+  }
+  document.getElementById('cam-panel').classList.add('show');
+}
+
+function closeCamPanel(){
+  document.getElementById('cam-panel').classList.remove('show');
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
-window.onload=()=>{ setActiveBox(boxes[0]); };
+window.onload=()=>{
+  setActiveBox(boxes[0]);
+  requestCameraPermission();
+};
 
 // ── STEP 1 → 2 ───────────────────────────────────────────────────────────────
-nextBtn.addEventListener('click', goToScan);
+nextBtn.addEventListener('click',goToScan);
 
 function goToScan(){
   const f=boxes[0].textContent.trim(), l=boxes[1].textContent.trim();
-  if(!f||!l){ alert('Please enter both names'); return; }
+  if(!f||!l){alert('Please enter both names.');return;}
   document.getElementById('form-step-1').style.display='none';
   document.getElementById('form-step-2').style.display='block';
   keyboard.style.display='none';
-  scanActive=false;
   document.getElementById('camera-error').style.display='none';
+  document.getElementById('camera-msg').style.background='rgba(0,0,0,0.7)';
+  document.getElementById('camera-msg').textContent='Hold steady to scan';
+  scanActive=false;
   startScanner();
 }
 
 // ── QR SCANNER ────────────────────────────────────────────────────────────────
-let scanActive=false;
+const scanCanvas=document.createElement('canvas');
+const scanCtx=scanCanvas.getContext('2d');
 
 function showCameraError(msg){
-  const errEl=document.getElementById('camera-error');
-  document.getElementById('camera-error-msg').textContent=msg||'Camera unavailable. Check permissions and try again.';
-  errEl.style.display='flex';
+  document.getElementById('camera-error-msg').textContent=msg||'Camera unavailable.';
+  document.getElementById('camera-error').style.display='flex';
 }
 
 function retryCamera(){
@@ -563,70 +534,58 @@ function retryCamera(){
   startScanner();
 }
 
-// Reusable canvas — never recreate per frame
-const scanCanvas = document.createElement('canvas');
-const scanCtx = scanCanvas.getContext('2d');
-
 function startScanner(){
   scanActive=true;
   const video=document.getElementById('video');
   const msg=document.getElementById('camera-msg');
 
-  // Safari/iPad requires mediaDevices on https or localhost only
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    showCameraError("Camera requires HTTPS. Make sure you are on a secure connection.");
+    showCameraError('Camera not available. This page must be served over HTTPS.');
     return;
   }
 
-  // iPad Safari: do NOT use {exact:'environment'} — it throws OverconstrainedError
-  // Use plain facingMode:'environment' string, fall back to {video:true}
-  const constraints=[
-    {video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}}},
-    {video:{facingMode:'environment'}},
-    {video:{width:{ideal:1280}, height:{ideal:720}}},
-    {video:true}
-  ];
+  // Build constraint — use selected deviceId if available, else fall back
+  function buildConstraints(){
+    if(selectedDeviceId){
+      return [{video:{deviceId:{exact:selectedDeviceId}}},{video:{facingMode:'environment'}},{video:true}];
+    }
+    return [{video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}},{video:{facingMode:'environment'}},{video:true}];
+  }
 
-  function tryConstraint(i){
-    if(i>=constraints.length){
-      showCameraError("Could not access camera. Check Settings > Safari > Camera and allow access.");
+  const constraints=buildConstraints();
+  let idx=0;
+
+  function tryNext(){
+    if(idx>=constraints.length){
+      showCameraError('Could not start camera. Try selecting a different camera in settings.');
       return;
     }
-    navigator.mediaDevices.getUserMedia(constraints[i])
+    const c=constraints[idx++];
+    navigator.mediaDevices.getUserMedia(c)
       .then(stream=>{
+        if(!scanActive){stream.getTracks().forEach(t=>t.stop());return;}
         video.srcObject=stream;
-        // iPad needs explicit play() call after srcObject set
-        const playPromise=video.play();
-        if(playPromise!==undefined){
-          playPromise.then(()=>requestAnimationFrame(tick)).catch(()=>{
-            // Autoplay blocked — still try ticking, video may play on interaction
-            requestAnimationFrame(tick);
-          });
-        } else {
-          requestAnimationFrame(tick);
-        }
+        const p=video.play();
+        if(p) p.then(()=>requestAnimationFrame(tick)).catch(()=>requestAnimationFrame(tick));
+        else requestAnimationFrame(tick);
       })
       .catch(err=>{
-        // OverconstrainedError or NotAllowedError
         if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
-          showCameraError("Camera permission denied. Go to Settings > Safari > Camera and allow access.");
+          showCameraError('Camera permission denied. Check your browser settings.');
           return;
         }
-        tryConstraint(i+1);
+        tryNext();
       });
   }
-  tryConstraint(0);
+  tryNext();
 
   function tick(){
-    if(!scanActive) return;
+    if(!scanActive)return;
     if(video.readyState===video.HAVE_ENOUGH_DATA&&video.videoWidth>0){
-      try {
-        // Reuse canvas — resize only when video dimensions change
-        if(scanCanvas.width!==video.videoWidth||scanCanvas.height!==video.videoHeight){
-          scanCanvas.width=video.videoWidth;
-          scanCanvas.height=video.videoHeight;
-        }
-        scanCtx.drawImage(video,0,0,scanCanvas.width,scanCanvas.height);
+      try{
+        if(scanCanvas.width!==video.videoWidth)  scanCanvas.width=video.videoWidth;
+        if(scanCanvas.height!==video.videoHeight) scanCanvas.height=video.videoHeight;
+        scanCtx.drawImage(video,0,0);
         const img=scanCtx.getImageData(0,0,scanCanvas.width,scanCanvas.height);
         const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
         if(code&&code.data){
@@ -638,7 +597,7 @@ function startScanner(){
           setTimeout(submitCheckin,400);
           return;
         }
-      } catch(e){}
+      }catch(e){}
     }
     requestAnimationFrame(tick);
   }
@@ -647,15 +606,19 @@ function startScanner(){
 // ── SUBMIT ────────────────────────────────────────────────────────────────────
 async function submitCheckin(){
   firstName=boxes[0].textContent.trim();
-  const res=await fetch('/api/checkin',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({firstName:boxes[0].textContent, lastName:boxes[1].textContent, qrData:scannedData})
-  });
-  const data=await res.json(); guestId=data.guestId;
-
+  try{
+    const res=await fetch('/api/checkin',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})
+    });
+    const data=await res.json();
+    guestId=data.guestId;
+  }catch(e){
+    showCameraError('Network error. Check connection and retry.');
+    return;
+  }
   document.getElementById('form-step-2').style.display='none';
   document.getElementById('waiting').style.display='block';
-
   setWaitingState('waiting');
   setStep(2);
   dotStep=0; declineActive=false;
@@ -664,58 +627,47 @@ async function submitCheckin(){
 
 // ── POLL ──────────────────────────────────────────────────────────────────────
 async function pollStatus(){
-  if(!guestId) return;
-  const res=await fetch(`/api/guest/${guestId}`);
-  const g=await res.json();
-  switch(g.status){
-    case 'accepted':
-      setStep(3);
-      setWaitingState('accepted');
-      declineActive=false; break;
-    case 'declined':
-      setStep(2);
-      setWaitingState('declined');
-      declineActive=true; dotStep=0; break;
-    case 'completed': case 'dismissed': resetKiosk(); break;
-  }
+  if(!guestId)return;
+  try{
+    const res=await fetch('/api/guest/'+guestId);
+    const g=await res.json();
+    switch(g.status){
+      case 'accepted': setStep(3); setWaitingState('accepted'); declineActive=false; break;
+      case 'declined': setStep(2); setWaitingState('declined'); declineActive=true; dotStep=0; break;
+      case 'completed': case 'dismissed': resetKiosk(); break;
+    }
+  }catch(e){}
 }
 
 // ── WAITING STATES ────────────────────────────────────────────────────────────
 function setWaitingState(state){
-  const eyebrow =document.getElementById('waiting-eyebrow');
-  const nameLine =document.getElementById('waiting-name-line');
-  const tagline  =document.getElementById('waiting-tagline');
-  const trigger  =document.getElementById('dismiss-trigger');
-  const drawer   =document.getElementById('dots-drawer');
-
+  const ey=document.getElementById('waiting-eyebrow');
+  const nl=document.getElementById('waiting-name-line');
+  const tl=document.getElementById('waiting-tagline');
+  const dt=document.getElementById('dismiss-trigger');
+  const dr=document.getElementById('dots-drawer');
+  nl.textContent=firstName;
   if(state==='waiting'){
-    eyebrow.textContent  ='Checking you in';
-    nameLine.textContent =firstName;
-    tagline.textContent  ='Please wait one minute';
-    trigger.style.display='none';
-    drawer.classList.remove('open');
+    ey.textContent='Checking you in';
+    tl.textContent='Please wait one minute';
+    dt.style.display='none'; dr.classList.remove('open');
   } else if(state==='accepted'){
-    eyebrow.textContent  ='Your name tag is on its way,';
-    nameLine.textContent =firstName;
-    tagline.textContent  ='We\'ll be right with you';
-    trigger.style.display='none';
-    drawer.classList.remove('open');
+    ey.textContent='Your name tag is on its way,';
+    tl.textContent="We'll be right with you";
+    dt.style.display='none'; dr.classList.remove('open');
   } else if(state==='declined'){
-    eyebrow.textContent  ='One more moment,';
-    nameLine.textContent =firstName;
-    tagline.textContent  ='';
-    trigger.style.display='flex';
+    ey.textContent='One more moment,';
+    tl.textContent='';
+    dt.style.display='flex';
   }
 }
 
-// ── STEP PROGRESS ─────────────────────────────────────────────────────────────
+// ── PROGRESS ──────────────────────────────────────────────────────────────────
 function setStep(n){
   const c1=document.getElementById('pc1'),c2=document.getElementById('pc2'),c3=document.getElementById('pc3');
   const l1=document.getElementById('pl1'),l2=document.getElementById('pl2'),l3=document.getElementById('pl3');
   const ln1=document.getElementById('pline1'),ln2=document.getElementById('pline2');
-
   c1.className='prog-circle done'; c1.textContent='✓'; l1.className='prog-label done';
-
   if(n>=2){
     c2.className='prog-circle done'; c2.textContent='✓'; l2.className='prog-label done';
     ln1.classList.remove('filled','loop-shimmer'); void ln1.offsetWidth;
@@ -724,8 +676,7 @@ function setStep(n){
   if(n>=3){
     ln1.classList.remove('loop-shimmer');
     c3.className='prog-circle done'; c3.textContent='✓'; l3.className='prog-label done';
-    ln2.classList.remove('filled'); void ln2.offsetWidth;
-    ln2.classList.add('filled');
+    ln2.classList.remove('filled'); void ln2.offsetWidth; ln2.classList.add('filled');
   } else {
     c3.className='prog-circle'; c3.textContent='3'; l3.className='prog-label';
     ln2.classList.remove('filled');
@@ -735,31 +686,17 @@ function setStep(n){
 function resetSteps(){
   [['pc1','✓'],['pc2','2'],['pc3','3']].forEach(([id,t])=>{
     const el=document.getElementById(id);
-    el.className = id==='pc1'?'prog-circle done':'prog-circle';
-    el.textContent=t;
+    el.className=id==='pc1'?'prog-circle done':'prog-circle'; el.textContent=t;
   });
-  document.getElementById('pl1').className='prog-label done';
-  document.getElementById('pl2').className='prog-label';
-  document.getElementById('pl3').className='prog-label';
+  ['pl1','pl2','pl3'].forEach((id,i)=>document.getElementById(id).className='prog-label'+(i===0?' done':''));
   document.getElementById('pline1').classList.remove('filled','loop-shimmer');
   document.getElementById('pline2').classList.remove('filled');
 }
 
-// ── D / DOTS ──────────────────────────────────────────────────────────────────
-function toggleDotsDrawer(){
-  if(!declineActive) return;
-  document.getElementById('dots-drawer').classList.toggle('open');
-}
-function dotClick(i){
-  if(!declineActive) return;
-  const seq=[1,0,2];
-  if(i===seq[dotStep]){ dotStep++; if(dotStep===3) awaitDismiss(); }
-  else dotStep=0;
-}
-function awaitDismiss(){
-  fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({guestId,status:'dismissed'})}).then(()=>resetKiosk());
-}
+// ── DOTS ──────────────────────────────────────────────────────────────────────
+function toggleDotsDrawer(){ if(!declineActive)return; document.getElementById('dots-drawer').classList.toggle('open'); }
+function dotClick(i){ if(!declineActive)return; const s=[1,0,2]; if(i===s[dotStep]){dotStep++;if(dotStep===3)awaitDismiss();}else dotStep=0; }
+function awaitDismiss(){ fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guestId,status:'dismissed'})}).then(()=>resetKiosk()); }
 
 // ── RESET ─────────────────────────────────────────────────────────────────────
 function resetKiosk(){
@@ -774,40 +711,10 @@ function resetKiosk(){
   document.getElementById('form-step-1').style.display='block';
   document.getElementById('camera-msg').style.background='rgba(0,0,0,0.7)';
   document.getElementById('camera-msg').textContent='Hold steady to scan';
+  document.getElementById('camera-error').style.display='none';
   scanActive=false;
-  // Reset keyboard height to default for next guest
-  kbKeyHeight=KB_DEFAULT_KEY_HEIGHT;
+  kbKeyH=KB_DEFAULT_H;
   setActiveBox(boxes[0]);
-}
-
-// ── KEYBOARD RESIZE ───────────────────────────────────────────────────────────
-function attachKbResize(handle){
-  let startY=0, startH=0, dragging=false;
-
-  function onStart(e){
-    dragging=true;
-    startY=e.touches?e.touches[0].clientY:e.clientY;
-    startH=kbKeyHeight;
-    e.preventDefault();
-  }
-  function onMove(e){
-    if(!dragging) return;
-    const y=e.touches?e.touches[0].clientY:e.clientY;
-    const delta=startY-y; // drag up = bigger
-    const newH=Math.max(36, Math.min(72, startH+delta*0.4));
-    kbKeyHeight=Math.round(newH);
-    // Update all key heights live
-    keyboard.querySelectorAll('.key-btn').forEach(b=>b.style.height=kbKeyHeight+'px');
-    e.preventDefault();
-  }
-  function onEnd(){ dragging=false; }
-
-  handle.addEventListener('touchstart',onStart,{passive:false});
-  handle.addEventListener('touchmove',onMove,{passive:false});
-  handle.addEventListener('touchend',onEnd);
-  handle.addEventListener('mousedown',onStart);
-  document.addEventListener('mousemove',onMove);
-  document.addEventListener('mouseup',onEnd);
 }
 </script>
 </body>
