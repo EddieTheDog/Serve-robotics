@@ -6,208 +6,120 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action: manipulation; }
-body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; margin:0; padding:0; height:100vh; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; color:#333; }
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; }
+body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; margin:0; padding:0; height:100vh; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; color:#333; overflow:hidden; }
 #main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; }
 h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; letter-spacing:2px; }
 
-/* Fake input styles */
-.fake-input {
-  font-size:24px; padding:15px; margin-bottom:15px; width:100%;
-  border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8;
-  text-align:left; height:48px; display:flex; align-items:center; position:relative; cursor:text;
-  overflow-x:auto; white-space:nowrap; color:#333;
-}
+/* Fake input */
+.fake-input { font-size:24px; padding:15px; margin-bottom:15px; width:100%; border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8; text-align:left; height:48px; display:flex; align-items:center; position:relative; cursor:text; overflow-x:auto; white-space:nowrap; color:#333; }
 .fake-input.active { border-color:#000; }
 .fake-input .cursor { width:2px; background:#000; animation:blink 1s step-start infinite; margin-left:2px; height:1em; }
 @keyframes blink { 0%,50%,100%{opacity:1;} 25%,75%{opacity:0;} }
-.fake-input[data-placeholder]::before { content: attr(data-placeholder); color:#aaa; pointer-events:none; }
+.fake-input[data-placeholder]::before { content:attr(data-placeholder); color:#aaa; pointer-events:none; }
 .fake-input.has-content::before { display:none; }
 
 button { display:block; font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
 button:active { opacity:0.8; }
 
 /* Step transitions */
-.step { transition: opacity 0.3s ease, transform 0.3s ease; }
-.step.fade-out { opacity:0; transform: translateY(-10px); pointer-events:none; }
-.step.fade-in { animation: fadeInUp 0.4s ease forwards; }
-@keyframes fadeInUp { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
+.step { transition:opacity 0.3s ease, transform 0.3s ease; }
+.step.fade-out { opacity:0; transform:translateY(-10px); pointer-events:none; }
+.step.fade-in { animation:fadeInUp 0.4s ease forwards; }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);} }
 
 #form-step-2, #waiting { display:none; }
 
-/* Camera container */
+/* Camera */
 #camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px; border:4px solid #000; border-radius:12px; overflow:hidden; background:#000; position:relative; }
 #video { width:100%; height:100%; object-fit:cover; }
 #camera-msg { position:absolute; bottom:10px; left:0; right:0; color:white; background:rgba(0,0,0,0.7); padding:5px; font-size:14px; }
+@keyframes successFlash { 0%{border-color:#000;} 30%{border-color:#00c060;box-shadow:0 0 20px #00c06055;} 100%{border-color:#000;} }
+.scan-success { animation:successFlash 0.6s ease forwards; }
 
-/* QR scan laser line */
-#scan-laser {
-  position:absolute; top:0; left:0; right:0; height:3px;
-  background: linear-gradient(90deg, transparent, #00ff88, transparent);
-  box-shadow: 0 0 8px #00ff88, 0 0 20px #00ff8866;
-  animation: laserScan 2s ease-in-out infinite;
-  z-index:10;
-}
-@keyframes laserScan {
-  0% { top: 0%; opacity:1; }
-  50% { top: calc(100% - 3px); opacity:1; }
-  100% { top: 0%; opacity:1; }
-}
+/* ---- WAITING ---- */
+#waiting { flex-direction:column; align-items:center; gap:28px; padding-top:10px; }
 
-/* Corner brackets on camera */
-.scan-corner {
-  position:absolute; width:22px; height:22px; z-index:11;
-  border-color:#fff; border-style:solid;
+/* Breathing ring */
+#breath-ring {
+  width:90px; height:90px; border-radius:50%;
+  border:3px solid #000;
+  animation:breathe 2.8s ease-in-out infinite;
 }
-.scan-corner.tl { top:8px; left:8px; border-width:3px 0 0 3px; }
-.scan-corner.tr { top:8px; right:8px; border-width:3px 3px 0 0; }
-.scan-corner.bl { bottom:8px; left:8px; border-width:0 0 3px 3px; }
-.scan-corner.br { bottom:8px; right:8px; border-width:0 3px 3px 0; }
-
-/* Scanning success flash */
-@keyframes successFlash {
-  0% { border-color:#000; }
-  30% { border-color:#00ff88; box-shadow: 0 0 20px #00ff8855; }
-  100% { border-color:#000; }
-}
-.scan-success { animation: successFlash 0.6s ease forwards; }
-
-/* ---- WAITING STATE ---- */
-#waiting {
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  gap: 24px;
-  padding-top: 10px;
+@keyframes breathe {
+  0%,100% { transform:scale(1); opacity:1; box-shadow:0 0 0 0 rgba(0,0,0,0.12); }
+  50%      { transform:scale(1.13); opacity:0.65; box-shadow:0 0 0 12px rgba(0,0,0,0); }
 }
 
-/* Spinner ring */
-.spinner-wrap {
-  position:relative;
-  width: 100px;
-  height: 100px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+/* Star accepted icon */
+#star-state { display:none; flex-direction:column; align-items:center; }
+.star-circle {
+  width:90px; height:90px; border-radius:50%; background:#000;
+  display:flex; align-items:center; justify-content:center;
+  animation:popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
 }
-.spinner-ring {
-  position:absolute;
-  width:100%;
-  height:100%;
-  border-radius:50%;
-  border: 4px solid transparent;
-  border-top-color: #000;
-  animation: spin 1s linear infinite;
+@keyframes popIn { from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;} }
+.star-svg {
+  width:44px; height:44px;
+  stroke:#fff; stroke-width:1.8; stroke-linejoin:round; fill:none;
+  stroke-dasharray:220; stroke-dashoffset:220;
+  animation:drawStar 0.55s ease 0.4s forwards;
 }
-.spinner-ring.ring2 {
-  width:78%;
-  height:78%;
-  border-top-color: transparent;
-  border-right-color: #555;
-  animation: spin 1.5s linear infinite reverse;
-}
-.spinner-ring.ring3 {
-  width:56%;
-  height:56%;
-  border-top-color: #000;
-  border-bottom-color: #000;
-  animation: spin 2s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes drawStar { to { stroke-dashoffset:0; fill:#fff; } }
 
-/* Pulse dots row */
-.pulse-dots {
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:center;
+/* Declined state: same breathing ring, slightly dimmer */
+#declined-state { display:none; flex-direction:column; align-items:center; }
+#declined-ring {
+  width:90px; height:90px; border-radius:50%;
+  border:3px solid #999;
+  animation:breatheSlow 3.6s ease-in-out infinite;
 }
-.pulse-dot {
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:#000;
-  animation: pulseDot 1.4s ease-in-out infinite;
+@keyframes breatheSlow {
+  0%,100%{transform:scale(1);opacity:0.45;}
+  50%{transform:scale(1.1);opacity:0.9;}
 }
-.pulse-dot:nth-child(1) { animation-delay: 0s; }
-.pulse-dot:nth-child(2) { animation-delay: 0.2s; }
-.pulse-dot:nth-child(3) { animation-delay: 0.4s; }
-.pulse-dot:nth-child(4) { animation-delay: 0.6s; }
-.pulse-dot:nth-child(5) { animation-delay: 0.8s; }
-@keyframes pulseDot {
-  0%, 80%, 100% { transform: scale(0.6); opacity:0.3; }
-  40% { transform: scale(1.2); opacity:1; }
+
+/* A to B journey line */
+#journey-wrap {
+  width:86%; max-width:340px;
+  display:flex; align-items:center; gap:10px;
+}
+.journey-dot {
+  width:13px; height:13px; border-radius:50%; background:#000; flex-shrink:0;
+}
+.journey-dot.dest {
+  background:#fff; border:2.5px solid #000;
+}
+.journey-track {
+  flex:1; height:3px; background:#e0e0e0; border-radius:2px; position:relative;
+}
+#journey-fill {
+  position:absolute; left:0; top:0; height:100%; width:0%;
+  background:#000; border-radius:2px;
 }
 
 /* Status message */
-#message {
-  font-size:20px;
-  font-weight:600;
-  text-align:center;
-  line-height:1.4;
-  animation: fadeInUp 0.5s ease;
-}
-
-/* Accepted checkmark */
-.check-wrap {
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  gap:16px;
-}
-.check-circle {
-  width:90px; height:90px;
-  border-radius:50%;
-  background:#000;
-  display:flex; align-items:center; justify-content:center;
-  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-@keyframes popIn {
-  from { transform:scale(0); opacity:0; }
-  to { transform:scale(1); opacity:1; }
-}
-.check-circle svg { width:44px; height:44px; }
-.check-circle svg path {
-  stroke-dasharray: 60;
-  stroke-dashoffset: 60;
-  animation: drawCheck 0.4s ease 0.3s forwards;
-}
-@keyframes drawCheck { to { stroke-dashoffset:0; } }
-
-/* Declined warning */
-.warn-wrap {
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  gap:16px;
-}
-.warn-circle {
-  width:90px; height:90px;
-  border-radius:50%;
-  border: 4px solid #000;
-  display:flex; align-items:center; justify-content:center;
-  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-.warn-circle span { font-size:42px; line-height:1; animation: shake 0.4s ease 0.3s; }
-@keyframes shake {
-  0%,100%{transform:translateX(0);}
-  25%{transform:translateX(-6px);}
-  75%{transform:translateX(6px);}
-}
+#message { font-size:20px; font-weight:600; text-align:center; line-height:1.4; }
 
 /* Secret dots */
-#dots { display:none; justify-content:center; gap:15px; margin-top:10px; }
+#dots { display:none; justify-content:center; gap:15px; }
 #dots button { width:50px; height:50px; font-size:12px; border-radius:50%; background:#f0f0f0; color:#ccc; display:flex; align-items:center; justify-content:center; margin:0; }
 
+/* Keyboard */
 #custom-keyboard { display:flex; flex-direction:column; position:fixed; bottom:0; left:0; right:0; background:#000; padding:5px; gap:5px; z-index:1000; }
 .keyboard-row { display:flex; justify-content:center; gap:5px; }
-.keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; transition:transform 0.1s, background 0.2s; }
+.keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; transition:transform 0.1s,background 0.2s; }
 .keyboard-row button:active { transform:scale(0.95); background:#333; }
 
 #fullscreen-btn { position:absolute; top:20px; right:20px; width:40px; height:40px; background:#000; color:#fff; border-radius:6px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; }
+
+/* Confetti */
+#confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 </style>
 </head>
 <body>
+<canvas id="confetti-canvas"></canvas>
+
 <div id="main-container">
   <h1>The Eddie's 2025 - Self Checkin</h1>
 
@@ -222,48 +134,28 @@ button:active { opacity:0.8; }
   <div id="form-step-2" class="step">
     <div id="camera-container">
       <video id="video" playsinline></video>
-      <div id="scan-laser"></div>
-      <div class="scan-corner tl"></div>
-      <div class="scan-corner tr"></div>
-      <div class="scan-corner bl"></div>
-      <div class="scan-corner br"></div>
       <div id="camera-msg">Scan your QR code</div>
     </div>
   </div>
 
   <div id="waiting">
-    <!-- Spinner (shown while analyzing) -->
-    <div id="spinner-state">
-      <div class="spinner-wrap">
-        <div class="spinner-ring"></div>
-        <div class="spinner-ring ring2"></div>
-        <div class="spinner-ring ring3"></div>
-      </div>
-    </div>
-
-    <!-- Accepted state (shown on accepted) -->
-    <div class="check-wrap" id="check-state">
-      <div class="check-circle">
-        <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 26L22 36L40 16" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <div id="breath-state"><div id="breath-ring"></div></div>
+    <div id="star-state">
+      <div class="star-circle">
+        <svg class="star-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
         </svg>
       </div>
     </div>
+    <div id="declined-state"><div id="declined-ring"></div></div>
 
-    <!-- Declined state -->
-    <div class="warn-wrap" id="warn-state">
-      <div class="warn-circle"><span>⏳</span></div>
+    <div id="journey-wrap">
+      <div class="journey-dot"></div>
+      <div class="journey-track"><div id="journey-fill"></div></div>
+      <div class="journey-dot dest"></div>
     </div>
 
     <h2 id="message">Please wait...</h2>
-
-    <div class="pulse-dots" id="pulse-dots">
-      <div class="pulse-dot"></div>
-      <div class="pulse-dot"></div>
-      <div class="pulse-dot"></div>
-      <div class="pulse-dot"></div>
-      <div class="pulse-dot"></div>
-    </div>
 
     <div id="dots">
       <button onclick="dotClick(0)">●</button>
@@ -276,32 +168,130 @@ button:active { opacity:0.8; }
 <script>
 let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="";
 let activeBox=null;
-const boxes=[document.getElementById("first"), document.getElementById("last")];
+const boxes=[document.getElementById("first"),document.getElementById("last")];
 const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
 const nextBtn=document.getElementById("next-btn");
+const journeyFill=document.getElementById("journey-fill");
 
-const keyboardRows = [
+// ---- Journey line logic ----
+let jRAF=null, jProgress=0, jTarget=0, jPhase="idle";
+
+function startJourney(){
+  jProgress=0; jTarget=0; jPhase="idle";
+  journeyFill.style.width="0%";
+  if(jRAF) cancelAnimationFrame(jRAF);
+  pickNextTarget();
+  jRAF=requestAnimationFrame(tickJourney);
+}
+
+function stopJourney(){
+  if(jRAF){ cancelAnimationFrame(jRAF); jRAF=null; }
+  jPhase="idle";
+}
+
+function resetJourney(){
+  stopJourney();
+  jProgress=0;
+  journeyFill.style.width="0%";
+}
+
+function pickNextTarget(){
+  const advance=10+Math.random()*20;
+  jTarget=Math.min(jProgress+advance, 88);
+  jPhase="moving";
+}
+
+function tickJourney(){
+  if(jPhase==="moving"){
+    const speed=0.2+Math.random()*0.1;
+    jProgress=Math.min(jProgress+speed, jTarget);
+    journeyFill.style.width=jProgress+"%";
+    if(jProgress>=jTarget){
+      jPhase="pausing";
+      const pause=700+Math.random()*1800;
+      setTimeout(()=>{ if(jPhase==="pausing") pickNextTarget(); }, pause);
+    }
+  }
+  jRAF=requestAnimationFrame(tickJourney);
+}
+
+function completeJourney(){
+  stopJourney();
+  let p=jProgress;
+  function finish(){
+    p+=1.8; if(p>=100){ journeyFill.style.width="100%"; return; }
+    journeyFill.style.width=p+"%";
+    requestAnimationFrame(finish);
+  }
+  requestAnimationFrame(finish);
+}
+
+// ---- Confetti ----
+const confCanvas=document.getElementById("confetti-canvas");
+const confCtx=confCanvas.getContext("2d");
+let confParticles=[], confRAF=null;
+
+function launchConfetti(){
+  confCanvas.width=window.innerWidth;
+  confCanvas.height=window.innerHeight;
+  confParticles=[];
+  for(let i=0;i<130;i++){
+    confParticles.push({
+      x:Math.random()*confCanvas.width,
+      y:-10-Math.random()*80,
+      vx:(Math.random()-0.5)*3.5,
+      vy:2.5+Math.random()*4,
+      rot:Math.random()*360,
+      rotV:(Math.random()-0.5)*7,
+      w:5+Math.random()*9,
+      h:9+Math.random()*7,
+      color:["#000","#222","#555","#888","#aaa","#ddd","#fff"][Math.floor(Math.random()*7)]
+    });
+  }
+  if(confRAF) cancelAnimationFrame(confRAF);
+  drawConfetti();
+}
+
+function drawConfetti(){
+  confCtx.clearRect(0,0,confCanvas.width,confCanvas.height);
+  let alive=false;
+  confParticles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.rot+=p.rotV; p.vy+=0.09;
+    if(p.y<confCanvas.height+20) alive=true;
+    const fade=Math.max(0,1-(p.y/(confCanvas.height*1.05)));
+    confCtx.save();
+    confCtx.globalAlpha=fade;
+    confCtx.translate(p.x,p.y);
+    confCtx.rotate(p.rot*Math.PI/180);
+    confCtx.fillStyle=p.color;
+    confCtx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+    confCtx.restore();
+  });
+  if(alive) confRAF=requestAnimationFrame(drawConfetti);
+  else { confCtx.clearRect(0,0,confCanvas.width,confCanvas.height); confRAF=null; }
+}
+
+// ---- Keyboard ----
+const keyboardRows=[
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
   ["z","x","c","v","b","n","m","DEL"," "]
 ];
 
 function setActiveBox(box){
-  boxes.forEach(b=>{ let cursor=b.querySelector(".cursor"); if(cursor) cursor.remove(); b.classList.remove("active"); });
-  activeBox=box;
-  activeBox.classList.add("active");
-  const cursor=document.createElement("div"); cursor.className="cursor";
-  activeBox.appendChild(cursor);
-  showKeyboard(activeBox);
+  boxes.forEach(b=>{ let c=b.querySelector(".cursor"); if(c) c.remove(); b.classList.remove("active"); });
+  activeBox=box; activeBox.classList.add("active");
+  const cur=document.createElement("div"); cur.className="cursor"; activeBox.appendChild(cur);
+  showKeyboard();
 }
 
-function showKeyboard(box){
+function showKeyboard(){
   keyboard.innerHTML="";
   keyboardRows.forEach(row=>{
     const div=document.createElement("div"); div.className="keyboard-row";
     row.forEach(key=>{
       const btn=document.createElement("button");
-      btn.textContent=key===" "?"␣":key.toUpperCase()==="DEL"?"DEL":key;
+      btn.textContent=key===" "?"␣":key==="DEL"?"DEL":key;
       btn.onclick=()=>insertKey(key);
       div.appendChild(btn);
     });
@@ -317,20 +307,18 @@ function insertKey(key){
   else if(key===" ") content+=" ";
   else content+=key;
   activeBox.textContent=content;
-  let cursor=activeBox.querySelector(".cursor");
-  if(cursor) cursor.remove();
-  const newCursor=document.createElement("div"); newCursor.className="cursor";
-  activeBox.appendChild(newCursor);
-  if(content.length>0) activeBox.classList.add("has-content");
-  else activeBox.classList.remove("has-content");
+  let c=activeBox.querySelector(".cursor"); if(c) c.remove();
+  const nc=document.createElement("div"); nc.className="cursor"; activeBox.appendChild(nc);
+  activeBox.classList.toggle("has-content",content.length>0);
 }
 
-boxes.forEach(box=> box.addEventListener("click",()=>setActiveBox(box)));
+boxes.forEach(box=>box.addEventListener("click",()=>setActiveBox(box)));
 
-fsBtn.addEventListener("click",()=>{ 
-  const el=document.documentElement; 
-  if(el.requestFullscreen) el.requestFullscreen(); 
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen(); 
+// ---- Fullscreen ----
+fsBtn.addEventListener("click",()=>{
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   else if(el.msRequestFullscreen) el.msRequestFullscreen();
 });
 document.addEventListener("fullscreenchange",()=>{ fsBtn.style.display=document.fullscreenElement?'none':'flex'; });
@@ -343,13 +331,13 @@ nextBtn.addEventListener("mouseleave",()=>clearTimeout(nextPressTimer));
 nextBtn.addEventListener("click",goToScan);
 
 window.onload=()=>setActiveBox(boxes[0]);
-
 document.addEventListener("keydown",e=>e.preventDefault());
 document.addEventListener("keypress",e=>e.preventDefault());
 document.addEventListener("input",e=>e.preventDefault());
 
+// ---- Navigation ----
 function goToScan(){
-  if(!boxes[0].textContent.trim() || !boxes[1].textContent.trim()) return alert("Please enter both names");
+  if(!boxes[0].textContent.trim()||!boxes[1].textContent.trim()) return alert("Please enter both names");
   const s1=document.getElementById("form-step-1");
   s1.classList.add("fade-out");
   setTimeout(()=>{
@@ -358,7 +346,7 @@ function goToScan(){
     s2.style.display="block"; s2.classList.add("fade-in");
     keyboard.style.display="none";
     startScanner();
-  }, 300);
+  },300);
 }
 
 function startScanner(){
@@ -376,13 +364,10 @@ function startScanner(){
       if(code){
         scannedData=code.data;
         cameraMsg.innerText="✓ QR Scanned!";
-        cameraMsg.style.background="rgba(0,180,80,0.9)";
-        const camContainer=document.getElementById("camera-container");
-        camContainer.classList.add("scan-success");
-        // Stop laser
-        document.getElementById("scan-laser").style.display="none";
+        cameraMsg.style.background="rgba(0,160,70,0.9)";
+        document.getElementById("camera-container").classList.add("scan-success");
         video.srcObject.getTracks().forEach(t=>t.stop());
-        setTimeout(()=>submitCheckin(), 600);
+        setTimeout(()=>submitCheckin(),600);
         return;
       }
     }
@@ -390,6 +375,7 @@ function startScanner(){
   }
 }
 
+// ---- Submit ----
 async function submitCheckin(){
   const s2=document.getElementById("form-step-2");
   s2.classList.add("fade-out");
@@ -397,47 +383,45 @@ async function submitCheckin(){
     s2.style.display="none"; s2.classList.remove("fade-out");
     const w=document.getElementById("waiting");
     w.style.display="flex"; w.classList.add("fade-in");
-  }, 300);
+  },300);
 
-  // Reset waiting state to spinner
   setWaitingState("analyzing");
 
-  const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
+  const res=await fetch("/api/checkin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
   const data=await res.json(); guestId=data.guestId;
   document.getElementById("message").innerText="Thank you. Please wait a minute while we analyze your information.";
   dotStep=0; document.getElementById("dots").style.display="none"; declineActive=false;
   pollTimer=setInterval(pollStatus,2000);
 }
 
+// ---- State switching ----
 function setWaitingState(state){
-  // state: "analyzing" | "accepted" | "declined"
-  const spinner=document.getElementById("spinner-state");
-  const checkWrap=document.getElementById("check-state");
-  const warnWrap=document.getElementById("warn-state");
-  const pulseDots=document.getElementById("pulse-dots");
+  const breathState=document.getElementById("breath-state");
+  let starState=document.getElementById("star-state");
+  const declinedState=document.getElementById("declined-state");
 
-  // Reset all
-  spinner.style.display="none";
-  checkWrap.style.display="none";
-  warnWrap.style.display="none";
+  breathState.style.display="none";
+  starState.style.display="none";
+  declinedState.style.display="none";
 
   if(state==="analyzing"){
-    spinner.style.display="flex";
-    pulseDots.style.display="flex";
+    breathState.style.display="block";
+    startJourney();
   } else if(state==="accepted"){
-    // Re-trigger animation by cloning
-    const fresh=checkWrap.cloneNode(true);
-    checkWrap.parentNode.replaceChild(fresh,checkWrap);
+    // Clone to re-trigger CSS animation on repeat accepts
+    const fresh=starState.cloneNode(true);
+    starState.parentNode.replaceChild(fresh,starState);
     fresh.style.display="flex";
-    pulseDots.style.display="none";
+    completeJourney();
+    launchConfetti();
   } else if(state==="declined"){
-    const fresh=warnWrap.cloneNode(true);
-    warnWrap.parentNode.replaceChild(fresh,warnWrap);
-    fresh.style.display="flex";
-    pulseDots.style.display="flex";
+    declinedState.style.display="flex";
+    resetJourney();
+    startJourney();
   }
 }
 
+// ---- Poll ----
 async function pollStatus(){
   if(!guestId) return;
   const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
@@ -458,13 +442,22 @@ async function pollStatus(){
   }
 }
 
-function dotClick(index){ if(!declineActive) return; const sequence=[1,0,2]; if(index===sequence[dotStep]){dotStep++; if(dotStep===3) awaitDismiss();} else dotStep=0; }
-function awaitDismiss(){ fetch("/api/update",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk()); }
+// ---- Secret dots ----
+function dotClick(index){
+  if(!declineActive) return;
+  const sequence=[1,0,2];
+  if(index===sequence[dotStep]){ dotStep++; if(dotStep===3) awaitDismiss(); }
+  else dotStep=0;
+}
+function awaitDismiss(){
+  fetch("/api/update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk());
+}
 
+// ---- Reset kiosk ----
 function resetKiosk(){
   clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
+  stopJourney(); resetJourney();
   boxes.forEach(box=>{ box.textContent=""; box.classList.remove("has-content"); });
-
   const w=document.getElementById("waiting");
   w.classList.add("fade-out");
   setTimeout(()=>{
@@ -475,10 +468,9 @@ function resetKiosk(){
     document.getElementById("dots").style.display="none";
     document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
     document.getElementById("camera-msg").innerText="Scan your QR code";
-    document.getElementById("scan-laser").style.display="block";
     setActiveBox(boxes[0]);
-    showKeyboard(boxes[0]);
-  }, 300);
+    showKeyboard();
+  },300);
 }
 </script>
 </body>
