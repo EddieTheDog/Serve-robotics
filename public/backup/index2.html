@@ -574,7 +574,7 @@ function startScanner(){
 
   // Safari/iPad requires mediaDevices on https or localhost only
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    showCameraError('Camera requires HTTPS. Make sure you're on a secure connection.');
+    showCameraError("Camera requires HTTPS. Make sure you are on a secure connection.");
     return;
   }
 
@@ -589,7 +589,7 @@ function startScanner(){
 
   function tryConstraint(i){
     if(i>=constraints.length){
-      showCameraError('Could not access camera. Check that Safari has camera permission in Settings → Safari → Camera.');
+      showCameraError("Could not access camera. Check Settings > Safari > Camera and allow access.");
       return;
     }
     navigator.mediaDevices.getUserMedia(constraints[i])
@@ -609,7 +609,7 @@ function startScanner(){
       .catch(err=>{
         // OverconstrainedError or NotAllowedError
         if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
-          showCameraError('Camera permission denied. Go to Settings → Safari → Camera and allow access.');
+          showCameraError("Camera permission denied. Go to Settings > Safari > Camera and allow access.");
           return;
         }
         tryConstraint(i+1);
