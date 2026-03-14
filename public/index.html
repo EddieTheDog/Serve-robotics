@@ -8,7 +8,7 @@
 <style>
 * { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; }
 body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; margin:0; padding:0; height:100vh; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; color:#333; overflow:hidden; }
-#main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; }
+#main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; display:flex; flex-direction:column; justify-content:center; }
 h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; letter-spacing:2px; }
 
 /* Fake input */
@@ -22,12 +22,7 @@ h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:8
 button { display:block; font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
 button:active { opacity:0.8; }
 
-/* Step transitions */
-.step { transition:opacity 0.3s ease, transform 0.3s ease; }
-.step.fade-out { opacity:0; transform:translateY(-10px); pointer-events:none; }
-.step.fade-in { animation:fadeInUp 0.4s ease forwards; }
-@keyframes fadeInUp { from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);} }
-
+/* Steps — no animation by default, just show/hide */
 #form-step-2, #waiting { display:none; }
 
 /* Camera */
@@ -47,31 +42,32 @@ button:active { opacity:0.8; }
   animation:breathe 2.8s ease-in-out infinite;
 }
 @keyframes breathe {
-  0%,100% { transform:scale(1); opacity:1; box-shadow:0 0 0 0 rgba(0,0,0,0.12); }
-  50%      { transform:scale(1.13); opacity:0.65; box-shadow:0 0 0 12px rgba(0,0,0,0); }
+  0%,100% { transform:scale(1); opacity:1; }
+  50%      { transform:scale(1.13); opacity:0.6; }
 }
 
-/* Star accepted icon */
+/* Star accepted — calm fade in only */
 #star-state { display:none; flex-direction:column; align-items:center; }
 .star-circle {
   width:90px; height:90px; border-radius:50%; background:#000;
   display:flex; align-items:center; justify-content:center;
-  animation:popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  opacity:0;
+  animation:starFadeIn 0.7s ease forwards;
 }
-@keyframes popIn { from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;} }
+@keyframes starFadeIn { from{opacity:0;} to{opacity:1;} }
 .star-svg {
-  width:44px; height:44px;
-  stroke:#fff; stroke-width:1.8; stroke-linejoin:round; fill:none;
-  stroke-dasharray:220; stroke-dashoffset:220;
-  animation:drawStar 0.55s ease 0.4s forwards;
+  width:42px; height:42px;
+  stroke:#fff; stroke-width:1.8; stroke-linejoin:round; fill:#fff;
+  opacity:0;
+  animation:starIconFade 0.5s ease 0.5s forwards;
 }
-@keyframes drawStar { to { stroke-dashoffset:0; fill:#fff; } }
+@keyframes starIconFade { from{opacity:0;} to{opacity:1;} }
 
-/* Declined state: same breathing ring, slightly dimmer */
+/* Declined breathing ring — greyed */
 #declined-state { display:none; flex-direction:column; align-items:center; }
 #declined-ring {
   width:90px; height:90px; border-radius:50%;
-  border:3px solid #999;
+  border:3px solid #aaa;
   animation:breatheSlow 3.6s ease-in-out infinite;
 }
 @keyframes breatheSlow {
@@ -79,7 +75,7 @@ button:active { opacity:0.8; }
   50%{transform:scale(1.1);opacity:0.9;}
 }
 
-/* A to B journey line */
+/* A→B journey line — centered, looping fill+drain */
 #journey-wrap {
   width:86%; max-width:340px;
   display:flex; align-items:center; gap:10px;
@@ -91,11 +87,29 @@ button:active { opacity:0.8; }
   background:#fff; border:2.5px solid #000;
 }
 .journey-track {
-  flex:1; height:3px; background:#e0e0e0; border-radius:2px; position:relative;
+  flex:1; height:3px; background:#e0e0e0; border-radius:2px;
+  position:relative; overflow:hidden;
 }
+/* The animated fill — uses a sliding highlight trick so it loops cleanly */
 #journey-fill {
-  position:absolute; left:0; top:0; height:100%; width:0%;
-  background:#000; border-radius:2px;
+  position:absolute; top:0; left:0; height:100%;
+  width:100%;
+  background: linear-gradient(90deg, #e0e0e0 0%, #000 20%, #000 80%, #e0e0e0 100%);
+  background-size:300% 100%;
+  background-position:100% 0;
+  animation:journeyLoop 2.2s ease-in-out infinite;
+  border-radius:2px;
+}
+@keyframes journeyLoop {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Accepted: fill snaps to solid black, animation off */
+#journey-fill.done {
+  animation:none;
+  background:#000;
+  background-size:unset;
 }
 
 /* Status message */
@@ -123,7 +137,7 @@ button:active { opacity:0.8; }
 <div id="main-container">
   <h1>The Eddie's 2025 - Self Checkin</h1>
 
-  <div id="form-step-1" class="step">
+  <div id="form-step-1">
     <div id="first" class="fake-input" data-placeholder="First Name"></div>
     <div id="last" class="fake-input" data-placeholder="Last Name"></div>
     <button id="next-btn">Next</button>
@@ -131,7 +145,7 @@ button:active { opacity:0.8; }
     <div id="fullscreen-btn">C</div>
   </div>
 
-  <div id="form-step-2" class="step">
+  <div id="form-step-2">
     <div id="camera-container">
       <video id="video" playsinline></video>
       <div id="camera-msg">Scan your QR code</div>
@@ -140,6 +154,7 @@ button:active { opacity:0.8; }
 
   <div id="waiting">
     <div id="breath-state"><div id="breath-ring"></div></div>
+
     <div id="star-state">
       <div class="star-circle">
         <svg class="star-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -147,6 +162,7 @@ button:active { opacity:0.8; }
         </svg>
       </div>
     </div>
+
     <div id="declined-state"><div id="declined-ring"></div></div>
 
     <div id="journey-wrap">
@@ -168,70 +184,20 @@ button:active { opacity:0.8; }
 <script>
 let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="";
 let activeBox=null;
+let confettiFired=false; // only fire once per guest
 const boxes=[document.getElementById("first"),document.getElementById("last")];
 const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
 const nextBtn=document.getElementById("next-btn");
 const journeyFill=document.getElementById("journey-fill");
 
-// ---- Journey line logic ----
-let jRAF=null, jProgress=0, jTarget=0, jPhase="idle";
-
-function startJourney(){
-  jProgress=0; jTarget=0; jPhase="idle";
-  journeyFill.style.width="0%";
-  if(jRAF) cancelAnimationFrame(jRAF);
-  pickNextTarget();
-  jRAF=requestAnimationFrame(tickJourney);
-}
-
-function stopJourney(){
-  if(jRAF){ cancelAnimationFrame(jRAF); jRAF=null; }
-  jPhase="idle";
-}
-
-function resetJourney(){
-  stopJourney();
-  jProgress=0;
-  journeyFill.style.width="0%";
-}
-
-function pickNextTarget(){
-  const advance=10+Math.random()*20;
-  jTarget=Math.min(jProgress+advance, 88);
-  jPhase="moving";
-}
-
-function tickJourney(){
-  if(jPhase==="moving"){
-    const speed=0.2+Math.random()*0.1;
-    jProgress=Math.min(jProgress+speed, jTarget);
-    journeyFill.style.width=jProgress+"%";
-    if(jProgress>=jTarget){
-      jPhase="pausing";
-      const pause=700+Math.random()*1800;
-      setTimeout(()=>{ if(jPhase==="pausing") pickNextTarget(); }, pause);
-    }
-  }
-  jRAF=requestAnimationFrame(tickJourney);
-}
-
-function completeJourney(){
-  stopJourney();
-  let p=jProgress;
-  function finish(){
-    p+=1.8; if(p>=100){ journeyFill.style.width="100%"; return; }
-    journeyFill.style.width=p+"%";
-    requestAnimationFrame(finish);
-  }
-  requestAnimationFrame(finish);
-}
-
-// ---- Confetti ----
+// ---- Confetti (one-shot per guest) ----
 const confCanvas=document.getElementById("confetti-canvas");
 const confCtx=confCanvas.getContext("2d");
 let confParticles=[], confRAF=null;
 
 function launchConfetti(){
+  if(confettiFired) return;
+  confettiFired=true;
   confCanvas.width=window.innerWidth;
   confCanvas.height=window.innerHeight;
   confParticles=[];
@@ -269,6 +235,20 @@ function drawConfetti(){
   });
   if(alive) confRAF=requestAnimationFrame(drawConfetti);
   else { confCtx.clearRect(0,0,confCanvas.width,confCanvas.height); confRAF=null; }
+}
+
+// ---- Journey line state ----
+function setJourneyLooping(){
+  journeyFill.classList.remove("done");
+  // force reflow so animation restarts cleanly
+  void journeyFill.offsetWidth;
+}
+function setJourneyDone(){
+  journeyFill.classList.add("done");
+}
+function resetJourneyLine(){
+  journeyFill.classList.remove("done");
+  void journeyFill.offsetWidth;
 }
 
 // ---- Keyboard ----
@@ -335,18 +315,13 @@ document.addEventListener("keydown",e=>e.preventDefault());
 document.addEventListener("keypress",e=>e.preventDefault());
 document.addEventListener("input",e=>e.preventDefault());
 
-// ---- Navigation ----
+// ---- Navigation (no fade animation between steps) ----
 function goToScan(){
   if(!boxes[0].textContent.trim()||!boxes[1].textContent.trim()) return alert("Please enter both names");
-  const s1=document.getElementById("form-step-1");
-  s1.classList.add("fade-out");
-  setTimeout(()=>{
-    s1.style.display="none"; s1.classList.remove("fade-out");
-    const s2=document.getElementById("form-step-2");
-    s2.style.display="block"; s2.classList.add("fade-in");
-    keyboard.style.display="none";
-    startScanner();
-  },300);
+  document.getElementById("form-step-1").style.display="none";
+  document.getElementById("form-step-2").style.display="block";
+  keyboard.style.display="none";
+  startScanner();
 }
 
 function startScanner(){
@@ -377,13 +352,8 @@ function startScanner(){
 
 // ---- Submit ----
 async function submitCheckin(){
-  const s2=document.getElementById("form-step-2");
-  s2.classList.add("fade-out");
-  setTimeout(()=>{
-    s2.style.display="none"; s2.classList.remove("fade-out");
-    const w=document.getElementById("waiting");
-    w.style.display="flex"; w.classList.add("fade-in");
-  },300);
+  document.getElementById("form-step-2").style.display="none";
+  document.getElementById("waiting").style.display="flex";
 
   setWaitingState("analyzing");
 
@@ -406,18 +376,18 @@ function setWaitingState(state){
 
   if(state==="analyzing"){
     breathState.style.display="block";
-    startJourney();
+    setJourneyLooping();
   } else if(state==="accepted"){
-    // Clone to re-trigger CSS animation on repeat accepts
+    // Clone re-triggers the calm fade-in animation each time
     const fresh=starState.cloneNode(true);
     starState.parentNode.replaceChild(fresh,starState);
     fresh.style.display="flex";
-    completeJourney();
+    setJourneyDone();
     launchConfetti();
   } else if(state==="declined"){
     declinedState.style.display="flex";
-    resetJourney();
-    startJourney();
+    resetJourneyLine();
+    setJourneyLooping();
   }
 }
 
@@ -456,21 +426,18 @@ function awaitDismiss(){
 // ---- Reset kiosk ----
 function resetKiosk(){
   clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
-  stopJourney(); resetJourney();
+  confettiFired=false;
+  resetJourneyLine();
   boxes.forEach(box=>{ box.textContent=""; box.classList.remove("has-content"); });
-  const w=document.getElementById("waiting");
-  w.classList.add("fade-out");
-  setTimeout(()=>{
-    w.style.display="none"; w.classList.remove("fade-out");
-    const s1=document.getElementById("form-step-1");
-    s1.style.display="block"; s1.classList.add("fade-in");
-    document.getElementById("form-step-2").style.display="none";
-    document.getElementById("dots").style.display="none";
-    document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
-    document.getElementById("camera-msg").innerText="Scan your QR code";
-    setActiveBox(boxes[0]);
-    showKeyboard();
-  },300);
+  document.getElementById("waiting").style.display="none";
+  document.getElementById("form-step-2").style.display="none";
+  document.getElementById("form-step-1").style.display="block";
+  document.getElementById("dots").style.display="none";
+  document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
+  document.getElementById("camera-msg").innerText="Scan your QR code";
+  document.getElementById("camera-container").classList.remove("scan-success");
+  setActiveBox(boxes[0]);
+  showKeyboard();
 }
 </script>
 </body>
