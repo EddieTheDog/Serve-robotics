@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Eddie's 2025 - Self Checkin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap');
+
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; }
+body {
+  font-family:'DM Sans', 'Helvetica Neue', sans-serif;
+  margin:0; padding:0; min-height:100vh; width:100%;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  background:#f9f9f9; color:#111;
+}
+#main-container { width:100%; max-width:520px; padding:28px 24px; text-align:center; flex:1; position:relative; display:flex; flex-direction:column; justify-content:center; }
+
+/* ── TITLE ── */
+.kiosk-title { margin-bottom:32px; line-height:1; }
+.kiosk-title-main {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:72px; letter-spacing:4px; line-height:0.9;
+  color:#111; display:block;
+}
+.kiosk-title-year {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:32px; letter-spacing:8px; color:#bbb;
+  display:block; margin-top:4px;
+}
+.kiosk-title-sub {
+  font-size:11px; font-weight:700; letter-spacing:3px;
+  text-transform:uppercase; color:#aaa; display:block; margin-top:10px;
+}
+
+/* ── FAKE INPUTS ── */
+.fake-input {
+  font-size:20px; font-weight:500; padding:14px 16px; margin-bottom:12px; width:100%;
+  border-radius:12px; border:2px solid #e4e4e4; background:#fff;
+  text-align:left; height:52px; display:flex; align-items:center; position:relative;
+  overflow-x:auto; white-space:nowrap; color:#111;
+  transition:border-color 0.15s;
+}
+.fake-input.active { border-color:#111; }
+.fake-input .cursor { width:2px; background:#111; animation:blink 1s step-start infinite; margin-left:2px; height:1.1em; }
+@keyframes blink { 0%,50%,100%{opacity:1} 25%,75%{opacity:0} }
+.fake-input[data-placeholder]::before { content:attr(data-placeholder); color:#ccc; pointer-events:none; font-weight:400; }
+.fake-input.has-content::before { display:none; }
+
+/* ── BUTTONS (global, kiosk style) ── */
+button {
+  display:block; font-size:16px; font-weight:700; padding:16px;
+  margin-top:10px; width:100%; background:#111; color:#fff;
+  border:none; border-radius:12px; cursor:pointer;
+  text-transform:uppercase; letter-spacing:1.5px;
+  font-family:'DM Sans', sans-serif;
+}
+button:active { opacity:0.75; }
+
+/* ── KEYBOARD ── */
+#form-step-2, #waiting { display:none; }
+#custom-keyboard { display:flex; flex-direction:column; position:fixed; bottom:0; left:0; right:0; background:#111; padding:6px; gap:5px; z-index:1000; }
+.keyboard-row { display:flex; justify-content:center; gap:5px; }
+.keyboard-row button { flex:1; font-size:20px; padding:14px 0; border-radius:10px; border:none; background:#222; color:#fff; font-weight:700; cursor:pointer; margin:0; letter-spacing:0; transition:background 0.1s; }
+.keyboard-row button:active { background:#444; }
+
+/* ── FULLSCREEN BTN ── */
+#fullscreen-btn { position:absolute; top:20px; right:20px; width:36px; height:36px; background:#111; color:#fff; border-radius:8px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; font-size:13px; width:36px; padding:0; margin:0; }
+
+/* ── CAMERA ── */
+#camera-container { width:100%; max-width:280px; height:280px; margin:0 auto 20px; border:3px solid #111; border-radius:16px; overflow:hidden; background:#000; position:relative; }
+#video { width:100%; height:100%; object-fit:cover; }
+#camera-msg { position:absolute; bottom:10px; left:0; right:0; color:#fff; background:rgba(0,0,0,0.65); padding:6px; font-size:13px; font-weight:600; letter-spacing:0.5px; }
+
+/* ── WAITING SCREEN ── */
+#waiting { width:100%; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
+.waiting-inner { display:flex; flex-direction:column; align-items:center; gap:32px; animation:fadeUp 0.5s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+/* Hero copy */
+.waiting-hero { text-align:center; line-height:1.15; }
+.waiting-line1 {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:15px; letter-spacing:4px; color:#bbb;
+  text-transform:uppercase; display:block; margin-bottom:6px;
+}
+.waiting-line2 {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:52px; letter-spacing:2px; color:#111;
+  display:block; line-height:1;
+}
+.waiting-line3 {
+  font-size:13px; font-weight:600; letter-spacing:2px;
+  text-transform:uppercase; color:#aaa; display:block; margin-top:8px;
+}
+
+/* Steps track */
+.steps-track { display:flex; align-items:flex-start; gap:0; width:300px; }
+.step-node { display:flex; flex-direction:column; align-items:center; gap:7px; flex-shrink:0; }
+.step-circle {
+  width:44px; height:44px; border-radius:50%;
+  border:2.5px solid #ddd; background:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:800; color:#ccc;
+  transition:border-color 0.35s, background 0.35s, color 0.35s;
+}
+.step-circle.done   { border-color:#111; background:#111; color:#fff; }
+.step-circle.active { border-color:#111; color:#111; }
+.step-label {
+  font-size:10px; font-weight:700; letter-spacing:0.5px;
+  text-transform:uppercase; color:#ccc; transition:color 0.35s; white-space:nowrap;
+}
+.step-label.done, .step-label.active { color:#111; }
+
+/* Connector line */
+.step-line-wrap { flex:1; height:2.5px; position:relative; background:#e4e4e4; overflow:hidden; margin-top:21px; }
+.step-line-fill {
+  position:absolute; inset:0; background:#111;
+  transform:scaleX(0); transform-origin:left;
+  transition:transform 0.55s cubic-bezier(0.4,0,0.2,1);
+}
+.step-line-fill.filled { transform:scaleX(1); }
+
+/* Shimmer — one-shot on fill, loops while waiting */
+.step-line-fill::after {
+  content:'';
+  position:absolute; top:0; bottom:0; left:-80px; width:80px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.85) 50%, transparent);
+  animation-name:shimmer;
+  animation-timing-function:ease-in-out;
+  animation-fill-mode:both;
+  animation-play-state:paused;
+}
+.step-line-fill.filled::after { animation-play-state:running; }
+/* Line 1 loops while on step 2 */
+#line1.loop-shimmer::after { animation-duration:1.6s; animation-iteration-count:infinite; }
+/* Line 2 fires once on completion */
+#line2.filled::after { animation-duration:0.8s; animation-iteration-count:1; }
+@keyframes shimmer { 0%{left:-80px} 100%{left:110%} }
+
+/* Status sub */
+.waiting-status { font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#bbb; }
+
+/* ── DISMISS BUTTON (hidden D) ── */
+#dismiss-trigger {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  width:36px; height:36px; border-radius:10px;
+  background:#111; color:#fff; font-size:15px; font-weight:800;
+  border:none; cursor:pointer; display:none; /* shown only in declined state */
+  margin:0; padding:0; letter-spacing:0; width:36px;
+  z-index:100;
+}
+#dismiss-trigger:active { background:#333; }
+
+/* Dots drawer — slides down from button */
+#dots-drawer {
+  position:fixed; bottom:64px; left:50%; transform:translateX(-50%);
+  background:#fff; border:2px solid #111; border-radius:14px;
+  padding:16px 20px; display:flex; gap:14px;
+  max-height:0; overflow:hidden; opacity:0;
+  transition:max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+  padding-top:0; padding-bottom:0;
+  z-index:99;
+}
+#dots-drawer.open {
+  max-height:100px; opacity:1;
+  padding-top:16px; padding-bottom:16px;
+}
+.dot-btn {
+  width:44px; height:44px; border-radius:50%;
+  background:#f4f4f4; border:2px solid #e4e4e4;
+  cursor:pointer; margin:0; padding:0;
+  transition:background 0.15s, border-color 0.15s;
+}
+.dot-btn:active { background:#111; border-color:#111; }
+</style>
+</head>
+<body>
+<div id="main-container">
+  <div class="kiosk-title">
+    <span class="kiosk-title-main">The Eddie's</span>
+    <span class="kiosk-title-year">2025</span>
+    <span class="kiosk-title-sub">Self Check-In</span>
+  </div>
+
+  <div id="form-step-1">
+    <div id="first" class="fake-input" data-placeholder="First Name"></div>
+    <div id="last" class="fake-input" data-placeholder="Last Name"></div>
+    <button id="next-btn">Next</button>
+    <div id="custom-keyboard"></div>
+    <div id="fullscreen-btn">C</div>
+  </div>
+
+  <div id="form-step-2">
+    <div id="camera-container">
+      <video id="video" playsinline></video>
+      <div id="camera-msg">Scan your QR code</div>
+    </div>
+  </div>
+
+  <div id="waiting">
+    <h2 id="message">Please wait...</h2>
+    <div id="dots">
+      <button onclick="dotClick(0)">●</button>
+      <button onclick="dotClick(1)">●</button>
+      <button onclick="dotClick(2)">●</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="";
+let activeBox=null;
+const boxes=[document.getElementById("first"), document.getElementById("last")];
+const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
+const nextBtn=document.getElementById("next-btn");
+
+const keyboardRows = [
+  ["q","w","e","r","t","y","u","i","o","p"],
+  ["a","s","d","f","g","h","j","k","l"],
+  ["z","x","c","v","b","n","m","DEL"," "]
+];
+
+// --- Fake input helpers ---
+function setActiveBox(box){
+  boxes.forEach(b=> { let cursor=b.querySelector(".cursor"); if(cursor) cursor.remove(); b.classList.remove("active"); });
+  activeBox=box;
+  activeBox.classList.add("active");
+  const cursor=document.createElement("div"); cursor.className="cursor";
+  activeBox.appendChild(cursor);
+  showKeyboard(activeBox);
+}
+
+// Show keyboard
+function showKeyboard(box){
+  keyboard.innerHTML="";
+  keyboardRows.forEach(row=>{
+    const div=document.createElement("div"); div.className="keyboard-row";
+    row.forEach(key=>{
+      const btn=document.createElement("button");
+      btn.textContent=key===" "?"␣":key.toUpperCase()==="DEL"?"DEL":key;
+      btn.onclick=()=>insertKey(key);
+      div.appendChild(btn);
+    });
+    keyboard.appendChild(div);
+  });
+  keyboard.style.display="flex";
+}
+
+// Insert key
+function insertKey(key){
+  if(!activeBox) return;
+  let content=activeBox.textContent.replace(/\u200B/g,'');
+  if(key==="DEL") content=content.slice(0,-1);
+  else if(key===" ") content+=" ";
+  else content+=key;
+  activeBox.textContent=content;
+
+  // Update cursor
+  let cursor=activeBox.querySelector(".cursor");
+  if(cursor) cursor.remove();
+  const newCursor=document.createElement("div"); 
+  newCursor.className="cursor";
+  activeBox.appendChild(newCursor);
+
+  // Update placeholder
+  if(content.length>0) activeBox.classList.add("has-content");
+  else activeBox.classList.remove("has-content");
+}
+
+boxes.forEach(box=> box.addEventListener("click",()=>setActiveBox(box)));
+
+// Fullscreen
+fsBtn.addEventListener("click",()=>{ 
+  const elBody=document.documentElement; 
+  if(elBody.requestFullscreen) elBody.requestFullscreen(); 
+  else if(elBody.webkitRequestFullscreen) elBody.webkitRequestFullscreen(); 
+  else if(elBody.msRequestFullscreen) elBody.msRequestFullscreen();
+});
+document.addEventListener("fullscreenchange",()=>{ fsBtn.style.display=(document.fullscreenElement)?'none':'flex'; });
+document.addEventListener("webkitfullscreenchange",()=>{ fsBtn.style.display=(document.webkitFullscreenElement)?'none':'flex'; });
+document.addEventListener("msfullscreenchange",()=>{ fsBtn.style.display=(document.msFullscreenElement)?'none':'flex'; });
+
+// Long press Next for fullscreen
+let nextPressTimer=null;
+nextBtn.addEventListener("mousedown", ()=>{ nextPressTimer=setTimeout(()=>fsBtn.click(),1000); });
+nextBtn.addEventListener("mouseup", ()=>clearTimeout(nextPressTimer));
+nextBtn.addEventListener("mouseleave", ()=>clearTimeout(nextPressTimer));
+nextBtn.addEventListener("click", goToScan);
+
+// Focus first box
+window.onload=()=>setActiveBox(boxes[0]);
+
+// Disable hardware keyboard
+document.addEventListener("keydown", e=>e.preventDefault());
+document.addEventListener("keypress", e=>e.preventDefault());
+document.addEventListener("input", e=>e.preventDefault());
+
+// --- QR Scan ---
+function goToScan(){
+  if(!boxes[0].textContent.trim() || !boxes[1].textContent.trim()) return alert("Please enter both names");
+  document.getElementById("form-step-1").style.display="none";
+  document.getElementById("form-step-2").style.display="block";
+  keyboard.style.display="none";
+  startScanner();
+}
+
+function startScanner(){
+  const video=document.getElementById("video"), cameraMsg=document.getElementById("camera-msg");
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+    .then(stream=>{ video.srcObject=stream; video.play(); requestAnimationFrame(tick); })
+    .catch(err=>{ cameraMsg.innerText="Camera access denied."; console.error(err); });
+  function tick(){
+    if(video.readyState===video.HAVE_ENOUGH_DATA){
+      const canvas=document.createElement("canvas").getContext("2d");
+      canvas.canvas.width=video.videoWidth; canvas.canvas.height=video.videoHeight;
+      canvas.drawImage(video,0,0,canvas.canvas.width,canvas.canvas.height);
+      const imageData=canvas.getImageData(0,0,canvas.canvas.width,canvas.canvas.height);
+      const code=jsQR(imageData.data,imageData.width,imageData.height);
+      if(code){ scannedData=code.data; cameraMsg.innerText="QR Scanned!"; cameraMsg.style.background="green"; video.srcObject.getTracks().forEach(t=>t.stop()); submitCheckin(); return; }
+    }
+    requestAnimationFrame(tick);
+  }
+}
+
+// --- Submit ---
+async function submitCheckin(){
+  const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
+  const data=await res.json(); guestId=data.guestId;
+  document.getElementById("form-step-2").style.display="none";
+  document.getElementById("waiting").style.display="block";
+  document.getElementById("message").innerText="Thank you. Please wait a minute while we analyze your information.";
+  dotStep=0; document.getElementById("dots").style.display="none"; declineActive=false;
+  pollTimer=setInterval(pollStatus,2000);
+}
+
+// --- Poll ---
+async function pollStatus(){
+  if(!guestId) return;
+  const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
+  switch(g.status){
+    case "accepted": document.getElementById("message").innerText=`${g.first_name}, your name tag is on the way.`; document.getElementById("dots").style.display="none"; declineActive=false; break;
+    case "declined": document.getElementById("message").innerText="Please wait one additional minute."; document.getElementById("dots").style.display="flex"; declineActive=true; dotStep=0; break;
+    case "completed": case "dismissed": resetKiosk(); break;
+  }
+}
+
+// --- Dot click ---
+function toggleDotsDrawer() {
+  if(!declineActive) return;
+  document.getElementById("dots-drawer").classList.toggle("open");
+}
+function dotClick(index){ if(!declineActive) return; const sequence=[1,0,2]; if(index===sequence[dotStep]){dotStep++; if(dotStep===3) awaitDismiss();} else dotStep=0; }
+function awaitDismiss(){ fetch("/api/update",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk()); }
+
+// --- Reset kiosk ---
+function resetKiosk(){
+  clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
+  boxes.forEach(box=>{ box.textContent=""; box.classList.remove("has-content"); });
+  document.getElementById("waiting").style.display="none";
+  document.getElementById("form-step-1").style.display="block";
+  document.getElementById("form-step-2").style.display="none";
+  document.getElementById("dots").style.display="none";
+  document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
+  document.getElementById("camera-msg").innerText="Scan your QR code";
+  setActiveBox(boxes[0]);
+}
+</script>
+</body>
+</html>
