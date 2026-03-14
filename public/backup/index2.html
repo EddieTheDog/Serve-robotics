@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>The Eddie's 2025 — Check-In</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Eddie's Check-In">
+<meta name="mobile-web-app-capable" content="yes">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -130,15 +134,49 @@ body {
 .key-btn:active { background:#444; }
 .key-btn.wide { font-size:13px; letter-spacing:0.5px; }
 
-/* ── FULLSCREEN BTN ── */
+/* ── FULLSCREEN / PWA BTN ── */
 #fullscreen-btn {
   position:fixed; top:16px; right:16px;
   width:34px; height:34px;
   background:#1a1a1a; color:#555;
   border:none; border-radius:8px;
   display:flex; align-items:center; justify-content:center;
-  font-size:12px; font-weight:700; letter-spacing:0;
+  font-size:10px; font-weight:700; letter-spacing:0;
   cursor:pointer; z-index:2000; font-family:inherit;
+  text-align:center; line-height:1.2; padding:0 3px;
+}
+
+/* PWA install prompt overlay */
+#pwa-prompt {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.85); z-index:9999;
+  align-items:flex-end; justify-content:center;
+  padding-bottom:24px;
+}
+#pwa-prompt.show { display:flex; }
+#pwa-card {
+  background:#1a1a1a; border:1px solid #333;
+  border-radius:20px; padding:28px 24px;
+  width:calc(100% - 32px); max-width:420px;
+  text-align:center;
+}
+#pwa-card h3 { font-size:18px; font-weight:800; color:#fff; margin-bottom:8px; }
+#pwa-card p  { font-size:14px; color:#888; line-height:1.5; margin-bottom:20px; }
+#pwa-card .pwa-step {
+  background:#111; border-radius:12px; padding:12px 16px;
+  margin-bottom:10px; font-size:13px; color:#ccc;
+  text-align:left; display:flex; align-items:center; gap:12px;
+}
+#pwa-card .pwa-step-num {
+  width:24px; height:24px; border-radius:50%;
+  background:#333; color:#fff; font-size:11px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+#pwa-close {
+  margin-top:16px; width:100%; padding:14px;
+  background:#fff; color:#000; border:none; border-radius:12px;
+  font-size:15px; font-weight:800; letter-spacing:1px; cursor:pointer;
+  font-family:inherit;
 }
 
 /* ── CAMERA SCREEN ── */
@@ -363,6 +401,18 @@ body {
   </div><!-- /main-content -->
 </div><!-- /shell -->
 
+<!-- PWA install prompt -->
+<div id="pwa-prompt">
+  <div id="pwa-card">
+    <h3>Add to Home Screen</h3>
+    <p>For the best kiosk experience, add this page to your iPad's Home Screen. It will open full-screen with no browser controls.</p>
+    <div class="pwa-step"><div class="pwa-step-num">1</div>Tap the <strong style="color:#fff">Share button</strong> ↑ in Safari's toolbar</div>
+    <div class="pwa-step"><div class="pwa-step-num">2</div>Tap <strong style="color:#fff">Add to Home Screen</strong></div>
+    <div class="pwa-step"><div class="pwa-step-num">3</div>Tap <strong style="color:#fff">Add</strong> — then open the new icon</div>
+    <button id="pwa-close" onclick="document.getElementById('pwa-prompt').classList.remove('show')">Got it</button>
+  </div>
+</div>
+
 <!-- Keyboard -->
 <div id="custom-keyboard"></div>
 
@@ -446,16 +496,37 @@ document.addEventListener('keydown',e=>e.preventDefault());
 document.addEventListener('keypress',e=>e.preventDefault());
 document.addEventListener('input',e=>e.preventDefault());
 
-// ── FULLSCREEN ────────────────────────────────────────────────────────────────
-fsBtn.addEventListener('click',()=>{
-  const el=document.documentElement;
-  if(el.requestFullscreen)el.requestFullscreen();
-  else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
-});
-document.addEventListener('fullscreenchange',()=>{fsBtn.style.display=document.fullscreenElement?'none':'flex';});
-document.addEventListener('webkitfullscreenchange',()=>{fsBtn.style.display=document.webkitFullscreenElement?'none':'flex';});
+// ── FULLSCREEN / PWA KIOSK MODE ──────────────────────────────────────────────
+const isStandalone = window.navigator.standalone === true ||
+                     window.matchMedia('(display-mode: standalone)').matches;
+
+function tryFullscreen(){
+  const el = document.documentElement;
+  if(el.requestFullscreen){ el.requestFullscreen().catch(()=>{}); return; }
+  if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); return; }
+  // iPad Safari — show PWA install instructions instead
+  document.getElementById('pwa-prompt').classList.add('show');
+}
+
+fsBtn.addEventListener('click', tryFullscreen);
+
+// Update button state
+function updateFsBtn(){
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if(isStandalone || isFs){
+    fsBtn.style.display='none';
+  } else {
+    fsBtn.style.display='flex';
+    fsBtn.textContent=isFs?'↙':'⛶';
+  }
+}
+document.addEventListener('fullscreenchange', updateFsBtn);
+document.addEventListener('webkitfullscreenchange', updateFsBtn);
+window.addEventListener('load', updateFsBtn);
+
+// Long-press on Continue button triggers fullscreen attempt
 let nextHold=null;
-nextBtn.addEventListener('pointerdown',()=>{nextHold=setTimeout(()=>fsBtn.click(),1200);});
+nextBtn.addEventListener('pointerdown',()=>{nextHold=setTimeout(()=>tryFullscreen(),1200);});
 nextBtn.addEventListener('pointerup',()=>clearTimeout(nextHold));
 nextBtn.addEventListener('pointerleave',()=>clearTimeout(nextHold));
 
@@ -492,51 +563,79 @@ function retryCamera(){
   startScanner();
 }
 
+// Reusable canvas — never recreate per frame
+const scanCanvas = document.createElement('canvas');
+const scanCtx = scanCanvas.getContext('2d');
+
 function startScanner(){
   scanActive=true;
   const video=document.getElementById('video');
   const msg=document.getElementById('camera-msg');
 
+  // Safari/iPad requires mediaDevices on https or localhost only
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    showCameraError('Camera API not available on this device.');
+    showCameraError('Camera requires HTTPS. Make sure you're on a secure connection.');
     return;
   }
 
-  // Try back camera first, fall back to any camera
+  // iPad Safari: do NOT use {exact:'environment'} — it throws OverconstrainedError
+  // Use plain facingMode:'environment' string, fall back to {video:true}
   const constraints=[
-    {video:{facingMode:{exact:'environment'}}},
+    {video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}}},
     {video:{facingMode:'environment'}},
+    {video:{width:{ideal:1280}, height:{ideal:720}}},
     {video:true}
   ];
 
   function tryConstraint(i){
-    if(i>=constraints.length){ showCameraError('Could not access camera. Please allow camera permissions.'); return; }
+    if(i>=constraints.length){
+      showCameraError('Could not access camera. Check that Safari has camera permission in Settings → Safari → Camera.');
+      return;
+    }
     navigator.mediaDevices.getUserMedia(constraints[i])
       .then(stream=>{
         video.srcObject=stream;
-        video.play().catch(()=>{});
-        requestAnimationFrame(tick);
+        // iPad needs explicit play() call after srcObject set
+        const playPromise=video.play();
+        if(playPromise!==undefined){
+          playPromise.then(()=>requestAnimationFrame(tick)).catch(()=>{
+            // Autoplay blocked — still try ticking, video may play on interaction
+            requestAnimationFrame(tick);
+          });
+        } else {
+          requestAnimationFrame(tick);
+        }
       })
-      .catch(()=>tryConstraint(i+1));
+      .catch(err=>{
+        // OverconstrainedError or NotAllowedError
+        if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
+          showCameraError('Camera permission denied. Go to Settings → Safari → Camera and allow access.');
+          return;
+        }
+        tryConstraint(i+1);
+      });
   }
   tryConstraint(0);
 
   function tick(){
     if(!scanActive) return;
-    if(video.readyState===video.HAVE_ENOUGH_DATA){
+    if(video.readyState===video.HAVE_ENOUGH_DATA&&video.videoWidth>0){
       try {
-        const ctx=document.createElement('canvas').getContext('2d');
-        ctx.canvas.width=video.videoWidth; ctx.canvas.height=video.videoHeight;
-        ctx.drawImage(video,0,0,ctx.canvas.width,ctx.canvas.height);
-        const img=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
+        // Reuse canvas — resize only when video dimensions change
+        if(scanCanvas.width!==video.videoWidth||scanCanvas.height!==video.videoHeight){
+          scanCanvas.width=video.videoWidth;
+          scanCanvas.height=video.videoHeight;
+        }
+        scanCtx.drawImage(video,0,0,scanCanvas.width,scanCanvas.height);
+        const img=scanCtx.getImageData(0,0,scanCanvas.width,scanCanvas.height);
         const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
-        if(code){
+        if(code&&code.data){
           scanActive=false;
           scannedData=code.data;
           msg.textContent='✓ Scanned';
           msg.style.background='rgba(52,199,89,0.85)';
           if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
-          setTimeout(submitCheckin,300);
+          setTimeout(submitCheckin,400);
           return;
         }
       } catch(e){}
