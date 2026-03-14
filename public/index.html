@@ -41,64 +41,6 @@ button:active { opacity:0.8; }
 .keyboard-row button:active { transform:scale(0.95); background:#333; }
 
 #fullscreen-btn { position:absolute; top:20px; right:20px; width:40px; height:40px; background:#000; color:#fff; border-radius:6px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; }
-
-/* ---- Waiting screen ---- */
-#waiting { display:none; width:100%; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
-.waiting-inner { display:flex; flex-direction:column; align-items:center; gap:36px; animation:fadeUp 0.5s ease both; }
-@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-
-/* Guest name */
-.waiting-name { font-size:28px; font-weight:800; letter-spacing:1px; text-align:center; margin:0; }
-.waiting-name span { display:inline-block; }
-
-/* Steps track */
-.steps-track { display:flex; align-items:center; gap:0; width:280px; }
-.step-node { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; }
-.step-circle {
-  width:48px; height:48px; border-radius:50%;
-  border:3px solid #e0e0e0; background:#fff;
-  display:flex; align-items:center; justify-content:center;
-  font-size:18px; font-weight:800; color:#ccc;
-  position:relative; overflow:hidden;
-  transition: border-color 0.4s ease, color 0.4s ease, background 0.4s ease;
-}
-.step-circle.done   { border-color:#000; background:#000; color:#fff; }
-.step-circle.active { border-color:#000; color:#000; }
-.step-circle.active::after {
-  content:''; position:absolute; inset:0; border-radius:50%;
-  background:conic-gradient(#000 var(--pct,0%), transparent var(--pct,0%));
-  opacity:0.12;
-}
-/* shimmer overlay on the active fill line */
-.step-label { font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#ccc; transition:color 0.4s; white-space:nowrap; }
-.step-label.done, .step-label.active { color:#000; }
-
-/* Connector line */
-.step-line-wrap { flex:1; height:3px; position:relative; background:#e8e8e8; overflow:hidden; }
-.step-line-fill {
-  position:absolute; inset:0; background:#000;
-  transform:scaleX(0); transform-origin:left;
-  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);
-}
-.step-line-fill.filled { transform:scaleX(1); }
-/* shimmer glint */
-.step-line-fill::after {
-  content:'';
-  position:absolute; top:0; bottom:0; left:-60px; width:60px;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.7) 50%, transparent);
-  animation:shimmer 0.9s ease forwards;
-  animation-play-state:paused;
-}
-.step-line-fill.filled::after { animation-play-state:running; }
-@keyframes shimmer { from{left:-60px} to{left:110%} }
-
-.waiting-sub { font-size:13px; color:#aaa; letter-spacing:1px; text-transform:uppercase; margin:0; font-weight:600; }
-
-/* Secret dismiss dots */
-.dots-row { display:none; justify-content:center; gap:20px; }
-.dot-btn { width:44px; height:44px; border-radius:50%; background:#f4f4f4; border:2px solid #e8e8e8; cursor:pointer; margin:0; padding:0; transition:background 0.15s; }
-.dot-btn:active { background:#000; }
-
 </style>
 </head>
 <body>
@@ -121,44 +63,11 @@ button:active { opacity:0.8; }
   </div>
 
   <div id="waiting">
-    <div class="waiting-inner">
-      <h2 class="waiting-name" id="waiting-name">Welcome</h2>
-
-      <!-- 3-step Uber-style progress -->
-      <div class="steps-track">
-        <!-- Step 1: Checked In -->
-        <div class="step-node">
-          <div class="step-circle done" id="step1-circle">✓</div>
-          <div class="step-label done" id="step1-label">Checked In</div>
-        </div>
-        <!-- Line 1→2 -->
-        <div class="step-line-wrap">
-          <div class="step-line-fill" id="line1"></div>
-        </div>
-        <!-- Step 2: QR Scanned -->
-        <div class="step-node">
-          <div class="step-circle" id="step2-circle">2</div>
-          <div class="step-label" id="step2-label">QR Scanned</div>
-        </div>
-        <!-- Line 2→3 -->
-        <div class="step-line-wrap">
-          <div class="step-line-fill" id="line2"></div>
-        </div>
-        <!-- Step 3: All Set -->
-        <div class="step-node">
-          <div class="step-circle" id="step3-circle">3</div>
-          <div class="step-label" id="step3-label">All Set</div>
-        </div>
-      </div>
-
-      <p class="waiting-sub" id="waiting-sub">Checking you in…</p>
-
-      <!-- Secret dismiss dots -->
-      <div id="dots" class="dots-row">
-        <button class="dot-btn" onclick="dotClick(0)"></button>
-        <button class="dot-btn" onclick="dotClick(1)"></button>
-        <button class="dot-btn" onclick="dotClick(2)"></button>
-      </div>
+    <h2 id="message">Please wait...</h2>
+    <div id="dots">
+      <button onclick="dotClick(0)">●</button>
+      <button onclick="dotClick(1)">●</button>
+      <button onclick="dotClick(2)">●</button>
     </div>
   </div>
 </div>
@@ -283,13 +192,8 @@ async function submitCheckin(){
   const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
   const data=await res.json(); guestId=data.guestId;
   document.getElementById("form-step-2").style.display="none";
-  // Show waiting screen
-  const firstName = boxes[0].textContent.trim();
-  document.getElementById("waiting").style.display="flex";
-  document.getElementById("waiting-name").textContent = firstName;
-  document.getElementById("waiting-sub").textContent = "Just a moment…";
-  // Step 1 already done; advance to step 2 with shimmer
-  setStep(2);
+  document.getElementById("waiting").style.display="block";
+  document.getElementById("message").innerText="Thank you. Please wait a minute while we analyze your information.";
   dotStep=0; document.getElementById("dots").style.display="none"; declineActive=false;
   pollTimer=setInterval(pollStatus,2000);
 }
@@ -299,17 +203,8 @@ async function pollStatus(){
   if(!guestId) return;
   const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
   switch(g.status){
-    case "accepted": {
-      setStep(3);
-      document.getElementById("waiting-sub").textContent = "Your name tag is on the way ✓";
-      document.getElementById("dots").style.display = "none";
-      declineActive = false; break;
-    }
-    case "declined": {
-      document.getElementById("waiting-sub").textContent = "One more moment…";
-      document.getElementById("dots").style.display = "flex";
-      declineActive = true; dotStep = 0; break;
-    }
+    case "accepted": document.getElementById("message").innerText=`${g.first_name}, your name tag is on the way.`; document.getElementById("dots").style.display="none"; declineActive=false; break;
+    case "declined": document.getElementById("message").innerText="Please wait one additional minute."; document.getElementById("dots").style.display="flex"; declineActive=true; dotStep=0; break;
     case "completed": case "dismissed": resetKiosk(); break;
   }
 }
@@ -318,58 +213,11 @@ async function pollStatus(){
 function dotClick(index){ if(!declineActive) return; const sequence=[1,0,2]; if(index===sequence[dotStep]){dotStep++; if(dotStep===3) awaitDismiss();} else dotStep=0; }
 function awaitDismiss(){ fetch("/api/update",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk()); }
 
-// --- Step progress helpers ---
-function setStep(n) {
-  // Circle states
-  const c1=document.getElementById("step1-circle"),
-        c2=document.getElementById("step2-circle"),
-        c3=document.getElementById("step3-circle");
-  const l1=document.getElementById("step1-label"),
-        l2=document.getElementById("step2-label"),
-        l3=document.getElementById("step3-label");
-  const line1=document.getElementById("line1"),
-        line2=document.getElementById("line2");
-
-  // Step 1 always done by the time waiting screen shows
-  c1.className="step-circle done"; c1.textContent="✓"; l1.className="step-label done";
-
-  if(n >= 2) {
-    c2.className="step-circle done"; c2.textContent="✓"; l2.className="step-label done";
-    // Trigger shimmer on line 1
-    line1.classList.remove("filled");
-    void line1.offsetWidth; // reflow to restart animation
-    line1.classList.add("filled");
-  }
-  if(n >= 3) {
-    c3.className="step-circle done"; c3.textContent="✓"; l3.className="step-label done";
-    line2.classList.remove("filled");
-    void line2.offsetWidth;
-    line2.classList.add("filled");
-  } else {
-    c3.className="step-circle"; c3.textContent="3"; l3.className="step-label";
-    line2.classList.remove("filled");
-  }
-}
-
-function resetSteps() {
-  document.getElementById("step1-circle").className="step-circle"; document.getElementById("step1-circle").textContent="1";
-  document.getElementById("step2-circle").className="step-circle"; document.getElementById("step2-circle").textContent="2";
-  document.getElementById("step3-circle").className="step-circle"; document.getElementById("step3-circle").textContent="3";
-  document.getElementById("step1-label").className="step-label";
-  document.getElementById("step2-label").className="step-label";
-  document.getElementById("step3-label").className="step-label";
-  document.getElementById("line1").classList.remove("filled");
-  document.getElementById("line2").classList.remove("filled");
-}
-
 // --- Reset kiosk ---
 function resetKiosk(){
   clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
   boxes.forEach(box=>{ box.textContent=""; box.classList.remove("has-content"); });
-  const wEl = document.getElementById("waiting");
-  wEl.style.display="none";
-  // Reset steps
-  resetSteps();
+  document.getElementById("waiting").style.display="none";
   document.getElementById("form-step-1").style.display="block";
   document.getElementById("form-step-2").style.display="none";
   document.getElementById("dots").style.display="none";
