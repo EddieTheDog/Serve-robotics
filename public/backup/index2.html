@@ -72,7 +72,7 @@ button:active { opacity:0.7; }
 
 .waiting-hero { text-align:center; }
 .waiting-label { font-size:12px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#bbb; display:block; margin-bottom:10px; }
-.waiting-name { font-family:'Bebas Neue',sans-serif; font-size:64px; letter-spacing:2px; color:#111; display:block; line-height:1; }
+.waiting-name { font-family:'Bebas Neue',sans-serif; font-size:42px; letter-spacing:2px; color:#111; display:block; line-height:1; }
 .waiting-tagline { font-size:12px; font-weight:600; letter-spacing:2.5px; text-transform:uppercase; color:#bbb; display:block; margin-top:12px; min-height:16px; }
 
 /* Steps */
@@ -102,10 +102,12 @@ button:active { opacity:0.7; }
 /* HIDDEN D BUTTON */
 #dismiss-trigger {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  width:36px; height:36px; border-radius:10px;
-  background:#111; color:#fff; font-size:14px; font-weight:800; letter-spacing:0;
+  width:32px; height:32px; border-radius:8px;
+  background:#e4e4e4; color:#999; font-size:12px; font-weight:700; letter-spacing:1px;
   border:none; cursor:pointer; display:none; margin:0; padding:0; z-index:100;
+  font-family:inherit;
 }
+#dismiss-trigger:active { background:#ccc; }
 
 /* DOTS DRAWER */
 #dots-drawer {
@@ -149,9 +151,9 @@ button:active { opacity:0.7; }
   <div id="waiting">
     <div class="waiting-inner">
       <div class="waiting-hero">
-        <span class="waiting-label"   id="waiting-label">Your name tag is on its way,</span>
+        <span class="waiting-label"   id="waiting-label">Welcome,</span>
         <span class="waiting-name"    id="waiting-name">Welcome</span>
-        <span class="waiting-tagline" id="waiting-tagline">Please wait a moment</span>
+        <span class="waiting-tagline" id="waiting-tagline"></span>
       </div>
       <div class="steps-track">
         <div class="step-node">
@@ -283,7 +285,7 @@ async function submitCheckin(){
   const firstName=boxes[0].textContent.trim();
   document.getElementById("form-step-2").style.display="none";
   document.getElementById("waiting").style.display="flex";
-  document.getElementById("waiting-label").textContent="Your name tag is on its way,";
+  document.getElementById("waiting-label").textContent="Welcome,";
   document.getElementById("waiting-name").textContent=firstName;
   document.getElementById("waiting-tagline").textContent="Please wait a moment";
   document.getElementById("waiting-status").textContent="Verifying your info";
@@ -299,17 +301,18 @@ async function pollStatus(){
   const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
   switch(g.status){
     case "accepted":{
-      if(!document.getElementById("step3-circle").classList.contains("done")){
-        setStep(3);
-        document.getElementById("waiting-label").textContent="Name tag incoming,";
-        document.getElementById("waiting-tagline").textContent="We'll be right with you";
-        document.getElementById("waiting-status").textContent="Accepted — almost ready";
-        document.getElementById("dismiss-trigger").style.display="none";
-        document.getElementById("dots-drawer").classList.remove("open");
-      }
+      setStep(3);
+      document.getElementById("waiting-label").textContent="Your name tag is on its way,";
+      document.getElementById("waiting-tagline").textContent="";
+      document.getElementById("waiting-status").textContent="Almost ready";
+      document.getElementById("dismiss-trigger").style.display="none";
+      document.getElementById("dots-drawer").classList.remove("open");
       declineActive=false; break;
     }
     case "declined":{
+      setStep(2);
+      document.getElementById("waiting-label").textContent="Welcome,";
+      document.getElementById("waiting-tagline").textContent="";
       document.getElementById("waiting-status").textContent="One more moment";
       document.getElementById("dismiss-trigger").style.display="flex";
       declineActive=true; dotStep=0; break;
