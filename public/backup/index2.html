@@ -2,198 +2,353 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>The Eddie's 2025 — Self Check-In</title>
+<title>The Eddie's 2025 — Check-In</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap');
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 
-* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; }
 body {
-  font-family:'DM Sans','Helvetica Neue',sans-serif;
-  margin:0; padding:0; min-height:100vh; width:100%;
-  display:flex; flex-direction:column; justify-content:center; align-items:center;
-  background:#f6f6f6; color:#111;
-}
-#main-container {
-  width:100%; max-width:520px; padding:32px 24px;
-  text-align:center; flex:1; position:relative;
-  display:flex; flex-direction:column; justify-content:center;
+  font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background:#000; color:#fff;
+  min-height:100vh; width:100%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
 }
 
-/* TITLE */
-.kiosk-title { margin-bottom:36px; }
-.kiosk-title-main { font-family:'Bebas Neue',sans-serif; font-size:80px; letter-spacing:3px; line-height:0.85; color:#111; display:block; }
-.kiosk-title-year { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:10px; color:#c8c8c8; display:block; margin-top:8px; }
-.kiosk-title-divider { width:40px; height:2px; background:#ddd; margin:14px auto 0; display:block; }
-.kiosk-title-sub { font-size:10px; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:#bbb; display:block; margin-top:12px; }
+/* ── OUTER SHELL ── */
+#shell {
+  width:100%; max-width:480px;
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  background:#000;
+}
 
-/* FAKE INPUTS */
+/* ── HEADER ── */
+.kiosk-header {
+  padding:52px 28px 28px;
+  border-bottom:1px solid #1a1a1a;
+  flex-shrink:0;
+}
+.kiosk-header-event {
+  font-size:11px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  color:#555; margin-bottom:6px;
+}
+.kiosk-header-title {
+  font-size:34px; font-weight:800;
+  letter-spacing:-0.5px; line-height:1.05;
+  color:#fff;
+}
+.kiosk-header-title span {
+  color:#555;
+}
+
+/* ── MAIN CONTENT AREA ── */
+#main-content {
+  flex:1; display:flex; flex-direction:column;
+  justify-content:center; padding:32px 28px;
+}
+
+/* ── STEP LABEL ── */
+.step-eyebrow {
+  font-size:11px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  color:#555; margin-bottom:20px;
+}
+
+/* ── FAKE INPUTS ── */
+.input-group { margin-bottom:16px; }
+.input-label {
+  font-size:11px; font-weight:700;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color:#555; margin-bottom:8px; display:block;
+}
 .fake-input {
-  font-size:20px; font-weight:500; padding:14px 16px; margin-bottom:12px; width:100%;
-  border-radius:12px; border:2px solid #e4e4e4; background:#fff;
-  text-align:left; height:52px; display:flex; align-items:center;
-  overflow-x:auto; white-space:nowrap; color:#111; transition:border-color 0.15s, box-shadow 0.15s;
+  width:100%; height:56px;
+  background:#111; border:1.5px solid #2a2a2a;
+  border-radius:14px;
+  display:flex; align-items:center;
+  padding:0 18px; font-size:19px; font-weight:500;
+  color:#fff; overflow-x:auto; white-space:nowrap;
+  transition:border-color 0.15s;
 }
-.fake-input.active { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,0.06); }
-.fake-input .cursor { width:2px; background:#111; animation:blink 1s step-start infinite; margin-left:2px; height:1.1em; flex-shrink:0; }
-@keyframes blink { 0%,50%,100%{opacity:1} 25%,75%{opacity:0} }
-.fake-input[data-placeholder]::before { content:attr(data-placeholder); color:#ccc; pointer-events:none; font-weight:400; }
+.fake-input.active {
+  border-color:#fff;
+}
+.fake-input[data-placeholder]::before {
+  content:attr(data-placeholder); color:#333;
+  pointer-events:none; font-weight:400;
+}
 .fake-input.has-content::before { display:none; }
-
-/* GLOBAL BUTTONS */
-button {
-  display:block; font-size:15px; font-weight:700; padding:16px;
-  margin-top:10px; width:100%; background:#111; color:#fff;
-  border:none; border-radius:12px; cursor:pointer;
-  text-transform:uppercase; letter-spacing:2px; font-family:inherit; transition:opacity 0.1s;
+.fake-input .cursor {
+  width:2px; height:1.2em; background:#fff;
+  animation:blink 1s step-start infinite;
+  margin-left:1px; flex-shrink:0;
 }
-button:active { opacity:0.7; }
+@keyframes blink { 0%,50%,100%{opacity:1} 25%,75%{opacity:0} }
 
-/* KEYBOARD */
-#form-step-2, #waiting { display:none; }
-#custom-keyboard { display:flex; flex-direction:column; position:fixed; bottom:0; left:0; right:0; background:#111; padding:6px; gap:5px; z-index:1000; }
-.keyboard-row { display:flex; justify-content:center; gap:5px; }
-.keyboard-row button { flex:1; font-size:20px; padding:14px 0; border-radius:10px; background:#2a2a2a; color:#fff; font-weight:700; margin:0; letter-spacing:0; width:auto; }
-.keyboard-row button:active { background:#444; opacity:1; }
-
-/* FULLSCREEN */
-#fullscreen-btn { position:absolute; top:20px; right:20px; width:36px; height:36px; background:#111; color:#fff; border-radius:8px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; font-size:13px; padding:0; margin:0; letter-spacing:0; }
-
-/* CAMERA */
-#camera-container { width:100%; max-width:280px; height:280px; margin:0 auto 20px; border:3px solid #111; border-radius:16px; overflow:hidden; background:#000; position:relative; }
-#video { width:100%; height:100%; object-fit:cover; }
-#camera-msg { position:absolute; bottom:10px; left:0; right:0; color:#fff; background:rgba(0,0,0,0.65); padding:6px; font-size:13px; font-weight:600; letter-spacing:0.5px; }
-
-/* WAITING SCREEN */
-#waiting { width:100%; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
-.waiting-inner { display:flex; flex-direction:column; align-items:center; gap:40px; animation:fadeUp 0.5s ease both; }
-@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-
-.waiting-hero { text-align:center; }
-/* One big combined greeting line */
-.waiting-greeting {
-  font-family:'Bebas Neue',sans-serif;
-  font-size:52px; letter-spacing:2px; color:#111;
-  display:block; line-height:1;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+/* ── NEXT BUTTON ── */
+#next-btn {
+  width:100%; height:56px; margin-top:8px;
+  background:#fff; color:#000;
+  border:none; border-radius:14px;
+  font-size:15px; font-weight:800;
+  letter-spacing:2px; text-transform:uppercase;
+  cursor:pointer; font-family:inherit;
+  transition:opacity 0.15s;
 }
-/* Subtitle under name */
-.waiting-sub {
-  font-size:13px; font-weight:600; letter-spacing:2px;
-  text-transform:uppercase; color:#bbb;
-  display:block; margin-top:14px;
-}
+#next-btn:active { opacity:0.7; }
 
-/* Steps */
-.steps-track { display:flex; align-items:flex-start; width:290px; }
-.step-node { display:flex; flex-direction:column; align-items:center; gap:7px; flex-shrink:0; }
-.step-circle {
-  width:40px; height:40px; border-radius:50%;
-  border:2px solid #e0e0e0; background:#f6f6f6;
+/* ── KEYBOARD ── */
+#custom-keyboard {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#111; border-top:1px solid #222;
+  padding:8px 6px 20px; display:flex;
+  flex-direction:column; gap:6px; z-index:1000;
+}
+.keyboard-row { display:flex; justify-content:center; gap:6px; }
+.key-btn {
+  flex:1; height:46px; max-width:52px;
+  background:#2c2c2e; color:#fff;
+  border:none; border-radius:10px;
+  font-size:18px; font-weight:600;
+  cursor:pointer; font-family:inherit;
   display:flex; align-items:center; justify-content:center;
-  font-size:14px; font-weight:800; color:#ccc;
-  transition:border-color 0.4s, background 0.4s, color 0.4s, box-shadow 0.4s;
+  transition:background 0.08s;
 }
-.step-circle.done {
-  border-color:#111; background:#111; color:#fff;
-  box-shadow:0 2px 8px rgba(0,0,0,0.18);
-}
-.step-circle.active { border-color:#111; color:#111; background:#fff; }
-.step-label { font-size:9px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:#ccc; transition:color 0.4s; white-space:nowrap; }
-.step-label.done, .step-label.active { color:#888; }
+.key-btn:active { background:#444; }
+.key-btn.wide { max-width:80px; font-size:13px; letter-spacing:0.5px; }
 
-.step-line-wrap { flex:1; height:2px; position:relative; background:#e8e8e8; overflow:hidden; margin-top:20px; border-radius:1px; }
-.step-line-fill { position:absolute; inset:0; background:#111; transform:scaleX(0); transform-origin:left; transition:transform 0.6s cubic-bezier(0.4,0,0.2,1); }
-.step-line-fill.filled { transform:scaleX(1); }
-.step-line-fill::after {
-  content:''; position:absolute; top:0; bottom:0; left:-80px; width:80px;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 50%, transparent);
+/* ── FULLSCREEN BTN ── */
+#fullscreen-btn {
+  position:fixed; top:16px; right:16px;
+  width:34px; height:34px;
+  background:#1a1a1a; color:#555;
+  border:none; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; letter-spacing:0;
+  cursor:pointer; z-index:2000; font-family:inherit;
+}
+
+/* ── CAMERA SCREEN ── */
+#form-step-2 { display:none; }
+.camera-eyebrow {
+  font-size:11px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  color:#555; margin-bottom:20px;
+}
+.camera-wrap {
+  width:100%; aspect-ratio:1;
+  max-width:280px; margin:0 auto 20px;
+  border-radius:20px; overflow:hidden;
+  border:2px solid #2a2a2a; position:relative;
+  background:#000;
+}
+#video { width:100%; height:100%; object-fit:cover; display:block; }
+.camera-corners {
+  position:absolute; inset:0; pointer-events:none;
+}
+.camera-corners::before, .camera-corners::after,
+.camera-corners span::before, .camera-corners span::after {
+  content:''; position:absolute;
+  width:22px; height:22px;
+  border-color:#fff; border-style:solid; border-radius:3px;
+}
+.camera-corners::before  { top:14px;    left:14px;   border-width:3px 0 0 3px; }
+.camera-corners::after   { top:14px;    right:14px;  border-width:3px 3px 0 0; }
+.camera-corners span::before { bottom:14px; left:14px;   border-width:0 0 3px 3px; }
+.camera-corners span::after  { bottom:14px; right:14px;  border-width:0 3px 3px 0; }
+#camera-msg {
+  position:absolute; bottom:0; left:0; right:0;
+  background:rgba(0,0,0,0.7);
+  padding:10px; font-size:13px; font-weight:600;
+  letter-spacing:0.5px; text-align:center;
+  color:#fff;
+}
+
+/* ── WAITING SCREEN ── */
+#waiting { display:none; }
+.waiting-content {
+  display:flex; flex-direction:column;
+  align-items:flex-start; gap:36px;
+  animation:fadeUp 0.45s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.waiting-greeting-block { }
+.waiting-eyebrow {
+  font-size:11px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  color:#555; margin-bottom:10px; display:block;
+}
+.waiting-name-line {
+  font-size:42px; font-weight:800;
+  letter-spacing:-1px; line-height:1.0;
+  color:#fff; display:block;
+}
+.waiting-tagline {
+  font-size:15px; font-weight:500;
+  color:#555; margin-top:10px; display:block;
+  min-height:20px;
+}
+
+/* ── PROGRESS TRACK ── */
+.progress-track {
+  display:flex; align-items:center; width:100%; gap:0;
+}
+.prog-node { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; }
+.prog-circle {
+  width:36px; height:36px; border-radius:50%;
+  border:1.5px solid #2a2a2a; background:#111;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:800; color:#444;
+  transition:all 0.4s ease;
+}
+.prog-circle.done {
+  background:#fff; border-color:#fff; color:#000;
+  box-shadow:0 0 0 4px rgba(255,255,255,0.08);
+}
+.prog-circle.active {
+  border-color:#444; color:#777;
+}
+.prog-label {
+  font-size:9px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:#333;
+  transition:color 0.4s; white-space:nowrap;
+}
+.prog-label.done { color:#666; }
+.prog-label.active { color:#555; }
+
+.prog-line-wrap {
+  flex:1; height:1.5px; position:relative;
+  background:#1e1e1e; overflow:hidden;
+  margin-bottom:24px;
+}
+.prog-line-fill {
+  position:absolute; inset:0; background:#fff;
+  transform:scaleX(0); transform-origin:left;
+  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+.prog-line-fill.filled { transform:scaleX(1); }
+.prog-line-fill::after {
+  content:''; position:absolute;
+  top:0; bottom:0; left:-80px; width:80px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.7) 50%,transparent);
   animation-name:glint; animation-timing-function:ease-in-out; animation-play-state:paused;
 }
-.step-line-fill.filled::after { animation-play-state:running; }
-#line1.loop-shimmer::after { animation-duration:1.8s; animation-iteration-count:infinite; animation-delay:0.5s; }
-#line2.filled::after { animation-duration:0.75s; animation-iteration-count:1; }
+.prog-line-fill.filled::after { animation-play-state:running; }
+#pline1.loop-shimmer::after { animation-duration:2s; animation-iteration-count:infinite; animation-delay:0.6s; }
+#pline2.filled::after { animation-duration:0.7s; animation-iteration-count:1; }
 @keyframes glint { 0%{left:-80px} 100%{left:110%} }
 
-.waiting-status { display:none; }
-
-/* HIDDEN D BUTTON */
+/* ── D BUTTON ── */
 #dismiss-trigger {
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  width:32px; height:32px; border-radius:8px;
-  background:#e4e4e4; color:#999; font-size:12px; font-weight:700; letter-spacing:1px;
-  border:none; cursor:pointer; display:none; margin:0; padding:0; z-index:100;
-  font-family:inherit;
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  width:30px; height:30px; border-radius:8px;
+  background:#1a1a1a; color:#333;
+  border:1px solid #2a2a2a;
+  font-size:11px; font-weight:700; letter-spacing:1px;
+  font-family:inherit; cursor:pointer;
+  display:none; align-items:center; justify-content:center;
+  z-index:100;
 }
-#dismiss-trigger:active { background:#ccc; }
+#dismiss-trigger:active { background:#2a2a2a; }
 
-/* DOTS DRAWER */
+/* ── DOTS DRAWER ── */
 #dots-drawer {
-  position:fixed; bottom:68px; left:50%; transform:translateX(-50%);
-  background:#fff; border:2px solid #111; border-radius:14px;
-  display:flex; gap:14px; align-items:center; overflow:hidden;
-  max-height:0; opacity:0; padding:0 20px;
-  transition:max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+  position:fixed; bottom:58px; left:50%; transform:translateX(-50%);
+  background:#111; border:1px solid #2a2a2a; border-radius:16px;
+  display:flex; gap:12px; align-items:center;
+  overflow:hidden; max-height:0; opacity:0; padding:0 18px;
+  transition:max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease;
   z-index:99;
 }
-#dots-drawer.open { max-height:80px; opacity:1; padding:14px 20px; }
-.dot-btn { width:42px; height:42px; border-radius:50%; background:#f4f4f4; border:2px solid #e4e4e4; cursor:pointer; margin:0; padding:0; display:block; transition:background 0.15s; }
-.dot-btn:active { background:#111; border-color:#111; opacity:1; }
+#dots-drawer.open { max-height:72px; opacity:1; padding:14px 18px; }
+.dot-btn {
+  width:36px; height:36px; border-radius:50%;
+  background:#1e1e1e; border:1.5px solid #2a2a2a;
+  cursor:pointer; display:block; margin:0; padding:0;
+  transition:background 0.12s;
+}
+.dot-btn:active { background:#fff; border-color:#fff; }
 </style>
 </head>
 <body>
-<div id="main-container">
 
-  <div class="kiosk-title">
-    <span class="kiosk-title-main">The Eddie's</span>
-    <span class="kiosk-title-year">2025</span>
-    <span class="kiosk-title-divider"></span>
-    <span class="kiosk-title-sub">Self Check-In</span>
+<div id="shell">
+
+  <!-- HEADER — always visible -->
+  <div class="kiosk-header">
+    <div class="kiosk-header-event">The Eddie's Awards</div>
+    <div class="kiosk-header-title">Check-In <span>2025</span></div>
   </div>
 
-  <div id="form-step-1">
-    <div id="first" class="fake-input" data-placeholder="First Name"></div>
-    <div id="last" class="fake-input" data-placeholder="Last Name"></div>
-    <button id="next-btn">Next</button>
-    <div id="custom-keyboard"></div>
-    <div id="fullscreen-btn">C</div>
-  </div>
+  <!-- STEP 1: Name entry -->
+  <div id="main-content">
 
-  <div id="form-step-2">
-    <div id="camera-container">
-      <video id="video" playsinline></video>
-      <div id="camera-msg">Scan your QR code</div>
-    </div>
-  </div>
-
-  <div id="waiting">
-    <div class="waiting-inner">
-      <div class="waiting-hero">
-        <span class="waiting-greeting" id="waiting-greeting">Welcome</span>
-        <span class="waiting-sub"      id="waiting-sub">Please wait one minute</span>
+    <div id="form-step-1">
+      <div class="step-eyebrow">Step 1 of 2 — Enter your name</div>
+      <div class="input-group">
+        <label class="input-label">First Name</label>
+        <div id="first" class="fake-input" data-placeholder="e.g. Sarah"></div>
       </div>
-      <div class="steps-track">
-        <div class="step-node">
-          <div class="step-circle done" id="step1-circle">checkmark</div>
-          <div class="step-label done"  id="step1-label">Checked In</div>
-        </div>
-        <div class="step-line-wrap"><div class="step-line-fill" id="line1"></div></div>
-        <div class="step-node">
-          <div class="step-circle" id="step2-circle">2</div>
-          <div class="step-label"  id="step2-label">QR Scanned</div>
-        </div>
-        <div class="step-line-wrap"><div class="step-line-fill" id="line2"></div></div>
-        <div class="step-node">
-          <div class="step-circle" id="step3-circle">3</div>
-          <div class="step-label"  id="step3-label">Name Tag Ready</div>
-        </div>
+      <div class="input-group">
+        <label class="input-label">Last Name</label>
+        <div id="last" class="fake-input" data-placeholder="e.g. Johnson"></div>
+      </div>
+      <button id="next-btn">Continue →</button>
+    </div>
+
+    <!-- STEP 2: QR Scan -->
+    <div id="form-step-2">
+      <div class="camera-eyebrow">Step 2 of 2 — Scan your QR code</div>
+      <div class="camera-wrap">
+        <video id="video" playsinline></video>
+        <div class="camera-corners"><span></span></div>
+        <div id="camera-msg">Hold steady to scan</div>
       </div>
     </div>
-  </div>
 
-</div>
+    <!-- STEP 3: Waiting -->
+    <div id="waiting">
+      <div class="waiting-content">
+        <div class="waiting-greeting-block">
+          <span class="waiting-eyebrow" id="waiting-eyebrow">Checking you in</span>
+          <span class="waiting-name-line" id="waiting-name-line">Welcome</span>
+          <span class="waiting-tagline" id="waiting-tagline">Please wait one minute</span>
+        </div>
 
+        <div class="progress-track">
+          <div class="prog-node">
+            <div class="prog-circle done" id="pc1">✓</div>
+            <div class="prog-label done"  id="pl1">Name</div>
+          </div>
+          <div class="prog-line-wrap"><div class="prog-line-fill" id="pline1"></div></div>
+          <div class="prog-node">
+            <div class="prog-circle" id="pc2">2</div>
+            <div class="prog-label"  id="pl2">QR Code</div>
+          </div>
+          <div class="prog-line-wrap"><div class="prog-line-fill" id="pline2"></div></div>
+          <div class="prog-node">
+            <div class="prog-circle" id="pc3">3</div>
+            <div class="prog-label"  id="pl3">Name Tag</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /shell -->
+
+<!-- Keyboard -->
+<div id="custom-keyboard"></div>
+
+<!-- Fullscreen toggle -->
+<button id="fullscreen-btn">⛶</button>
+
+<!-- Hidden dismiss trigger -->
 <button id="dismiss-trigger" onclick="toggleDotsDrawer()">D</button>
 <div id="dots-drawer">
   <button class="dot-btn" onclick="dotClick(0)"></button>
@@ -202,195 +357,249 @@ button:active { opacity:0.7; }
 </div>
 
 <script>
-let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="", firstName="";
-let activeBox=null;
-const boxes=[document.getElementById("first"), document.getElementById("last")];
-const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
-const nextBtn=document.getElementById("next-btn");
-const keyboardRows=[["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l"],["z","x","c","v","b","n","m","DEL"," "]];
+let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData='', firstName='';
 
-function setActiveBox(box){
-  boxes.forEach(b=>{let c=b.querySelector(".cursor");if(c)c.remove();b.classList.remove("active");});
-  activeBox=box; activeBox.classList.add("active");
-  const cur=document.createElement("div"); cur.className="cursor"; activeBox.appendChild(cur);
-  showKeyboard(activeBox);
-}
-function showKeyboard(box){
-  keyboard.innerHTML="";
-  keyboardRows.forEach(row=>{
-    const div=document.createElement("div"); div.className="keyboard-row";
+const boxes=[document.getElementById('first'), document.getElementById('last')];
+const keyboard=document.getElementById('custom-keyboard');
+const fsBtn=document.getElementById('fullscreen-btn');
+const nextBtn=document.getElementById('next-btn');
+let activeBox=null;
+
+// ── KEYBOARD ──────────────────────────────────────────────────────────────────
+const rows=[
+  ['q','w','e','r','t','y','u','i','o','p'],
+  ['a','s','d','f','g','h','j','k','l'],
+  ['z','x','c','v','b','n','m','DEL',' ']
+];
+
+function buildKeyboard(){
+  keyboard.innerHTML='';
+  rows.forEach(row=>{
+    const div=document.createElement('div'); div.className='keyboard-row';
     row.forEach(key=>{
-      const btn=document.createElement("button");
-      btn.textContent=key===" "?"_":key.toUpperCase()==="DEL"?"DEL":key;
-      btn.onclick=()=>insertKey(key); div.appendChild(btn);
+      const btn=document.createElement('button'); btn.className='key-btn';
+      if(key==='DEL'||key===' ') btn.classList.add('wide');
+      btn.textContent=key===' '?'space':key==='DEL'?'del':key;
+      btn.onpointerdown=e=>{e.preventDefault();insertKey(key);};
+      div.appendChild(btn);
     });
     keyboard.appendChild(div);
   });
-  keyboard.style.display="flex";
+  keyboard.style.display='flex';
 }
+
+function setActiveBox(box){
+  boxes.forEach(b=>{const c=b.querySelector('.cursor');if(c)c.remove();b.classList.remove('active');});
+  activeBox=box; box.classList.add('active');
+  const cur=document.createElement('div'); cur.className='cursor'; box.appendChild(cur);
+  buildKeyboard();
+}
+
 function insertKey(key){
   if(!activeBox) return;
-  let c=activeBox.textContent.replace(/\u200B/g,'');
-  if(key==="DEL") c=c.slice(0,-1);
-  else if(key===" ") c+=" ";
-  else c+=key;
-  activeBox.textContent=c;
-  let cur=activeBox.querySelector(".cursor"); if(cur)cur.remove();
-  const nc=document.createElement("div"); nc.className="cursor"; activeBox.appendChild(nc);
-  activeBox.classList.toggle("has-content",c.length>0);
+  let v=activeBox.textContent.replace(/\u200B/g,'');
+  if(key==='DEL') v=v.slice(0,-1);
+  else if(key===' ') v+=' ';
+  else v+=key;
+  activeBox.textContent=v;
+  const oc=activeBox.querySelector('.cursor'); if(oc)oc.remove();
+  const nc=document.createElement('div'); nc.className='cursor'; activeBox.appendChild(nc);
+  activeBox.classList.toggle('has-content',v.length>0);
+  // Auto-advance to last name after first is non-empty
+  if(activeBox===boxes[0]&&key!=='DEL'&&v.length===1) {}
 }
-boxes.forEach(box=>box.addEventListener("click",()=>setActiveBox(box)));
 
-fsBtn.addEventListener("click",()=>{
+boxes.forEach(b=>b.addEventListener('click',()=>setActiveBox(b)));
+
+// Block hardware kb
+document.addEventListener('keydown',e=>e.preventDefault());
+document.addEventListener('keypress',e=>e.preventDefault());
+document.addEventListener('input',e=>e.preventDefault());
+
+// ── FULLSCREEN ────────────────────────────────────────────────────────────────
+fsBtn.addEventListener('click',()=>{
   const el=document.documentElement;
   if(el.requestFullscreen)el.requestFullscreen();
   else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
-  else if(el.msRequestFullscreen)el.msRequestFullscreen();
 });
-document.addEventListener("fullscreenchange",()=>{fsBtn.style.display=document.fullscreenElement?"none":"flex";});
-document.addEventListener("webkitfullscreenchange",()=>{fsBtn.style.display=document.webkitFullscreenElement?"none":"flex";});
-document.addEventListener("msfullscreenchange",()=>{fsBtn.style.display=document.msFullscreenElement?"none":"flex";});
+document.addEventListener('fullscreenchange',()=>{fsBtn.style.display=document.fullscreenElement?'none':'flex';});
+document.addEventListener('webkitfullscreenchange',()=>{fsBtn.style.display=document.webkitFullscreenElement?'none':'flex';});
+let nextHold=null;
+nextBtn.addEventListener('pointerdown',()=>{nextHold=setTimeout(()=>fsBtn.click(),1200);});
+nextBtn.addEventListener('pointerup',()=>clearTimeout(nextHold));
+nextBtn.addEventListener('pointerleave',()=>clearTimeout(nextHold));
 
-let nextPressTimer=null;
-nextBtn.addEventListener("mousedown",()=>{nextPressTimer=setTimeout(()=>fsBtn.click(),1000);});
-nextBtn.addEventListener("mouseup",()=>clearTimeout(nextPressTimer));
-nextBtn.addEventListener("mouseleave",()=>clearTimeout(nextPressTimer));
-nextBtn.addEventListener("click",goToScan);
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.onload=()=>{ setActiveBox(boxes[0]); };
 
-window.onload=()=>{
-  setActiveBox(boxes[0]);
-  document.getElementById("step1-circle").textContent="\u2713";
-};
-
-document.addEventListener("keydown",e=>e.preventDefault());
-document.addEventListener("keypress",e=>e.preventDefault());
-document.addEventListener("input",e=>e.preventDefault());
+// ── STEP 1 → 2 ───────────────────────────────────────────────────────────────
+nextBtn.addEventListener('click', goToScan);
 
 function goToScan(){
-  if(!boxes[0].textContent.trim()||!boxes[1].textContent.trim()) return alert("Please enter both names");
-  document.getElementById("form-step-1").style.display="none";
-  document.getElementById("form-step-2").style.display="block";
-  keyboard.style.display="none";
+  const f=boxes[0].textContent.trim(), l=boxes[1].textContent.trim();
+  if(!f||!l){ alert('Please enter both names'); return; }
+  document.getElementById('form-step-1').style.display='none';
+  document.getElementById('form-step-2').style.display='block';
+  keyboard.style.display='none';
   startScanner();
 }
 
+// ── QR SCANNER ────────────────────────────────────────────────────────────────
 function startScanner(){
-  const video=document.getElementById("video"), msg=document.getElementById("camera-msg");
-  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+  const video=document.getElementById('video');
+  const msg=document.getElementById('camera-msg');
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
     .then(stream=>{video.srcObject=stream;video.play();requestAnimationFrame(tick);})
-    .catch(err=>{msg.innerText="Camera access denied.";console.error(err);});
+    .catch(()=>{msg.textContent='Camera access denied.';});
   function tick(){
     if(video.readyState===video.HAVE_ENOUGH_DATA){
-      const ctx=document.createElement("canvas").getContext("2d");
-      ctx.canvas.width=video.videoWidth;ctx.canvas.height=video.videoHeight;
+      const ctx=document.createElement('canvas').getContext('2d');
+      ctx.canvas.width=video.videoWidth; ctx.canvas.height=video.videoHeight;
       ctx.drawImage(video,0,0,ctx.canvas.width,ctx.canvas.height);
       const img=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
       const code=jsQR(img.data,img.width,img.height);
       if(code){
-        scannedData=code.data;msg.innerText="QR Scanned!";msg.style.background="green";
-        video.srcObject.getTracks().forEach(t=>t.stop());submitCheckin();return;
+        scannedData=code.data;
+        msg.textContent='✓ QR Code scanned';
+        msg.style.background='rgba(52,199,89,0.85)';
+        video.srcObject.getTracks().forEach(t=>t.stop());
+        submitCheckin(); return;
       }
     }
     requestAnimationFrame(tick);
   }
 }
 
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
 async function submitCheckin(){
-  const res=await fetch("/api/checkin",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
-  const data=await res.json(); guestId=data.guestId;
-  const firstName=boxes[0].textContent.trim();
-  document.getElementById("form-step-2").style.display="none";
-  document.getElementById("waiting").style.display="flex";
   firstName=boxes[0].textContent.trim();
-  document.getElementById("waiting-greeting").textContent="Welcome, "+firstName;
-  document.getElementById("waiting-sub").textContent="Please wait one minute";
-  document.getElementById("dismiss-trigger").style.display="none";
-  document.getElementById("dots-drawer").classList.remove("open");
+  const res=await fetch('/api/checkin',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({firstName:boxes[0].textContent, lastName:boxes[1].textContent, qrData:scannedData})
+  });
+  const data=await res.json(); guestId=data.guestId;
+
+  document.getElementById('form-step-2').style.display='none';
+  document.getElementById('waiting').style.display='block';
+
+  setWaitingState('waiting');
   setStep(2);
   dotStep=0; declineActive=false;
   pollTimer=setInterval(pollStatus,2000);
 }
 
+// ── POLL ──────────────────────────────────────────────────────────────────────
 async function pollStatus(){
   if(!guestId) return;
-  const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
+  const res=await fetch(`/api/guest/${guestId}`);
+  const g=await res.json();
   switch(g.status){
-    case "accepted":{
+    case 'accepted':
       setStep(3);
-      document.getElementById("waiting-greeting").textContent="On its way, "+firstName;
-      document.getElementById("waiting-sub").textContent="We'll be right with you";
-      document.getElementById("dismiss-trigger").style.display="none";
-      document.getElementById("dots-drawer").classList.remove("open");
+      setWaitingState('accepted');
       declineActive=false; break;
-    }
-    case "declined":{
+    case 'declined':
       setStep(2);
-      document.getElementById("waiting-greeting").textContent="Welcome, "+firstName;
-      document.getElementById("waiting-sub").textContent="One more moment";
-      document.getElementById("dismiss-trigger").style.display="flex";
+      setWaitingState('declined');
       declineActive=true; dotStep=0; break;
-    }
-    case "completed": case "dismissed": resetKiosk(); break;
+    case 'completed': case 'dismissed': resetKiosk(); break;
   }
 }
 
-function toggleDotsDrawer(){
-  if(!declineActive) return;
-  document.getElementById("dots-drawer").classList.toggle("open");
-}
-function dotClick(index){
-  if(!declineActive) return;
-  const seq=[1,0,2];
-  if(index===seq[dotStep]){dotStep++;if(dotStep===3)awaitDismiss();}
-  else dotStep=0;
-}
-function awaitDismiss(){
-  fetch("/api/update",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk());
+// ── WAITING STATES ────────────────────────────────────────────────────────────
+function setWaitingState(state){
+  const eyebrow =document.getElementById('waiting-eyebrow');
+  const nameLine =document.getElementById('waiting-name-line');
+  const tagline  =document.getElementById('waiting-tagline');
+  const trigger  =document.getElementById('dismiss-trigger');
+  const drawer   =document.getElementById('dots-drawer');
+
+  if(state==='waiting'){
+    eyebrow.textContent  ='Checking you in';
+    nameLine.textContent =firstName;
+    tagline.textContent  ='Please wait one minute';
+    trigger.style.display='none';
+    drawer.classList.remove('open');
+  } else if(state==='accepted'){
+    eyebrow.textContent  ='Your name tag is on its way,';
+    nameLine.textContent =firstName;
+    tagline.textContent  ='We\'ll be right with you';
+    trigger.style.display='none';
+    drawer.classList.remove('open');
+  } else if(state==='declined'){
+    eyebrow.textContent  ='One more moment,';
+    nameLine.textContent =firstName;
+    tagline.textContent  ='';
+    trigger.style.display='flex';
+  }
 }
 
+// ── STEP PROGRESS ─────────────────────────────────────────────────────────────
 function setStep(n){
-  const c1=document.getElementById("step1-circle"),c2=document.getElementById("step2-circle"),c3=document.getElementById("step3-circle");
-  const l1=document.getElementById("step1-label"),l2=document.getElementById("step2-label"),l3=document.getElementById("step3-label");
-  const line1=document.getElementById("line1"),line2=document.getElementById("line2");
-  c1.className="step-circle done"; c1.textContent="\u2713"; l1.className="step-label done";
+  const c1=document.getElementById('pc1'),c2=document.getElementById('pc2'),c3=document.getElementById('pc3');
+  const l1=document.getElementById('pl1'),l2=document.getElementById('pl2'),l3=document.getElementById('pl3');
+  const ln1=document.getElementById('pline1'),ln2=document.getElementById('pline2');
+
+  c1.className='prog-circle done'; c1.textContent='✓'; l1.className='prog-label done';
+
   if(n>=2){
-    c2.className="step-circle done"; c2.textContent="\u2713"; l2.className="step-label done";
-    line1.classList.remove("filled","loop-shimmer"); void line1.offsetWidth;
-    line1.classList.add("filled","loop-shimmer");
+    c2.className='prog-circle done'; c2.textContent='✓'; l2.className='prog-label done';
+    ln1.classList.remove('filled','loop-shimmer'); void ln1.offsetWidth;
+    ln1.classList.add('filled','loop-shimmer');
   }
   if(n>=3){
-    line1.classList.remove("loop-shimmer");
-    c3.className="step-circle done"; c3.textContent="\u2713"; l3.className="step-label done";
-    line2.classList.remove("filled"); void line2.offsetWidth;
-    line2.classList.add("filled");
+    ln1.classList.remove('loop-shimmer');
+    c3.className='prog-circle done'; c3.textContent='✓'; l3.className='prog-label done';
+    ln2.classList.remove('filled'); void ln2.offsetWidth;
+    ln2.classList.add('filled');
   } else {
-    c3.className="step-circle"; c3.textContent="3"; l3.className="step-label";
-    line2.classList.remove("filled");
+    c3.className='prog-circle'; c3.textContent='3'; l3.className='prog-label';
+    ln2.classList.remove('filled');
   }
 }
 
 function resetSteps(){
-  [["step1-circle","1"],["step2-circle","2"],["step3-circle","3"]].forEach(([id,t])=>{
-    const el=document.getElementById(id); el.className="step-circle"; el.textContent=t;
+  [['pc1','✓'],['pc2','2'],['pc3','3']].forEach(([id,t])=>{
+    const el=document.getElementById(id);
+    el.className = id==='pc1'?'prog-circle done':'prog-circle';
+    el.textContent=t;
   });
-  ["step1-label","step2-label","step3-label"].forEach(id=>document.getElementById(id).className="step-label");
-  document.getElementById("line1").classList.remove("filled","loop-shimmer");
-  document.getElementById("line2").classList.remove("filled");
+  document.getElementById('pl1').className='prog-label done';
+  document.getElementById('pl2').className='prog-label';
+  document.getElementById('pl3').className='prog-label';
+  document.getElementById('pline1').classList.remove('filled','loop-shimmer');
+  document.getElementById('pline2').classList.remove('filled');
 }
 
+// ── D / DOTS ──────────────────────────────────────────────────────────────────
+function toggleDotsDrawer(){
+  if(!declineActive) return;
+  document.getElementById('dots-drawer').classList.toggle('open');
+}
+function dotClick(i){
+  if(!declineActive) return;
+  const seq=[1,0,2];
+  if(i===seq[dotStep]){ dotStep++; if(dotStep===3) awaitDismiss(); }
+  else dotStep=0;
+}
+function awaitDismiss(){
+  fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({guestId,status:'dismissed'})}).then(()=>resetKiosk());
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────────
 function resetKiosk(){
-  clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0; firstName="";
-  boxes.forEach(box=>{box.textContent="";box.classList.remove("has-content");});
-  document.getElementById("waiting").style.display="none";
-  document.getElementById("dismiss-trigger").style.display="none";
-  document.getElementById("dots-drawer").classList.remove("open");
+  clearInterval(pollTimer);
+  pollTimer=null; guestId=null; scannedData=''; declineActive=false; dotStep=0; firstName='';
+  boxes.forEach(b=>{b.textContent='';b.classList.remove('has-content');});
+  document.getElementById('waiting').style.display='none';
+  document.getElementById('dismiss-trigger').style.display='none';
+  document.getElementById('dots-drawer').classList.remove('open');
   resetSteps();
-  document.getElementById("form-step-1").style.display="block";
-  document.getElementById("form-step-2").style.display="none";
-  document.getElementById("camera-msg").style.background="rgba(0,0,0,0.65)";
-  document.getElementById("camera-msg").innerText="Scan your QR code";
+  document.getElementById('form-step-2').style.display='none';
+  document.getElementById('form-step-1').style.display='block';
+  document.getElementById('camera-msg').style.background='rgba(0,0,0,0.7)';
+  document.getElementById('camera-msg').textContent='Hold steady to scan';
   setActiveBox(boxes[0]);
 }
 </script>
