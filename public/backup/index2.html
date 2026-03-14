@@ -47,7 +47,7 @@ body {
 /* ── MAIN CONTENT AREA ── */
 #main-content {
   flex:1; display:flex; flex-direction:column;
-  justify-content:center; padding:32px 28px;
+  justify-content:flex-start; padding:40px 28px 28px;
 }
 
 /* ── STEP LABEL ── */
@@ -104,21 +104,21 @@ body {
 #custom-keyboard {
   position:fixed; bottom:0; left:0; right:0;
   background:#111; border-top:1px solid #222;
-  padding:8px 6px 20px; display:flex;
+  padding:8px 4px 20px; display:flex;
   flex-direction:column; gap:6px; z-index:1000;
 }
-.keyboard-row { display:flex; justify-content:center; gap:6px; }
+.keyboard-row { display:flex; justify-content:stretch; gap:5px; padding:0 4px; }
 .key-btn {
-  flex:1; height:46px; max-width:52px;
+  flex:1; height:46px;
   background:#2c2c2e; color:#fff;
   border:none; border-radius:10px;
   font-size:18px; font-weight:600;
   cursor:pointer; font-family:inherit;
   display:flex; align-items:center; justify-content:center;
-  transition:background 0.08s;
+  transition:background 0.08s; min-width:0;
 }
 .key-btn:active { background:#444; }
-.key-btn.wide { max-width:80px; font-size:13px; letter-spacing:0.5px; }
+.key-btn.wide { font-size:13px; letter-spacing:0.5px; }
 
 /* ── FULLSCREEN BTN ── */
 #fullscreen-btn {
@@ -132,6 +132,10 @@ body {
 }
 
 /* ── CAMERA SCREEN ── */
+.camera-desc {
+  font-size:15px; font-weight:400; color:#555; line-height:1.5;
+  margin-bottom:24px;
+}
 #form-step-2 { display:none; }
 .camera-eyebrow {
   font-size:11px; font-weight:700;
@@ -303,6 +307,7 @@ body {
     <!-- STEP 2: QR Scan -->
     <div id="form-step-2">
       <div class="camera-eyebrow">Step 2 of 2 — Scan your QR code</div>
+      <p class="camera-desc">Take out the ticket emailed to you and hold the QR code up to the camera below.</p>
       <div class="camera-wrap">
         <video id="video" playsinline></video>
         <div class="camera-corners"><span></span></div>
