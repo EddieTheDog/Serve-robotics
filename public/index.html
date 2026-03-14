@@ -6,134 +6,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action:manipulation; }
-body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; margin:0; padding:0; height:100vh; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; color:#333; overflow:hidden; }
-#main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; display:flex; flex-direction:column; justify-content:center; }
+* { box-sizing:border-box; margin:0; padding:0; user-select:none; touch-action: manipulation; }
+body { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; margin:0; padding:0; height:100vh; width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; color:#333; }
+#main-container { width:100%; max-width:600px; padding:20px; text-align:center; flex:1; position:relative; }
 h1 { margin-bottom:20px; font-size:32px; text-transform:uppercase; font-weight:800; letter-spacing:2px; }
 
-/* Fake input */
-.fake-input { font-size:24px; padding:15px; margin-bottom:15px; width:100%; border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8; text-align:left; height:48px; display:flex; align-items:center; position:relative; cursor:text; overflow-x:auto; white-space:nowrap; color:#333; }
+/* Fake input styles */
+.fake-input {
+  font-size:24px; padding:15px; margin-bottom:15px; width:100%;
+  border-radius:8px; border:2px solid #e0e0e0; background:#f8f8f8;
+  text-align:left; height:48px; display:flex; align-items:center; position:relative; cursor:text;
+  overflow-x:auto; white-space:nowrap; color:#333;
+}
 .fake-input.active { border-color:#000; }
 .fake-input .cursor { width:2px; background:#000; animation:blink 1s step-start infinite; margin-left:2px; height:1em; }
 @keyframes blink { 0%,50%,100%{opacity:1;} 25%,75%{opacity:0;} }
-.fake-input[data-placeholder]::before { content:attr(data-placeholder); color:#aaa; pointer-events:none; }
+.fake-input[data-placeholder]::before { content: attr(data-placeholder); color:#aaa; pointer-events:none; }
 .fake-input.has-content::before { display:none; }
 
 button { display:block; font-size:18px; padding:18px; margin-top:10px; width:100%; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
 button:active { opacity:0.8; }
 
-/* Steps — no animation by default, just show/hide */
 #form-step-2, #waiting { display:none; }
-
-/* Camera */
 #camera-container { width:100%; max-width:300px; height:300px; margin:0 auto 20px; border:4px solid #000; border-radius:12px; overflow:hidden; background:#000; position:relative; }
 #video { width:100%; height:100%; object-fit:cover; }
 #camera-msg { position:absolute; bottom:10px; left:0; right:0; color:white; background:rgba(0,0,0,0.7); padding:5px; font-size:14px; }
-@keyframes successFlash { 0%{border-color:#000;} 30%{border-color:#00c060;box-shadow:0 0 20px #00c06055;} 100%{border-color:#000;} }
-.scan-success { animation:successFlash 0.6s ease forwards; }
 
-/* ---- WAITING ---- */
-#waiting { flex-direction:column; align-items:center; gap:28px; padding-top:10px; }
-
-/* Breathing ring */
-#breath-ring {
-  width:90px; height:90px; border-radius:50%;
-  border:3px solid #000;
-  animation:breathe 2.8s ease-in-out infinite;
-}
-@keyframes breathe {
-  0%,100% { transform:scale(1); opacity:1; }
-  50%      { transform:scale(1.13); opacity:0.6; }
-}
-
-/* Star accepted — calm fade in only */
-#star-state { display:none; flex-direction:column; align-items:center; }
-.star-circle {
-  width:90px; height:90px; border-radius:50%; background:#000;
-  display:flex; align-items:center; justify-content:center;
-  opacity:0;
-  animation:starFadeIn 0.7s ease forwards;
-}
-@keyframes starFadeIn { from{opacity:0;} to{opacity:1;} }
-.star-svg {
-  width:42px; height:42px;
-  stroke:#fff; stroke-width:1.8; stroke-linejoin:round; fill:#fff;
-  opacity:0;
-  animation:starIconFade 0.5s ease 0.5s forwards;
-}
-@keyframes starIconFade { from{opacity:0;} to{opacity:1;} }
-
-/* Declined breathing ring — greyed */
-#declined-state { display:none; flex-direction:column; align-items:center; }
-#declined-ring {
-  width:90px; height:90px; border-radius:50%;
-  border:3px solid #aaa;
-  animation:breatheSlow 3.6s ease-in-out infinite;
-}
-@keyframes breatheSlow {
-  0%,100%{transform:scale(1);opacity:0.45;}
-  50%{transform:scale(1.1);opacity:0.9;}
-}
-
-/* A→B journey line — centered, looping fill+drain */
-#journey-wrap {
-  width:86%; max-width:340px;
-  display:flex; align-items:center; gap:10px;
-}
-.journey-dot {
-  width:13px; height:13px; border-radius:50%; background:#000; flex-shrink:0;
-}
-.journey-dot.dest {
-  background:#fff; border:2.5px solid #000;
-}
-.journey-track {
-  flex:1; height:3px; background:#e0e0e0; border-radius:2px;
-  position:relative; overflow:hidden;
-}
-/* The animated fill — uses a sliding highlight trick so it loops cleanly */
-#journey-fill {
-  position:absolute; top:0; left:0; height:100%;
-  width:100%;
-  background: linear-gradient(90deg, #e0e0e0 0%, #000 20%, #000 80%, #e0e0e0 100%);
-  background-size:300% 100%;
-  background-position:100% 0;
-  animation:journeyLoop 2.2s ease-in-out infinite;
-  border-radius:2px;
-}
-@keyframes journeyLoop {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -100% 0; }
-}
-
-/* Accepted: fill snaps to solid black, animation off */
-#journey-fill.done {
-  animation:none;
-  background:#000;
-  background-size:unset;
-}
-
-/* Status message */
-#message { font-size:20px; font-weight:600; text-align:center; line-height:1.4; }
-
-/* Secret dots */
-#dots { display:none; justify-content:center; gap:15px; }
+#dots { display:none; justify-content:center; gap:15px; margin-top:30px; }
 #dots button { width:50px; height:50px; font-size:12px; border-radius:50%; background:#f0f0f0; color:#ccc; display:flex; align-items:center; justify-content:center; margin:0; }
 
-/* Keyboard */
 #custom-keyboard { display:flex; flex-direction:column; position:fixed; bottom:0; left:0; right:0; background:#000; padding:5px; gap:5px; z-index:1000; }
 .keyboard-row { display:flex; justify-content:center; gap:5px; }
-.keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; transition:transform 0.1s,background 0.2s; }
+.keyboard-row button { flex:1; font-size:22px; padding:15px 0; border-radius:12px; border:2px solid #000; background:#111; color:#fff; font-weight:700; cursor:pointer; transition:transform 0.1s, background 0.2s; }
 .keyboard-row button:active { transform:scale(0.95); background:#333; }
 
 #fullscreen-btn { position:absolute; top:20px; right:20px; width:40px; height:40px; background:#000; color:#fff; border-radius:6px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:2000; }
 
-/* Confetti */
-#confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+/* ---- Waiting screen ---- */
+#waiting { display:none; width:100%; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
+.waiting-inner { display:flex; flex-direction:column; align-items:center; gap:28px; animation: fadeUp 0.6s ease both; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+.waiting-ring { position:relative; width:140px; height:140px; display:flex; align-items:center; justify-content:center; }
+.ring-svg { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+.ring-track { fill:none; stroke:#f0f0f0; stroke-width:4; }
+.ring-progress { fill:none; stroke:#000; stroke-width:4; stroke-linecap:round;
+  stroke-dasharray: 326.7; stroke-dashoffset: 326.7;
+  animation: ringFill 2.4s cubic-bezier(0.4,0,0.2,1) forwards, ringPulse 2s 2.4s ease-in-out infinite; }
+@keyframes ringFill { to { stroke-dashoffset: 0; } }
+@keyframes ringPulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+.ring-icon { font-size:36px; color:#000; animation: spinStar 8s linear infinite; }
+@keyframes spinStar { to { transform:rotate(360deg); } }
+
+.waiting-msg { font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:2px; text-align:center; margin:0; }
+.waiting-sub { font-size:14px; color:#888; letter-spacing:1px; text-transform:uppercase; margin:0; font-weight:500; }
+
+.dots-row { display:none; justify-content:center; gap:20px; margin-top:8px; }
+.dot-btn { width:52px; height:52px; border-radius:50%; background:#f4f4f4; border:2px solid #e0e0e0; color:#ccc; font-size:10px; cursor:pointer; transition:background 0.2s, border-color 0.2s; margin:0; padding:0; }
+.dot-btn:active { background:#000; border-color:#000; }
+
+/* accepted state */
+#waiting.accepted .ring-progress { stroke:#000; animation:none; stroke-dashoffset:0; }
+#waiting.accepted .ring-icon { animation:none; }
+#waiting.accepted .waiting-msg { }
+
+/* declined state */
+#waiting.declined .ring-progress { stroke:#ccc; animation:none; }
+
 </style>
 </head>
 <body>
-<canvas id="confetti-canvas"></canvas>
-
 <div id="main-container">
   <h1>The Eddie's 2025 - Self Checkin</h1>
 
@@ -153,30 +95,21 @@ button:active { opacity:0.8; }
   </div>
 
   <div id="waiting">
-    <div id="breath-state"><div id="breath-ring"></div></div>
-
-    <div id="star-state">
-      <div class="star-circle">
-        <svg class="star-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+    <div class="waiting-inner">
+      <div class="waiting-ring">
+        <svg class="ring-svg" viewBox="0 0 120 120">
+          <circle class="ring-track" cx="60" cy="60" r="52"/>
+          <circle class="ring-progress" cx="60" cy="60" r="52"/>
         </svg>
+        <div class="ring-icon">✦</div>
       </div>
-    </div>
-
-    <div id="declined-state"><div id="declined-ring"></div></div>
-
-    <div id="journey-wrap">
-      <div class="journey-dot"></div>
-      <div class="journey-track"><div id="journey-fill"></div></div>
-      <div class="journey-dot dest"></div>
-    </div>
-
-    <h2 id="message">Please wait...</h2>
-
-    <div id="dots">
-      <button onclick="dotClick(0)">●</button>
-      <button onclick="dotClick(1)">●</button>
-      <button onclick="dotClick(2)">●</button>
+      <h2 id="message" class="waiting-msg">Please wait…</h2>
+      <p class="waiting-sub" id="waiting-sub">Checking you in</p>
+      <div id="dots" class="dots-row">
+        <button class="dot-btn" onclick="dotClick(0)"></button>
+        <button class="dot-btn" onclick="dotClick(1)"></button>
+        <button class="dot-btn" onclick="dotClick(2)"></button>
+      </div>
     </div>
   </div>
 </div>
@@ -184,94 +117,34 @@ button:active { opacity:0.8; }
 <script>
 let guestId=null, pollTimer=null, dotStep=0, declineActive=false, scannedData="";
 let activeBox=null;
-let confettiFired=false; // only fire once per guest
-const boxes=[document.getElementById("first"),document.getElementById("last")];
+const boxes=[document.getElementById("first"), document.getElementById("last")];
 const keyboard=document.getElementById("custom-keyboard"), fsBtn=document.getElementById("fullscreen-btn");
 const nextBtn=document.getElementById("next-btn");
-const journeyFill=document.getElementById("journey-fill");
 
-// ---- Confetti (one-shot per guest) ----
-const confCanvas=document.getElementById("confetti-canvas");
-const confCtx=confCanvas.getContext("2d");
-let confParticles=[], confRAF=null;
-
-function launchConfetti(){
-  if(confettiFired) return;
-  confettiFired=true;
-  confCanvas.width=window.innerWidth;
-  confCanvas.height=window.innerHeight;
-  confParticles=[];
-  for(let i=0;i<130;i++){
-    confParticles.push({
-      x:Math.random()*confCanvas.width,
-      y:-10-Math.random()*80,
-      vx:(Math.random()-0.5)*3.5,
-      vy:2.5+Math.random()*4,
-      rot:Math.random()*360,
-      rotV:(Math.random()-0.5)*7,
-      w:5+Math.random()*9,
-      h:9+Math.random()*7,
-      color:["#000","#222","#555","#888","#aaa","#ddd","#fff"][Math.floor(Math.random()*7)]
-    });
-  }
-  if(confRAF) cancelAnimationFrame(confRAF);
-  drawConfetti();
-}
-
-function drawConfetti(){
-  confCtx.clearRect(0,0,confCanvas.width,confCanvas.height);
-  let alive=false;
-  confParticles.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy; p.rot+=p.rotV; p.vy+=0.09;
-    if(p.y<confCanvas.height+20) alive=true;
-    const fade=Math.max(0,1-(p.y/(confCanvas.height*1.05)));
-    confCtx.save();
-    confCtx.globalAlpha=fade;
-    confCtx.translate(p.x,p.y);
-    confCtx.rotate(p.rot*Math.PI/180);
-    confCtx.fillStyle=p.color;
-    confCtx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
-    confCtx.restore();
-  });
-  if(alive) confRAF=requestAnimationFrame(drawConfetti);
-  else { confCtx.clearRect(0,0,confCanvas.width,confCanvas.height); confRAF=null; }
-}
-
-// ---- Journey line state ----
-function setJourneyLooping(){
-  journeyFill.classList.remove("done");
-  // force reflow so animation restarts cleanly
-  void journeyFill.offsetWidth;
-}
-function setJourneyDone(){
-  journeyFill.classList.add("done");
-}
-function resetJourneyLine(){
-  journeyFill.classList.remove("done");
-  void journeyFill.offsetWidth;
-}
-
-// ---- Keyboard ----
-const keyboardRows=[
+const keyboardRows = [
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
   ["z","x","c","v","b","n","m","DEL"," "]
 ];
 
+// --- Fake input helpers ---
 function setActiveBox(box){
-  boxes.forEach(b=>{ let c=b.querySelector(".cursor"); if(c) c.remove(); b.classList.remove("active"); });
-  activeBox=box; activeBox.classList.add("active");
-  const cur=document.createElement("div"); cur.className="cursor"; activeBox.appendChild(cur);
-  showKeyboard();
+  boxes.forEach(b=> { let cursor=b.querySelector(".cursor"); if(cursor) cursor.remove(); b.classList.remove("active"); });
+  activeBox=box;
+  activeBox.classList.add("active");
+  const cursor=document.createElement("div"); cursor.className="cursor";
+  activeBox.appendChild(cursor);
+  showKeyboard(activeBox);
 }
 
-function showKeyboard(){
+// Show keyboard
+function showKeyboard(box){
   keyboard.innerHTML="";
   keyboardRows.forEach(row=>{
     const div=document.createElement("div"); div.className="keyboard-row";
     row.forEach(key=>{
       const btn=document.createElement("button");
-      btn.textContent=key===" "?"␣":key==="DEL"?"DEL":key;
+      btn.textContent=key===" "?"␣":key.toUpperCase()==="DEL"?"DEL":key;
       btn.onclick=()=>insertKey(key);
       div.appendChild(btn);
     });
@@ -280,6 +153,7 @@ function showKeyboard(){
   keyboard.style.display="flex";
 }
 
+// Insert key
 function insertKey(key){
   if(!activeBox) return;
   let content=activeBox.textContent.replace(/\u200B/g,'');
@@ -287,37 +161,50 @@ function insertKey(key){
   else if(key===" ") content+=" ";
   else content+=key;
   activeBox.textContent=content;
-  let c=activeBox.querySelector(".cursor"); if(c) c.remove();
-  const nc=document.createElement("div"); nc.className="cursor"; activeBox.appendChild(nc);
-  activeBox.classList.toggle("has-content",content.length>0);
+
+  // Update cursor
+  let cursor=activeBox.querySelector(".cursor");
+  if(cursor) cursor.remove();
+  const newCursor=document.createElement("div"); 
+  newCursor.className="cursor";
+  activeBox.appendChild(newCursor);
+
+  // Update placeholder
+  if(content.length>0) activeBox.classList.add("has-content");
+  else activeBox.classList.remove("has-content");
 }
 
-boxes.forEach(box=>box.addEventListener("click",()=>setActiveBox(box)));
+boxes.forEach(box=> box.addEventListener("click",()=>setActiveBox(box)));
 
-// ---- Fullscreen ----
-fsBtn.addEventListener("click",()=>{
-  const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen();
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+// Fullscreen
+fsBtn.addEventListener("click",()=>{ 
+  const elBody=document.documentElement; 
+  if(elBody.requestFullscreen) elBody.requestFullscreen(); 
+  else if(elBody.webkitRequestFullscreen) elBody.webkitRequestFullscreen(); 
+  else if(elBody.msRequestFullscreen) elBody.msRequestFullscreen();
 });
-document.addEventListener("fullscreenchange",()=>{ fsBtn.style.display=document.fullscreenElement?'none':'flex'; });
-document.addEventListener("webkitfullscreenchange",()=>{ fsBtn.style.display=document.webkitFullscreenElement?'none':'flex'; });
+document.addEventListener("fullscreenchange",()=>{ fsBtn.style.display=(document.fullscreenElement)?'none':'flex'; });
+document.addEventListener("webkitfullscreenchange",()=>{ fsBtn.style.display=(document.webkitFullscreenElement)?'none':'flex'; });
+document.addEventListener("msfullscreenchange",()=>{ fsBtn.style.display=(document.msFullscreenElement)?'none':'flex'; });
 
+// Long press Next for fullscreen
 let nextPressTimer=null;
-nextBtn.addEventListener("mousedown",()=>{ nextPressTimer=setTimeout(()=>fsBtn.click(),1000); });
-nextBtn.addEventListener("mouseup",()=>clearTimeout(nextPressTimer));
-nextBtn.addEventListener("mouseleave",()=>clearTimeout(nextPressTimer));
-nextBtn.addEventListener("click",goToScan);
+nextBtn.addEventListener("mousedown", ()=>{ nextPressTimer=setTimeout(()=>fsBtn.click(),1000); });
+nextBtn.addEventListener("mouseup", ()=>clearTimeout(nextPressTimer));
+nextBtn.addEventListener("mouseleave", ()=>clearTimeout(nextPressTimer));
+nextBtn.addEventListener("click", goToScan);
 
+// Focus first box
 window.onload=()=>setActiveBox(boxes[0]);
-document.addEventListener("keydown",e=>e.preventDefault());
-document.addEventListener("keypress",e=>e.preventDefault());
-document.addEventListener("input",e=>e.preventDefault());
 
-// ---- Navigation (no fade animation between steps) ----
+// Disable hardware keyboard
+document.addEventListener("keydown", e=>e.preventDefault());
+document.addEventListener("keypress", e=>e.preventDefault());
+document.addEventListener("input", e=>e.preventDefault());
+
+// --- QR Scan ---
 function goToScan(){
-  if(!boxes[0].textContent.trim()||!boxes[1].textContent.trim()) return alert("Please enter both names");
+  if(!boxes[0].textContent.trim() || !boxes[1].textContent.trim()) return alert("Please enter both names");
   document.getElementById("form-step-1").style.display="none";
   document.getElementById("form-step-2").style.display="block";
   keyboard.style.display="none";
@@ -336,108 +223,66 @@ function startScanner(){
       canvas.drawImage(video,0,0,canvas.canvas.width,canvas.canvas.height);
       const imageData=canvas.getImageData(0,0,canvas.canvas.width,canvas.canvas.height);
       const code=jsQR(imageData.data,imageData.width,imageData.height);
-      if(code){
-        scannedData=code.data;
-        cameraMsg.innerText="✓ QR Scanned!";
-        cameraMsg.style.background="rgba(0,160,70,0.9)";
-        document.getElementById("camera-container").classList.add("scan-success");
-        video.srcObject.getTracks().forEach(t=>t.stop());
-        setTimeout(()=>submitCheckin(),600);
-        return;
-      }
+      if(code){ scannedData=code.data; cameraMsg.innerText="QR Scanned!"; cameraMsg.style.background="green"; video.srcObject.getTracks().forEach(t=>t.stop()); submitCheckin(); return; }
     }
     requestAnimationFrame(tick);
   }
 }
 
-// ---- Submit ----
+// --- Submit ---
 async function submitCheckin(){
-  document.getElementById("form-step-2").style.display="none";
-  document.getElementById("waiting").style.display="flex";
-
-  setWaitingState("analyzing");
-
-  const res=await fetch("/api/checkin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
+  const res=await fetch("/api/checkin",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({firstName:boxes[0].textContent,lastName:boxes[1].textContent,qrData:scannedData})});
   const data=await res.json(); guestId=data.guestId;
-  document.getElementById("message").innerText="Thank you. Please wait a minute while we analyze your information.";
+  document.getElementById("form-step-2").style.display="none";
+  const w = document.getElementById("waiting");
+  w.style.display="flex"; w.className=""; 
+  document.getElementById("message").innerText="Just a moment…";
+  document.getElementById("waiting-sub").innerText="Checking you in";
   dotStep=0; document.getElementById("dots").style.display="none"; declineActive=false;
   pollTimer=setInterval(pollStatus,2000);
 }
 
-// ---- State switching ----
-function setWaitingState(state){
-  const breathState=document.getElementById("breath-state");
-  let starState=document.getElementById("star-state");
-  const declinedState=document.getElementById("declined-state");
-
-  breathState.style.display="none";
-  starState.style.display="none";
-  declinedState.style.display="none";
-
-  if(state==="analyzing"){
-    breathState.style.display="block";
-    setJourneyLooping();
-  } else if(state==="accepted"){
-    // Clone re-triggers the calm fade-in animation each time
-    const fresh=starState.cloneNode(true);
-    starState.parentNode.replaceChild(fresh,starState);
-    fresh.style.display="flex";
-    setJourneyDone();
-    launchConfetti();
-  } else if(state==="declined"){
-    declinedState.style.display="flex";
-    resetJourneyLine();
-    setJourneyLooping();
-  }
-}
-
-// ---- Poll ----
+// --- Poll ---
 async function pollStatus(){
   if(!guestId) return;
   const res=await fetch(`/api/guest/${guestId}`); const g=await res.json();
   switch(g.status){
-    case "accepted":
-      setWaitingState("accepted");
-      document.getElementById("message").innerText=`${g.first_name}, your name tag is on the way.`;
-      document.getElementById("dots").style.display="none";
-      declineActive=false;
-      break;
-    case "declined":
-      setWaitingState("declined");
-      document.getElementById("message").innerText="Please wait one additional minute.";
-      document.getElementById("dots").style.display="flex";
-      declineActive=true; dotStep=0;
-      break;
+    case "accepted": {
+      const w = document.getElementById("waiting");
+      w.classList.remove("declined"); w.classList.add("accepted");
+      document.getElementById("message").innerText = `Welcome, ${g.first_name}.`;
+      document.getElementById("waiting-sub").innerText = "Your name tag is on the way";
+      document.getElementById("dots").style.display = "none";
+      declineActive = false; break;
+    }
+    case "declined": {
+      const w = document.getElementById("waiting");
+      w.classList.remove("accepted"); w.classList.add("declined");
+      document.getElementById("message").innerText = "One more moment.";
+      document.getElementById("waiting-sub").innerText = "We're still getting things ready";
+      document.getElementById("dots").style.display = "flex";
+      declineActive = true; dotStep = 0; break;
+    }
     case "completed": case "dismissed": resetKiosk(); break;
   }
 }
 
-// ---- Secret dots ----
-function dotClick(index){
-  if(!declineActive) return;
-  const sequence=[1,0,2];
-  if(index===sequence[dotStep]){ dotStep++; if(dotStep===3) awaitDismiss(); }
-  else dotStep=0;
-}
-function awaitDismiss(){
-  fetch("/api/update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk());
-}
+// --- Dot click ---
+function dotClick(index){ if(!declineActive) return; const sequence=[1,0,2]; if(index===sequence[dotStep]){dotStep++; if(dotStep===3) awaitDismiss();} else dotStep=0; }
+function awaitDismiss(){ fetch("/api/update",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({guestId,status:"dismissed"})}).then(()=>resetKiosk()); }
 
-// ---- Reset kiosk ----
+// --- Reset kiosk ---
 function resetKiosk(){
   clearInterval(pollTimer); pollTimer=null; guestId=null; scannedData=""; declineActive=false; dotStep=0;
-  confettiFired=false;
-  resetJourneyLine();
   boxes.forEach(box=>{ box.textContent=""; box.classList.remove("has-content"); });
-  document.getElementById("waiting").style.display="none";
-  document.getElementById("form-step-2").style.display="none";
+  const wEl = document.getElementById("waiting");
+  wEl.style.display="none"; wEl.className="";
   document.getElementById("form-step-1").style.display="block";
+  document.getElementById("form-step-2").style.display="none";
   document.getElementById("dots").style.display="none";
   document.getElementById("camera-msg").style.background="rgba(0,0,0,0.7)";
   document.getElementById("camera-msg").innerText="Scan your QR code";
-  document.getElementById("camera-container").classList.remove("scan-success");
   setActiveBox(boxes[0]);
-  showKeyboard();
 }
 </script>
 </body>
