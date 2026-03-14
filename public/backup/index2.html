@@ -104,8 +104,18 @@ body {
 #custom-keyboard {
   position:fixed; bottom:0; left:0; right:0;
   background:#111; border-top:1px solid #222;
-  padding:8px 4px 20px; display:flex;
+  padding:0 4px 20px; display:flex;
   flex-direction:column; gap:6px; z-index:1000;
+  transition:none;
+}
+#kb-handle {
+  width:100%; padding:8px 0 4px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:ns-resize; flex-shrink:0; touch-action:none;
+}
+#kb-handle-bar {
+  width:36px; height:4px; background:#333;
+  border-radius:2px;
 }
 .keyboard-row { display:flex; justify-content:stretch; gap:5px; padding:0 4px; }
 .key-btn {
@@ -143,11 +153,12 @@ body {
   color:#555; margin-bottom:20px;
 }
 .camera-wrap {
-  width:100%; aspect-ratio:1;
-  max-width:280px; margin:0 auto 20px;
+  width:100%; max-width:280px;
+  height:280px;
+  margin:0 auto 20px;
   border-radius:20px; overflow:hidden;
   border:2px solid #2a2a2a; position:relative;
-  background:#000;
+  background:#111;
 }
 #video { width:100%; height:100%; object-fit:cover; display:block; }
 .camera-corners {
@@ -309,9 +320,14 @@ body {
       <div class="camera-eyebrow">Step 2 of 2 — Scan your QR code</div>
       <p class="camera-desc">Take out the ticket emailed to you and hold the QR code up to the camera below.</p>
       <div class="camera-wrap">
-        <video id="video" playsinline></video>
+        <video id="video" playsinline autoplay muted></video>
         <div class="camera-corners"><span></span></div>
         <div id="camera-msg">Hold steady to scan</div>
+        <div id="camera-error" style="display:none;position:absolute;inset:0;background:#111;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;">
+          <div style="font-size:28px;">📷</div>
+          <div id="camera-error-msg" style="font-size:13px;color:#888;text-align:center;line-height:1.4;">Camera unavailable</div>
+          <button onclick="retryCamera()" style="width:auto;padding:10px 20px;font-size:13px;background:#fff;color:#000;border-radius:10px;border:none;font-weight:700;letter-spacing:1px;margin-top:4px;">Retry</button>
+        </div>
       </div>
     </div>
 
@@ -377,14 +393,23 @@ const rows=[
   ['z','x','c','v','b','n','m','DEL',' ']
 ];
 
+const KB_DEFAULT_KEY_HEIGHT = 46; // px
+let kbKeyHeight = KB_DEFAULT_KEY_HEIGHT;
+
 function buildKeyboard(){
   keyboard.innerHTML='';
+  // Drag handle
+  const handle=document.createElement('div'); handle.id='kb-handle';
+  const bar=document.createElement('div'); bar.id='kb-handle-bar';
+  handle.appendChild(bar); keyboard.appendChild(handle);
+  attachKbResize(handle);
   rows.forEach(row=>{
     const div=document.createElement('div'); div.className='keyboard-row';
     row.forEach(key=>{
       const btn=document.createElement('button'); btn.className='key-btn';
       if(key==='DEL'||key===' ') btn.classList.add('wide');
       btn.textContent=key===' '?'space':key==='DEL'?'del':key;
+      btn.style.height=kbKeyHeight+'px';
       btn.onpointerdown=e=>{e.preventDefault();insertKey(key);};
       div.appendChild(btn);
     });
@@ -446,30 +471,75 @@ function goToScan(){
   document.getElementById('form-step-1').style.display='none';
   document.getElementById('form-step-2').style.display='block';
   keyboard.style.display='none';
+  scanActive=false;
+  document.getElementById('camera-error').style.display='none';
   startScanner();
 }
 
 // ── QR SCANNER ────────────────────────────────────────────────────────────────
+let scanActive=false;
+
+function showCameraError(msg){
+  const errEl=document.getElementById('camera-error');
+  document.getElementById('camera-error-msg').textContent=msg||'Camera unavailable. Check permissions and try again.';
+  errEl.style.display='flex';
+}
+
+function retryCamera(){
+  document.getElementById('camera-error').style.display='none';
+  document.getElementById('camera-msg').style.background='rgba(0,0,0,0.7)';
+  document.getElementById('camera-msg').textContent='Hold steady to scan';
+  startScanner();
+}
+
 function startScanner(){
+  scanActive=true;
   const video=document.getElementById('video');
   const msg=document.getElementById('camera-msg');
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
-    .then(stream=>{video.srcObject=stream;video.play();requestAnimationFrame(tick);})
-    .catch(()=>{msg.textContent='Camera access denied.';});
+
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    showCameraError('Camera API not available on this device.');
+    return;
+  }
+
+  // Try back camera first, fall back to any camera
+  const constraints=[
+    {video:{facingMode:{exact:'environment'}}},
+    {video:{facingMode:'environment'}},
+    {video:true}
+  ];
+
+  function tryConstraint(i){
+    if(i>=constraints.length){ showCameraError('Could not access camera. Please allow camera permissions.'); return; }
+    navigator.mediaDevices.getUserMedia(constraints[i])
+      .then(stream=>{
+        video.srcObject=stream;
+        video.play().catch(()=>{});
+        requestAnimationFrame(tick);
+      })
+      .catch(()=>tryConstraint(i+1));
+  }
+  tryConstraint(0);
+
   function tick(){
+    if(!scanActive) return;
     if(video.readyState===video.HAVE_ENOUGH_DATA){
-      const ctx=document.createElement('canvas').getContext('2d');
-      ctx.canvas.width=video.videoWidth; ctx.canvas.height=video.videoHeight;
-      ctx.drawImage(video,0,0,ctx.canvas.width,ctx.canvas.height);
-      const img=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
-      const code=jsQR(img.data,img.width,img.height);
-      if(code){
-        scannedData=code.data;
-        msg.textContent='✓ QR Code scanned';
-        msg.style.background='rgba(52,199,89,0.85)';
-        video.srcObject.getTracks().forEach(t=>t.stop());
-        submitCheckin(); return;
-      }
+      try {
+        const ctx=document.createElement('canvas').getContext('2d');
+        ctx.canvas.width=video.videoWidth; ctx.canvas.height=video.videoHeight;
+        ctx.drawImage(video,0,0,ctx.canvas.width,ctx.canvas.height);
+        const img=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
+        const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+        if(code){
+          scanActive=false;
+          scannedData=code.data;
+          msg.textContent='✓ Scanned';
+          msg.style.background='rgba(52,199,89,0.85)';
+          if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+          setTimeout(submitCheckin,300);
+          return;
+        }
+      } catch(e){}
     }
     requestAnimationFrame(tick);
   }
@@ -605,7 +675,40 @@ function resetKiosk(){
   document.getElementById('form-step-1').style.display='block';
   document.getElementById('camera-msg').style.background='rgba(0,0,0,0.7)';
   document.getElementById('camera-msg').textContent='Hold steady to scan';
+  scanActive=false;
+  // Reset keyboard height to default for next guest
+  kbKeyHeight=KB_DEFAULT_KEY_HEIGHT;
   setActiveBox(boxes[0]);
+}
+
+// ── KEYBOARD RESIZE ───────────────────────────────────────────────────────────
+function attachKbResize(handle){
+  let startY=0, startH=0, dragging=false;
+
+  function onStart(e){
+    dragging=true;
+    startY=e.touches?e.touches[0].clientY:e.clientY;
+    startH=kbKeyHeight;
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!dragging) return;
+    const y=e.touches?e.touches[0].clientY:e.clientY;
+    const delta=startY-y; // drag up = bigger
+    const newH=Math.max(36, Math.min(72, startH+delta*0.4));
+    kbKeyHeight=Math.round(newH);
+    // Update all key heights live
+    keyboard.querySelectorAll('.key-btn').forEach(b=>b.style.height=kbKeyHeight+'px');
+    e.preventDefault();
+  }
+  function onEnd(){ dragging=false; }
+
+  handle.addEventListener('touchstart',onStart,{passive:false});
+  handle.addEventListener('touchmove',onMove,{passive:false});
+  handle.addEventListener('touchend',onEnd);
+  handle.addEventListener('mousedown',onStart);
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onEnd);
 }
 </script>
 </body>
