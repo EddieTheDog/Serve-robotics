@@ -124,12 +124,25 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .pass-preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .pass-preset-card {
   border-radius: 14px; padding: 16px 14px; display: flex; flex-direction: column; gap: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12); position: relative; cursor: default;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12); position: relative; cursor: grab;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.15s;
+  touch-action: none;
 }
+.pass-preset-card:active { cursor: grabbing; }
+.pass-preset-card.dragging { opacity: 0.35; transform: scale(0.97); }
+.pass-preset-card.drag-over { box-shadow: 0 0 0 3px #fff, 0 4px 16px rgba(0,0,0,0.25); transform: scale(1.03); }
 .pass-preset-emoji { font-size: 28px; line-height: 1; }
 .pass-preset-name { font-size: 15px; font-weight: 800; word-break: break-word; }
 .pass-preset-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .pass-preset-del { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.15); color: inherit; border: none; border-radius: 6px; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+/* Edit panel lives below the card, full grid-column span */
+.pass-edit-row { grid-column: 1 / -1; }
+.pass-edit-panel {
+  background: #f7f7f7; border-radius: 14px; padding: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: -4px;
+  display: none;
+}
+.pass-edit-panel.open { display: block; }
 
 .pass-builder { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
 .pass-builder-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
@@ -446,7 +459,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
   <!-- Existing presets -->
   <div class="section-label">Created Passes</div>
-  <div class="pass-preset-grid" style="display:block;" id="pass-preset-grid"></div>
+  <div class="pass-preset-grid" id="pass-preset-grid"></div>
 
   <!-- Individual assign -->
   <div class="section-label">Assign to Individual</div>
@@ -1599,51 +1612,59 @@ function renderPassList() {
   const el = document.getElementById('pass-preset-grid');
   const list = _passPresetsList;
   if (!list.length) {
-    el.innerHTML = '<div class="empty">No passes created yet.</div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1;">No passes created yet.</div>';
     return;
   }
-  el.innerHTML = list.map((p, i) => {
+
+  // Build cards + their edit panels interleaved as grid items
+  let html = '';
+  list.forEach((p, i) => {
     const dark = isDarkColor(p.color);
     const tc = dark ? '#fff' : '#000';
-    const aaLabel = p.auto_assign ? ` · Auto: ${p.auto_assign.replace('badge:', '')}` : '';
-    return `<div class="config-item" id="pass-row-${p.id}" style="flex-direction:column;align-items:stretch;gap:0;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="display:flex;flex-direction:column;gap:2px;">
-          <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="movePass(${i},-1)" ${i===0?'disabled':''}>↑</button>
-          <button class="btn small gray" style="padding:4px 8px;font-size:16px;line-height:1;" onclick="movePass(${i},1)" ${i===list.length-1?'disabled':''}>↓</button>
+    const aaLabel = p.auto_assign ? `<div style="font-size:11px;opacity:0.65;margin-top:2px;">Auto: ${p.auto_assign.replace('badge:','')}</div>` : '';
+
+    html += `<div class="pass-preset-card"
+      id="pass-card-${p.id}"
+      draggable="true"
+      data-id="${p.id}"
+      data-index="${i}"
+      style="background:${p.color};color:${tc};"
+      ondragstart="passDragStart(event,'${p.id}')"
+      ondragover="passDragOver(event,'${p.id}')"
+      ondragleave="passDragLeave(event,'${p.id}')"
+      ondrop="passDrop(event,'${p.id}')"
+      ondragend="passDragEnd()">
+        <button class="pass-preset-del" onclick="deletePassPreset('${p.id}','${esc(p.name)}')" title="Remove">✕</button>
+        <div class="pass-preset-emoji">${p.emoji}</div>
+        <div class="pass-preset-name">${esc(p.name)}</div>
+        ${p.description ? `<div style="font-size:11px;opacity:0.65;margin-top:2px;">${esc(p.description)}</div>` : ''}
+        ${aaLabel}
+        <div class="pass-preset-actions">
+          <button class="btn small" style="background:rgba(${dark?'255,255,255':'0,0,0'},0.15);color:${tc};font-size:12px;" onclick="togglePassEdit('${p.id}')">Edit ✏️</button>
+          <button class="btn small" style="background:rgba(${dark?'255,255,255':'0,0,0'},0.15);color:${tc};font-size:12px;" onclick="quickAssign('${esc(p.name)}')">Assign →</button>
         </div>
-        <!-- Color swatch -->
-        <div style="width:40px;height:40px;border-radius:10px;background:${p.color};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">${p.emoji}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="ci-label">${esc(p.name)}</div>
-          <div style="font-size:12px;color:#aaa;margin-top:2px;">${p.description ? esc(p.description) : ''}${aaLabel}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-          <button class="btn small gray" onclick="togglePassEdit('${p.id}')">Edit</button>
-          <button class="btn small gray" onclick="quickAssign('${esc(p.name)}')">Assign</button>
-          <button class="btn small red" onclick="deletePassPreset('${p.id}','${esc(p.name)}')">Remove</button>
-        </div>
-      </div>
-      <!-- Inline edit panel -->
-      <div class="btn-schedule-block" id="pass-edit-${p.id}" style="display:none;margin-top:12px;">
+    </div>
+    <div class="pass-edit-row" id="pass-edit-row-${p.id}">
+      <div class="pass-edit-panel" id="pass-edit-${p.id}">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Editing: ${esc(p.name)}</div>
         <div style="display:grid;grid-template-columns:72px 1fr;gap:8px;margin-bottom:8px;">
           <input type="text" id="edit-emoji-${p.id}" value="${esc(p.emoji)}" placeholder="🎟️" style="padding:10px;font-size:22px;border:2px solid #e0e0e0;border-radius:8px;outline:none;text-align:center;">
           <input type="text" id="edit-name-${p.id}" value="${esc(p.name)}" placeholder="Pass name" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;">
         </div>
-        <input type="text" id="edit-desc-${p.id}" value="${esc(p.description||'')}" placeholder="Description (optional)" style="width:100%;padding:10px 14px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;margin-bottom:8px;">
+        <input type="text" id="edit-desc-${p.id}" value="${esc(p.description||'')}" placeholder="Description (optional)" style="width:100%;padding:10px 14px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;margin-bottom:10px;">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Color</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;" id="edit-swatches-${p.id}">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="edit-swatches-${p.id}">
           ${['#000000','#ff6b00','#FFD700','#9b59b6','#2196F3','#34c759','#ff3b30','#af8c6a','#1a1a2e'].map(c =>
             `<div class="color-swatch${p.color===c?' sel':''}" style="background:${c};" onclick="selectEditPassColor('${p.id}','${c}',this)"></div>`
           ).join('')}
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#555;cursor:pointer;">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#555;cursor:pointer;">
             <input type="color" id="edit-color-picker-${p.id}" value="${p.color}" oninput="selectEditPassColor('${p.id}',this.value,null)" style="width:28px;height:28px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;padding:2px;">
           </label>
         </div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Auto-Assign</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="edit-aa-${p.id}">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;" id="edit-aa-${p.id}">
           ${[['','None'],['badge:Eddie +','Eddie+'],['badge:VIP','VIP'],['badge:Staff','Staff'],['badge:Press','Press'],['actor','Actors'],['ALL','Everyone']].map(([val,label]) =>
-            `<button class="assign-chip${p.auto_assign===val?' sel':''}" onclick="selectEditAutoAssign('${p.id}','${val}',this)">${label}</button>`
+            `<button class="assign-chip${(p.auto_assign||'')=== val?' sel':''}" onclick="selectEditAutoAssign('${p.id}','${val}',this)">${label}</button>`
           ).join('')}
         </div>
         <div style="display:flex;gap:8px;">
@@ -1652,7 +1673,91 @@ function renderPassList() {
         </div>
       </div>
     </div>`;
-  }).join('');
+  });
+  el.innerHTML = html;
+  attachPassTouchDrag();
+}
+
+// ── DRAG AND DROP ─────────────────────────────────────────────────────────────
+let _dragPassId = null;
+
+function passDragStart(e, id) {
+  _dragPassId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { const c = document.getElementById('pass-card-' + id); if (c) c.classList.add('dragging'); }, 0);
+}
+function passDragOver(e, id) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  if (id === _dragPassId) return;
+  document.querySelectorAll('.pass-preset-card').forEach(c => c.classList.remove('drag-over'));
+  const c = document.getElementById('pass-card-' + id); if (c) c.classList.add('drag-over');
+}
+function passDragLeave(e, id) {
+  const c = document.getElementById('pass-card-' + id); if (c) c.classList.remove('drag-over');
+}
+async function passDrop(e, targetId) {
+  e.preventDefault();
+  document.querySelectorAll('.pass-preset-card').forEach(c => c.classList.remove('drag-over', 'dragging'));
+  if (!_dragPassId || _dragPassId === targetId) return;
+  const fromIdx = _passPresetsList.findIndex(p => p.id === _dragPassId);
+  const toIdx   = _passPresetsList.findIndex(p => p.id === targetId);
+  if (fromIdx < 0 || toIdx < 0) return;
+  const moved = _passPresetsList.splice(fromIdx, 1)[0];
+  _passPresetsList.splice(toIdx, 0, moved);
+  renderPassList();
+  const updates = _passPresetsList.map((p, i) => ({ id: p.id, sort_order: i }));
+  await fetch('/api/passes', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reorder: updates})});
+  _dragPassId = null;
+}
+function passDragEnd() {
+  document.querySelectorAll('.pass-preset-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+}
+
+// Touch drag shim for mobile
+function attachPassTouchDrag() {
+  let touchDragId = null, clone = null, startX = 0, startY = 0;
+  document.querySelectorAll('.pass-preset-card').forEach(card => {
+    card.addEventListener('touchstart', e => {
+      if (e.target.closest('button')) return; // don't hijack button taps
+      touchDragId = card.dataset.id;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      clone = card.cloneNode(true);
+      clone.style.cssText = 'position:fixed;opacity:0.75;pointer-events:none;z-index:9999;width:'+card.offsetWidth+'px;border-radius:14px;transition:none;';
+      document.body.appendChild(clone);
+      card.classList.add('dragging');
+    }, {passive:true});
+    card.addEventListener('touchmove', e => {
+      if (!touchDragId) return;
+      e.preventDefault();
+      const tx = e.touches[0].clientX, ty = e.touches[0].clientY;
+      if (clone) { clone.style.left=(tx - card.offsetWidth/2)+'px'; clone.style.top=(ty - 30)+'px'; }
+      // Find card under finger
+      document.querySelectorAll('.pass-preset-card').forEach(c => c.classList.remove('drag-over'));
+      const el = document.elementFromPoint(tx, ty);
+      const over = el && el.closest('.pass-preset-card');
+      if (over && over.dataset.id !== touchDragId) over.classList.add('drag-over');
+    }, {passive:false});
+    card.addEventListener('touchend', async e => {
+      if (!touchDragId) return;
+      if (clone) { clone.remove(); clone = null; }
+      document.querySelectorAll('.pass-preset-card').forEach(c => { c.classList.remove('dragging','drag-over'); });
+      const tx = e.changedTouches[0].clientX, ty = e.changedTouches[0].clientY;
+      const el = document.elementFromPoint(tx, ty);
+      const over = el && el.closest('.pass-preset-card');
+      if (over && over.dataset.id && over.dataset.id !== touchDragId) {
+        const fromIdx = _passPresetsList.findIndex(p => p.id === touchDragId);
+        const toIdx   = _passPresetsList.findIndex(p => p.id === over.dataset.id);
+        if (fromIdx >= 0 && toIdx >= 0) {
+          const moved = _passPresetsList.splice(fromIdx, 1)[0];
+          _passPresetsList.splice(toIdx, 0, moved);
+          renderPassList();
+          const updates = _passPresetsList.map((p, i) => ({ id: p.id, sort_order: i }));
+          await fetch('/api/passes', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reorder: updates})});
+        }
+      }
+      touchDragId = null;
+    });
+  });
 }
 
 // Per-pass edit color state
@@ -1700,15 +1805,7 @@ async function savePassEdit(id) {
   loadPasses();
 }
 
-async function movePass(index, direction) {
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= _passPresetsList.length) return;
-  [_passPresetsList[index], _passPresetsList[newIndex]] = [_passPresetsList[newIndex], _passPresetsList[index]];
-  const updates = _passPresetsList.map((p, i) => ({ id: p.id, sort_order: i }));
-  renderPassList();
-  await fetch('/api/passes', {method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({reorder: updates})});
-}
+// movePass replaced by drag-and-drop
 
 function quickAssign(passName) {
   document.getElementById('new-pass-name').value = passName;
