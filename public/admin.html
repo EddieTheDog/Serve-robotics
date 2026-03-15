@@ -822,15 +822,49 @@ function renderScheduleEditor() {
   const el = document.getElementById('schedule-list');
   el.innerHTML = '';
   scheduleItems.forEach(item => {
+    const triggers = item.button_triggers || [];
+    const triggerSummary = triggers.length
+      ? triggers.map(t => {
+          const btn = buttonsList.find(b => b.id === t.buttonId);
+          const label = btn ? `${btn.emoji} ${btn.label}` : '(deleted)';
+          return `<span style="font-size:11px;background:#f0f0f0;border-radius:6px;padding:2px 7px;font-weight:700;color:#555;">${t.mode === 'show' ? '▶' : '■'} ${label}</span>`;
+        }).join(' ')
+      : '<span style="font-size:12px;color:#ccc;">None</span>';
+
     const div = document.createElement('div');
     div.className = `schedule-item-row ${item.is_live ? 'is-live' : ''}`;
     div.innerHTML = `
       <div class="schedule-inputs">
         <input type="text" value="${esc(item.title)}" placeholder="Title" id="si-title-${item.id}">
         <textarea rows="2" placeholder="Description (optional)" id="si-desc-${item.id}">${esc(item.description||'')}</textarea>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <button class="btn small" onclick="saveScheduleItem('${item.id}')">Save</button>
           <button class="btn small red" onclick="deleteScheduleItem('${item.id}')">Remove</button>
+          <button class="btn small gray" onclick="toggleTriggerPanel('${item.id}')">⚡ Triggers</button>
+        </div>
+        <!-- Trigger summary chips -->
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#ccc;">On go-live:</span>
+          ${triggerSummary}
+        </div>
+        <!-- Trigger panel -->
+        <div id="trigger-panel-${item.id}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Button Triggers — fire when this goes live</div>
+          <div id="trigger-list-${item.id}" style="margin-bottom:12px;">
+            ${renderTriggerList(item.id, triggers)}
+          </div>
+          <!-- Add trigger row -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="trigger-btn-${item.id}" style="flex:1;padding:8px 10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
+              <option value="">— Pick a button —</option>
+              ${buttonsList.map(b => `<option value="${b.id}">${b.emoji} ${esc(b.label)}</option>`).join('')}
+            </select>
+            <select id="trigger-mode-${item.id}" style="width:110px;padding:8px 10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
+              <option value="show">▶ Show</option>
+              <option value="hide">■ Hide</option>
+            </select>
+            <button class="btn small" onclick="addTrigger('${item.id}')">+ Add</button>
+          </div>
         </div>
       </div>
       <div class="schedule-item-controls">
@@ -840,6 +874,59 @@ function renderScheduleEditor() {
       </div>`;
     el.appendChild(div);
   });
+}
+
+function renderTriggerList(schedId, triggers) {
+  if (!triggers.length) return '<div style="font-size:13px;color:#ccc;margin-bottom:4px;">No triggers yet.</div>';
+  return triggers.map((t, i) => {
+    const btn = buttonsList.find(b => b.id === t.buttonId);
+    const label = btn ? `${btn.emoji} ${btn.label}` : '(deleted button)';
+    const modeLabel = t.mode === 'show' ? '▶ Show' : '■ Hide';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5;">
+      <span style="font-size:13px;font-weight:700;color:#555;min-width:56px;">${modeLabel}</span>
+      <span style="flex:1;font-size:13px;color:#333;">${label}</span>
+      <button class="btn small red" style="flex-shrink:0;" onclick="removeTrigger('${schedId}',${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleTriggerPanel(schedId) {
+  const p = document.getElementById('trigger-panel-' + schedId);
+  if (!p) return;
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+async function addTrigger(schedId) {
+  const buttonId = document.getElementById('trigger-btn-' + schedId).value;
+  const mode = document.getElementById('trigger-mode-' + schedId).value;
+  if (!buttonId) return alert('Pick a button first');
+  const item = scheduleItems.find(s => s.id === schedId);
+  if (!item) return;
+  const triggers = [...(item.button_triggers || [])];
+  // Don't add duplicates for the same button+mode
+  if (triggers.some(t => t.buttonId === buttonId && t.mode === mode)) return;
+  triggers.push({ buttonId, mode });
+  item.button_triggers = triggers;
+  await fetch('/api/schedule', {method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id: schedId, button_triggers: triggers})});
+  // Re-render just the trigger list in place (no full reload)
+  document.getElementById('trigger-list-' + schedId).innerHTML = renderTriggerList(schedId, triggers);
+  // Reset select
+  document.getElementById('trigger-btn-' + schedId).value = '';
+  // Refresh summary chips
+  loadSchedule();
+}
+
+async function removeTrigger(schedId, index) {
+  const item = scheduleItems.find(s => s.id === schedId);
+  if (!item) return;
+  const triggers = [...(item.button_triggers || [])];
+  triggers.splice(index, 1);
+  item.button_triggers = triggers;
+  await fetch('/api/schedule', {method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id: schedId, button_triggers: triggers})});
+  document.getElementById('trigger-list-' + schedId).innerHTML = renderTriggerList(schedId, triggers);
+  loadSchedule();
 }
 async function saveScheduleItem(id) {
   const title = document.getElementById(`si-title-${id}`).value.trim();
