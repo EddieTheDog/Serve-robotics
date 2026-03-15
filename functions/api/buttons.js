@@ -6,11 +6,11 @@ export async function onRequestGet({ request, env }) {
   let query, binds;
   if (isAdmin) {
     // Admin sees all visible buttons regardless of timing
-    query = `SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at
+    query = `SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at, show_on_schedule_id, hide_on_schedule_id
              FROM custom_buttons WHERE visible = 1 ORDER BY sort_order ASC`;
     binds = [];
   } else {
-    query = `SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at
+    query = `SELECT id, label, emoji, action, sort_order, visible, starts_at, expires_at, show_on_schedule_id, hide_on_schedule_id
              FROM custom_buttons
              WHERE visible = 1
                AND (starts_at IS NULL OR starts_at = 0 OR starts_at <= ?)
@@ -24,16 +24,16 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const { label, emoji, action, sort_order, starts_at, expires_at } = await request.json();
+  const { label, emoji, action, sort_order, starts_at, expires_at, show_on_schedule_id, hide_on_schedule_id } = await request.json();
   if (!label) return new Response('Missing label', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
   const { results: existing } = await env.DB.prepare(`SELECT MAX(sort_order) as m FROM custom_buttons`).all();
   const nextOrder = sort_order ?? ((existing[0]?.m ?? -1) + 1);
   await env.DB.prepare(`
-    INSERT INTO custom_buttons (id, label, emoji, action, sort_order, visible, starts_at, expires_at, created_at)
-    VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)
-  `).bind(id, label, emoji ?? '🔘', action ?? 'none', nextOrder, starts_at ?? null, expires_at ?? null, now).run();
+    INSERT INTO custom_buttons (id, label, emoji, action, sort_order, visible, starts_at, expires_at, show_on_schedule_id, hide_on_schedule_id, created_at)
+    VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+  `).bind(id, label, emoji ?? '🔘', action ?? 'none', nextOrder, starts_at ?? null, expires_at ?? null, show_on_schedule_id ?? null, hide_on_schedule_id ?? null, now).run();
   return Response.json({ success: true, id });
 }
 
@@ -48,7 +48,7 @@ export async function onRequestPatch({ request, env }) {
     return Response.json({ success: true });
   }
 
-  const { id, label, emoji, visible, starts_at, expires_at } = body;
+  const { id, label, emoji, visible, starts_at, expires_at, show_on_schedule_id, hide_on_schedule_id } = body;
   if (!id) return new Response('Missing id', { status: 400 });
   const updates = [];
   const binds = [];
@@ -57,6 +57,8 @@ export async function onRequestPatch({ request, env }) {
   if (visible !== undefined)   { updates.push('visible = ?');     binds.push(visible); }
   if (starts_at !== undefined) { updates.push('starts_at = ?');  binds.push(starts_at); }
   if (expires_at !== undefined){ updates.push('expires_at = ?'); binds.push(expires_at); }
+  if (show_on_schedule_id !== undefined){ updates.push('show_on_schedule_id = ?'); binds.push(show_on_schedule_id); }
+  if (hide_on_schedule_id !== undefined){ updates.push('hide_on_schedule_id = ?'); binds.push(hide_on_schedule_id); }
   if (!updates.length) return new Response('Nothing to update', { status: 400 });
   binds.push(id);
   await env.DB.prepare(`UPDATE custom_buttons SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
