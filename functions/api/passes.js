@@ -46,9 +46,37 @@ export async function onRequestPut({ request, env }) {
 
   const { id, name, emoji, color, description, auto_assign } = body;
   if (!id) return new Response('Missing id', { status: 400 });
+
+  // Get the current name before updating so we can rename it on guests
+  const existing = await env.DB.prepare(`SELECT name FROM pass_presets WHERE id = ?`).bind(id).first();
+  const oldName = existing?.name;
+
   await env.DB.prepare(
     `UPDATE pass_presets SET name=?, emoji=?, color=?, description=?, auto_assign=? WHERE id=?`
   ).bind(name, emoji||'🎟️', color||'#000000', description||'', auto_assign||'', id).run();
+
+  // If the name changed, update every guest who has the old name in their passes array
+  if (oldName && oldName !== name) {
+    const { results: guests } = await env.DB.prepare(
+      `SELECT id, passes FROM guests WHERE passes IS NOT NULL AND passes != '[]' AND passes LIKE ?`
+    ).bind(`%${oldName}%`).all();
+
+    const now = Date.now();
+    const stmts = [];
+    for (const g of guests) {
+      let passes = [];
+      try { passes = JSON.parse(g.passes || '[]'); } catch(e) { continue; }
+      const idx = passes.indexOf(oldName);
+      if (idx === -1) continue;
+      passes[idx] = name;
+      stmts.push(
+        env.DB.prepare(`UPDATE guests SET passes=?, updated_at=? WHERE id=?`)
+          .bind(JSON.stringify(passes), now, g.id)
+      );
+    }
+    if (stmts.length > 0) await env.DB.batch(stmts);
+  }
+
   return Response.json({ success: true });
 }
 
