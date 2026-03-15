@@ -135,11 +135,9 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .pass-preset-name { font-size: 15px; font-weight: 800; word-break: break-word; }
 .pass-preset-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .pass-preset-del { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.15); color: inherit; border: none; border-radius: 6px; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-/* Edit panel lives below the card, full grid-column span */
-.pass-edit-row { grid-column: 1 / -1; }
 .pass-edit-panel {
   background: #f7f7f7; border-radius: 14px; padding: 18px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: -4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 8px;
   display: none;
 }
 .pass-edit-panel.open { display: block; }
@@ -460,6 +458,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <!-- Existing presets -->
   <div class="section-label">Created Passes</div>
   <div class="pass-preset-grid" id="pass-preset-grid"></div>
+  <div id="pass-edit-container"></div>
 
   <!-- Individual assign -->
   <div class="section-label">Assign to Individual</div>
@@ -509,6 +508,18 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">Cancel</button>
       <button class="modal-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pass Delete Modal -->
+<div class="modal-overlay" id="pass-delete-modal">
+  <div class="modal">
+    <h3>Remove Pass?</h3>
+    <p id="pass-delete-msg">This removes the pass preset. Guests who already have it keep it.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closePassDeleteModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmPassDelete()">Remove</button>
     </div>
   </div>
 </div>
@@ -1531,9 +1542,22 @@ async function bulkAssignPass() {
   document.getElementById('assign-sheet').classList.remove('show');
 }
 
-async function deletePassPreset(id, name) {
-  if (!confirm(`Delete pass preset "${name}"?
-(This does not remove it from guests who already have it.)`)) return;
+let _pendingPassDeleteId = null;
+
+function deletePassPreset(id, name) {
+  _pendingPassDeleteId = id;
+  document.getElementById('pass-delete-msg').textContent =
+    `Remove "${name}"? Guests who already have it keep it.`;
+  document.getElementById('pass-delete-modal').classList.add('open');
+}
+function closePassDeleteModal() {
+  _pendingPassDeleteId = null;
+  document.getElementById('pass-delete-modal').classList.remove('open');
+}
+async function confirmPassDelete() {
+  if (!_pendingPassDeleteId) return;
+  const id = _pendingPassDeleteId;
+  closePassDeleteModal();
   await fetch('/api/passes', {method:'DELETE', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ id })});
   loadPasses();
@@ -1643,38 +1667,41 @@ function renderPassList() {
           <button class="btn small" style="background:rgba(${dark?'255,255,255':'0,0,0'},0.15);color:${tc};font-size:12px;" onclick="togglePassEdit('${p.id}')">Edit ✏️</button>
           <button class="btn small" style="background:rgba(${dark?'255,255,255':'0,0,0'},0.15);color:${tc};font-size:12px;" onclick="quickAssign('${esc(p.name)}')">Assign →</button>
         </div>
-    </div>
-    <div class="pass-edit-row" id="pass-edit-row-${p.id}">
-      <div class="pass-edit-panel" id="pass-edit-${p.id}">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Editing: ${esc(p.name)}</div>
-        <div style="display:grid;grid-template-columns:72px 1fr;gap:8px;margin-bottom:8px;">
-          <input type="text" id="edit-emoji-${p.id}" value="${esc(p.emoji)}" placeholder="🎟️" style="padding:10px;font-size:22px;border:2px solid #e0e0e0;border-radius:8px;outline:none;text-align:center;">
-          <input type="text" id="edit-name-${p.id}" value="${esc(p.name)}" placeholder="Pass name" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;">
-        </div>
-        <input type="text" id="edit-desc-${p.id}" value="${esc(p.description||'')}" placeholder="Description (optional)" style="width:100%;padding:10px 14px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Color</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="edit-swatches-${p.id}">
-          ${['#000000','#ff6b00','#FFD700','#9b59b6','#2196F3','#34c759','#ff3b30','#af8c6a','#1a1a2e'].map(c =>
-            `<div class="color-swatch${p.color===c?' sel':''}" style="background:${c};" onclick="selectEditPassColor('${p.id}','${c}',this)"></div>`
-          ).join('')}
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#555;cursor:pointer;">
-            <input type="color" id="edit-color-picker-${p.id}" value="${p.color}" oninput="selectEditPassColor('${p.id}',this.value,null)" style="width:28px;height:28px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;padding:2px;">
-          </label>
-        </div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Auto-Assign</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;" id="edit-aa-${p.id}">
-          ${[['','None'],['badge:Eddie +','Eddie+'],['badge:VIP','VIP'],['badge:Staff','Staff'],['badge:Press','Press'],['actor','Actors'],['ALL','Everyone']].map(([val,label]) =>
-            `<button class="assign-chip${(p.auto_assign||'')=== val?' sel':''}" onclick="selectEditAutoAssign('${p.id}','${val}',this)">${label}</button>`
-          ).join('')}
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn small green" onclick="savePassEdit('${p.id}')">Save Changes</button>
-          <button class="btn small gray" onclick="togglePassEdit('${p.id}')">Cancel</button>
-        </div>
-      </div>
     </div>`;
   });
   el.innerHTML = html;
+
+  // Edit panels go in a separate container below the grid
+  const editContainer = document.getElementById('pass-edit-container');
+  editContainer.innerHTML = _passPresetsList.map(p => `
+    <div class="pass-edit-panel" id="pass-edit-${p.id}">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Editing: ${esc(p.name)}</div>
+      <div style="display:grid;grid-template-columns:72px 1fr;gap:8px;margin-bottom:8px;">
+        <input type="text" id="edit-emoji-${p.id}" value="${esc(p.emoji)}" placeholder="🎟️" style="padding:10px;font-size:22px;border:2px solid #e0e0e0;border-radius:8px;outline:none;text-align:center;">
+        <input type="text" id="edit-name-${p.id}" value="${esc(p.name)}" placeholder="Pass name" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;">
+      </div>
+      <input type="text" id="edit-desc-${p.id}" value="${esc(p.description||'')}" placeholder="Description (optional)" style="width:100%;padding:10px 14px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Color</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="edit-swatches-${p.id}">
+        ${['#000000','#ff6b00','#FFD700','#9b59b6','#2196F3','#34c759','#ff3b30','#af8c6a','#1a1a2e'].map(c =>
+          `<div class="color-swatch${p.color===c?' sel':''}" style="background:${c};" onclick="selectEditPassColor('${p.id}','${c}',this)"></div>`
+        ).join('')}
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#555;cursor:pointer;">
+          <input type="color" id="edit-color-picker-${p.id}" value="${p.color}" oninput="selectEditPassColor('${p.id}',this.value,null)" style="width:28px;height:28px;border:2px solid #e0e0e0;border-radius:6px;cursor:pointer;padding:2px;">
+        </label>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Auto-Assign</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;" id="edit-aa-${p.id}">
+        ${[['','None'],['badge:Eddie +','Eddie+'],['badge:VIP','VIP'],['badge:Staff','Staff'],['badge:Press','Press'],['actor','Actors'],['ALL','Everyone']].map(([val,label]) =>
+          `<button class="assign-chip${(p.auto_assign||'')===val?' sel':''}" onclick="selectEditAutoAssign('${p.id}','${val}',this)">${label}</button>`
+        ).join('')}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn small green" onclick="savePassEdit('${p.id}')">Save Changes</button>
+        <button class="btn small gray" onclick="togglePassEdit('${p.id}')">Cancel</button>
+      </div>
+    </div>`).join('');
+
   attachPassTouchDrag();
 }
 
@@ -1767,10 +1794,12 @@ const _editPassAA = {};
 function togglePassEdit(id) {
   const panel = document.getElementById('pass-edit-' + id);
   if (!panel) return;
-  const open = panel.style.display !== 'none';
-  panel.style.display = open ? 'none' : 'block';
-  if (!open) {
-    // Reset state from current preset
+  const isOpen = panel.classList.contains('open');
+  // Close all others first
+  document.querySelectorAll('.pass-edit-panel').forEach(p => p.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     const p = _passPresetsList.find(x => x.id === id);
     if (p) { _editPassColors[id] = p.color; _editPassAA[id] = p.auto_assign || ''; }
   }
