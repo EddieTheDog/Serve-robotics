@@ -6,8 +6,8 @@
 
 export async function onRequestGet({ env }) {
   const { results } = await env.DB.prepare(
-    `SELECT id, name, emoji, color, description, auto_assign, created_at
-     FROM pass_presets ORDER BY created_at ASC`
+    `SELECT id, name, emoji, color, description, auto_assign, sort_order, created_at
+     FROM pass_presets ORDER BY COALESCE(sort_order, 9999), created_at ASC`
   ).all();
   return Response.json(results);
 }
@@ -17,11 +17,13 @@ export async function onRequestPost({ request, env }) {
   if (!name) return new Response('Missing name', { status: 400 });
   const id = crypto.randomUUID();
   const now = Date.now();
+  const { results: existing } = await env.DB.prepare('SELECT MAX(sort_order) as m FROM pass_presets').all();
+  const nextOrder = (existing[0]?.m ?? -1) + 1;
   await env.DB.prepare(
-    `INSERT INTO pass_presets (id, name, emoji, color, description, auto_assign, created_at)
-     VALUES (?,?,?,?,?,?,?)`
+    `INSERT INTO pass_presets (id, name, emoji, color, description, auto_assign, sort_order, created_at)
+     VALUES (?,?,?,?,?,?,?,?)`
   ).bind(id, name.trim(), emoji||'🎟️', color||'#000000',
-         description||'', auto_assign||'', now).run();
+         description||'', auto_assign||'', nextOrder, now).run();
 
   // If auto_assign set, immediately assign to matching guests
   if (auto_assign) {
@@ -31,7 +33,18 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const { id, name, emoji, color, description, auto_assign } = await request.json();
+  const body = await request.json();
+
+  // Reorder batch: [{id, sort_order}, ...]
+  if (body.reorder) {
+    const stmts = body.reorder.map(({ id, sort_order }) =>
+      env.DB.prepare(`UPDATE pass_presets SET sort_order=? WHERE id=?`).bind(sort_order, id)
+    );
+    await env.DB.batch(stmts);
+    return Response.json({ success: true });
+  }
+
+  const { id, name, emoji, color, description, auto_assign } = body;
   if (!id) return new Response('Missing id', { status: 400 });
   await env.DB.prepare(
     `UPDATE pass_presets SET name=?, emoji=?, color=?, description=?, auto_assign=? WHERE id=?`
