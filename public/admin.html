@@ -822,49 +822,15 @@ function renderScheduleEditor() {
   const el = document.getElementById('schedule-list');
   el.innerHTML = '';
   scheduleItems.forEach(item => {
-    const triggers = item.button_triggers || [];
-    const triggerSummary = triggers.length
-      ? triggers.map(t => {
-          const btn = buttonsList.find(b => b.id === t.buttonId);
-          const label = btn ? `${btn.emoji} ${btn.label}` : '(deleted)';
-          return `<span style="font-size:11px;background:#f0f0f0;border-radius:6px;padding:2px 7px;font-weight:700;color:#555;">${t.mode === 'show' ? '▶' : '■'} ${label}</span>`;
-        }).join(' ')
-      : '<span style="font-size:12px;color:#ccc;">None</span>';
-
     const div = document.createElement('div');
     div.className = `schedule-item-row ${item.is_live ? 'is-live' : ''}`;
     div.innerHTML = `
       <div class="schedule-inputs">
         <input type="text" value="${esc(item.title)}" placeholder="Title" id="si-title-${item.id}">
         <textarea rows="2" placeholder="Description (optional)" id="si-desc-${item.id}">${esc(item.description||'')}</textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <div style="display:flex;gap:8px;">
           <button class="btn small" onclick="saveScheduleItem('${item.id}')">Save</button>
           <button class="btn small red" onclick="deleteScheduleItem('${item.id}')">Remove</button>
-          <button class="btn small gray" onclick="toggleTriggerPanel('${item.id}')">⚡ Triggers</button>
-        </div>
-        <!-- Trigger summary chips -->
-        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#ccc;">On go-live:</span>
-          ${triggerSummary}
-        </div>
-        <!-- Trigger panel -->
-        <div id="trigger-panel-${item.id}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Button Triggers — fire when this goes live</div>
-          <div id="trigger-list-${item.id}" style="margin-bottom:12px;">
-            ${renderTriggerList(item.id, triggers)}
-          </div>
-          <!-- Add trigger row -->
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <select id="trigger-btn-${item.id}" style="flex:1;padding:8px 10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
-              <option value="">— Pick a button —</option>
-              ${buttonsList.map(b => `<option value="${b.id}">${b.emoji} ${esc(b.label)}</option>`).join('')}
-            </select>
-            <select id="trigger-mode-${item.id}" style="width:110px;padding:8px 10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;">
-              <option value="show">▶ Show</option>
-              <option value="hide">■ Hide</option>
-            </select>
-            <button class="btn small" onclick="addTrigger('${item.id}')">+ Add</button>
-          </div>
         </div>
       </div>
       <div class="schedule-item-controls">
@@ -1000,8 +966,10 @@ async function resolveAccom(id) {
 // ---- CUSTOM BUTTONS ----
 let buttonsList = [];
 async function loadButtons() {
-  const res = await fetch('/api/buttons?admin=1');
-  buttonsList = await res.json();
+  const [btnRes, schedRes] = await Promise.all([fetch('/api/buttons?admin=1'), fetch('/api/schedule')]);
+  buttonsList = await btnRes.json();
+  const sched = await schedRes.json();
+  if (Array.isArray(sched)) scheduleItems = sched;
   renderButtonsList();
 }
 function renderButtonsList() {
@@ -1083,6 +1051,34 @@ function renderButtonsList() {
       actions = `<button class="btn small gray" onclick="addBtnExpiry('${b.id}')">Set Expiry</button>` + actions;
     }
 
+    // Schedule trigger summary line
+    const showSched = scheduleItems.find(s => s.id === b.show_on_schedule_id);
+    const hideSched = scheduleItems.find(s => s.id === b.hide_on_schedule_id);
+    let schedSummary = '';
+    if (showSched) schedSummary += `<span style="font-size:11px;color:#007aff;font-weight:700;margin-top:3px;display:block;">▶ Shows when: ${esc(showSched.title)}</span>`;
+    if (hideSched) schedSummary += `<span style="font-size:11px;color:#ff9500;font-weight:700;margin-top:2px;display:block;">■ Hides when: ${esc(hideSched.title)}</span>`;
+
+    // Schedule trigger panel
+    const schedOptions = `<option value="">— None —</option>` +
+      scheduleItems.map(s => `<option value="${s.id}"${b.show_on_schedule_id===s.id?' selected':''}>${esc(s.title)}</option>`).join('');
+    const hideSchedOptions = `<option value="">— None —</option>` +
+      scheduleItems.map(s => `<option value="${s.id}"${b.hide_on_schedule_id===s.id?' selected':''}>${esc(s.title)}</option>`).join('');
+
+    const schedPanel = `<div class="btn-schedule-block" id="sched-trigger-${b.id}" style="display:none;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;">Schedule Triggers</div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:5px;">▶ Show when this goes live</div>
+        <select style="width:100%;padding:8px 10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;"
+          onchange="setBtnScheduleTrigger('${b.id}','show',this.value)">${schedOptions}</select>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:5px;">■ Hide when this goes live</div>
+        <select style="width:100%;padding:8px 10px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;"
+          onchange="setBtnScheduleTrigger('${b.id}','hide',this.value)">${hideSchedOptions}</select>
+        <div style="font-size:12px;color:#aaa;margin-top:6px;line-height:1.4;">Set both to auto-show on one item and auto-hide on the next.</div>
+      </div>
+    </div>`;
+
     return `<div class="config-item" id="btn-row-${b.id}" style="flex-direction:column;align-items:stretch;gap:0;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="display:flex;flex-direction:column;gap:2px;">
@@ -1094,10 +1090,15 @@ function renderButtonsList() {
           <div class="ci-label">${esc(b.label)}</div>
           ${actionDesc ? `<div style="font-size:12px;color:#888;word-break:break-all;margin-top:2px;">${esc(actionDesc)}</div>` : ''}
           ${statusLine}
+          ${schedSummary}
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">${actions}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button class="btn small gray" onclick="toggleBtnSchedTrigger('${b.id}')">⚡ When</button>
+          ${actions}
+        </div>
       </div>
       ${panel}
+      ${schedPanel}
     </div>`;
   }
 
@@ -1109,6 +1110,22 @@ function renderButtonsList() {
   }
 
   el.innerHTML = html;
+}
+
+function toggleBtnSchedTrigger(id) {
+  const p = document.getElementById('sched-trigger-' + id);
+  if (!p) return;
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+async function setBtnScheduleTrigger(id, type, schedId) {
+  const b = buttonsList.find(x => x.id === id);
+  if (!b) return;
+  const field = type === 'show' ? 'show_on_schedule_id' : 'hide_on_schedule_id';
+  b[field] = schedId || null;
+  await fetch('/api/buttons', {method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id, [field]: schedId || null})});
+  renderButtonsList();
 }
 
 function toggleBtnSchedule(id) {
