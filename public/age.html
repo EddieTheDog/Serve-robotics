@@ -64,42 +64,17 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 .scan-filter-label { font-size:15px; font-weight:800; color:#fff; margin-top:2px; }
 .scan-back-btn { background:rgba(255,255,255,0.12); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; }
 
-/* Camera switcher */
+/* Camera switcher — sits in topbar row, not overlapping */
 #cam-switch-btn {
-  position:absolute; top:0; right:68px; z-index:11;
-  margin-top:calc(env(safe-area-inset-top,20px) + 10px);
-  background:rgba(255,255,255,0.15); color:#fff; border:none;
+  background:rgba(255,255,255,0.12); color:#fff; border:none;
   border-radius:8px; padding:8px 12px; font-size:18px;
-  font-family:inherit; cursor:pointer;
+  font-family:inherit; cursor:pointer; flex-shrink:0;
 }
 
-/* Age overlay */
-#age-overlay {
-  position:absolute; top:50%; left:50%; transform:translate(-50%,-60%);
-  text-align:center; pointer-events:none; z-index:10;
-}
-.age-big { font-size:96px; font-weight:800; line-height:1; color:#fff; text-shadow:0 4px 24px rgba(0,0,0,0.9); }
-.age-sub { font-size:15px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.6); margin-top:4px; }
-.age-confidence { font-size:13px; color:rgba(255,255,255,0.4); margin-top:4px; }
-
-/* Status pill */
-#scan-status {
-  position:absolute; top:50%; left:50%; transform:translate(-50%, 80px);
-  background:rgba(0,0,0,0.65); backdrop-filter:blur(10px);
-  color:#fff; font-size:14px; font-weight:600;
-  padding:8px 20px; border-radius:20px; white-space:nowrap; max-width:90vw;
-  z-index:10; text-align:center;
-}
+/* age-overlay + scan-status removed */
 
 /* Face guide ring */
-#face-guide {
-  position:absolute; top:50%; left:50%; transform:translate(-50%,-60%);
-  width:220px; height:220px; border-radius:50%;
-  border:2.5px solid rgba(255,255,255,0.25);
-  pointer-events:none; z-index:5;
-  transition:border-color 0.3s;
-}
-#face-guide.detected { border-color:rgba(52,199,89,0.8); }
+/* face-guide removed */
 
 /* Bottom action bar */
 #action-bar {
@@ -211,22 +186,12 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 
   <div class="scan-topbar">
     <div class="scan-topbar-left">
-      <div class="scan-mode-label" id="top-label">Age Check</div>
-      <div class="scan-filter-label" id="top-sub">Point at a face</div>
+      <div class="scan-mode-label" id="top-label">QR Scan</div>
+      <div class="scan-filter-label" id="top-sub">Scan a guest QR code</div>
     </div>
+    <button id="cam-switch-btn" onclick="switchCamera()">🔄</button>
     <button class="scan-back-btn" onclick="goBack()">⚙ Setup</button>
   </div>
-
-  <button id="cam-switch-btn" onclick="switchCamera()">🔄</button>
-
-  <div id="face-guide"></div>
-  <div id="age-overlay">
-    <div class="age-big" id="age-big">--</div>
-    <div class="age-sub" id="age-sub">Point at a face</div>
-    <div class="age-confidence" id="age-conf"></div>
-  </div>
-
-  <div id="scan-status">Detecting face…</div>
 
   <div id="qr-vf"><div class="vf-frame"><div class="vf-inner"></div></div></div>
 
@@ -236,36 +201,30 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
   <!-- Bottom action bar -->
   <div id="action-bar">
 
-    <!-- IDLE: no face detected -->
-    <div class="action-state active" id="state-idle">
-      <div class="idle-text">Point the camera at a guest's face</div>
+    <!-- QR: scan first -->
+    <div class="action-state active" id="state-qr">
+      <div class="qr-instruction">
+        Scan the guest's QR code
+        <span>Point at their event ticket or app QR</span>
+      </div>
     </div>
 
-    <!-- FACE DETECTED: show age + verdict + confirm button -->
-    <div class="action-state" id="state-detected">
+    <!-- FACE: age detection after QR -->
+    <div class="action-state" id="state-face">
       <div class="detected-row">
         <div class="detected-age-block">
           <div class="detected-age-num" id="det-age">--</div>
           <div class="detected-age-lbl">est. age</div>
         </div>
         <div class="detected-info">
-          <div class="detected-verdict neutral" id="det-verdict">Detecting…</div>
+          <div class="detected-verdict neutral" id="det-verdict">Point at face</div>
           <div class="detected-note" id="det-note">±3 years · on-device</div>
         </div>
       </div>
-      <button class="confirm-btn neutral" id="confirm-btn" onclick="onConfirm()">Continue → Scan QR</button>
+      <button class="confirm-btn neutral" id="confirm-btn" onclick="onConfirm()" disabled>Detecting face…</button>
     </div>
 
-    <!-- QR SCAN: scan guest QR to assign -->
-    <div class="action-state" id="state-qr">
-      <div class="qr-instruction">
-        Scan the guest's QR code
-        <span>Point at their event ticket or app QR</span>
-      </div>
-      <button class="qr-cancel" onclick="cancelQR()">← Back to face check</button>
-    </div>
-
-    <!-- DONE: assigned -->
+    <!-- DONE -->
     <div class="action-state" id="state-done">
       <div class="detected-row" style="margin-bottom:14px;">
         <div class="detected-age-block">
@@ -277,7 +236,7 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
           <div class="detected-note" id="done-note"></div>
         </div>
       </div>
-      <button class="confirm-btn neutral" onclick="resetToFace()">Next Guest →</button>
+      <button class="confirm-btn neutral" onclick="resetForNext()">Next Guest →</button>
     </div>
 
   </div>
@@ -296,12 +255,12 @@ let faceAnimFrame = null;
 let qrAnimFrame = null;
 let offCanvas = null;
 let offCtx = null;
-let usingFrontCam = true; // start with front camera for age check
+let usingFrontCam = false;
 let _readings = [];
-let _lockedAge = null;      // age confirmed by user
+let _currentGuest = null;
 let _autoAssign = false;
 let _passPresets = [];
-let _currentStage = 'idle'; // 'idle' | 'detected' | 'qr' | 'done'
+let _currentStage = 'qr';
 
 // ── MODEL LOAD ────────────────────────────────────────────────────────────────
 async function loadModels() {
@@ -319,8 +278,8 @@ async function loadModels() {
     fill.style.width = '75%';
     await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
     fill.style.width = '100%';
-    lbl.textContent = '';
     bar.style.display = 'none';
+    lbl.textContent = '';
     statusEl.textContent = '✓ Ready — runs entirely on-device.';
     modelsLoaded = true;
     btn.disabled = false;
@@ -345,23 +304,37 @@ function toggleAutoAssign() {
   document.getElementById('auto-assign-config').style.display = _autoAssign ? 'block' : 'none';
 }
 
-// ── CAMERA ────────────────────────────────────────────────────────────────────
+// ── START ─────────────────────────────────────────────────────────────────────
 async function startMain() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('main-screen').classList.add('show');
-  await startCamera();
-  startFaceLoop();
+  await startCamera(false); // back camera for QR
+  startQRLoop();
+  setStage('qr');
 }
 
-async function startCamera(front = true) {
+function goBack() {
+  stopLoops();
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('main-screen').classList.remove('show');
+  document.getElementById('setup-screen').classList.remove('hidden');
+  _currentGuest = null; _readings = [];
+  setStage('qr');
+}
+
+// ── CAMERA ────────────────────────────────────────────────────────────────────
+async function startCamera(front) {
   usingFrontCam = front;
   if (stream) stream.getTracks().forEach(t => t.stop());
+  const video = document.getElementById('video');
+  // Mirror front cam like a selfie
+  video.style.transform = front ? 'scaleX(-1)' : 'none';
+  document.getElementById('overlay-canvas').style.transform = front ? 'scaleX(-1)' : 'none';
   const constraints = front
     ? { video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} } }
     : { video:{ facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} } };
   try {
     stream = await navigator.mediaDevices.getUserMedia(constraints);
-    const video = document.getElementById('video');
     video.srcObject = stream;
     await new Promise(res => video.onloadedmetadata = res);
     offCanvas = document.createElement('canvas');
@@ -372,23 +345,15 @@ async function startCamera(front = true) {
     oc.width = video.videoWidth;
     oc.height = video.videoHeight;
   } catch(e) {
-    document.getElementById('scan-status').textContent = 'Camera unavailable';
+    console.warn('Camera error', e);
   }
 }
 
 async function switchCamera() {
   stopLoops();
   await startCamera(!usingFrontCam);
-  // Mirror only front cam
-  const v = document.getElementById('video');
-  const oc = document.getElementById('overlay-canvas');
-  const m = usingFrontCam ? 'scaleX(-1)' : 'none';
-  v.style.transform = m; oc.style.transform = m;
-  if (_currentStage === 'qr') {
-    startQRLoop();
-  } else {
-    startFaceLoop();
-  }
+  if (_currentStage === 'qr') startQRLoop();
+  else if (_currentStage === 'face') startFaceLoop();
 }
 
 function stopLoops() {
@@ -398,153 +363,41 @@ function stopLoops() {
   clearOverlay();
 }
 
-function goBack() {
-  stopLoops();
-  if (stream) stream.getTracks().forEach(t => t.stop()); stream = null;
-  document.getElementById('main-screen').classList.remove('show');
-  document.getElementById('setup-screen').classList.remove('hidden');
-  resetToFace(true);
-}
+// ── STAGE ─────────────────────────────────────────────────────────────────────
+function setStage(stage) {
+  _currentStage = stage;
+  document.querySelectorAll('.action-state').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('state-' + stage);
+  if (el) el.classList.add('active');
 
-// ── FACE LOOP ─────────────────────────────────────────────────────────────────
-function startFaceLoop() {
-  faceActive = true; qrActive = false;
-  _readings = [];
-  setStage('idle');
-  document.getElementById('qr-vf').classList.remove('show');
-  document.getElementById('top-label').textContent = 'Age Check';
-  document.getElementById('top-sub').textContent = 'Point at face';
-  document.getElementById('scan-status').textContent = 'Detecting face…';
-
-  const video = document.getElementById('video');
-  const oc = document.getElementById('overlay-canvas');
-  const octx = oc.getContext('2d');
-
-  async function loop() {
-    if (!faceActive) return;
-    try {
-      const dets = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({inputSize:320, scoreThreshold:0.45}))
-        .withAgeAndGender();
-
-      clearOverlay();
-      document.getElementById('face-guide').classList.toggle('detected', dets.length > 0);
-
-      if (dets.length > 0) {
-        const best = dets.reduce((a,b) =>
-          a.detection.box.width * a.detection.box.height > b.detection.box.width * b.detection.box.height ? a : b
-        );
-        const raw = Math.round(best.age);
-        _readings.push(raw);
-        if (_readings.length > 10) _readings.shift();
-        const age = Math.round(_readings.reduce((a,b)=>a+b,0) / _readings.length);
-
-        // Draw face box
-        const sx = oc.width / video.videoWidth;
-        const sy = oc.height / video.videoHeight;
-        const {x,y,width,height} = best.detection.box;
-        octx.strokeStyle = '#34c759';
-        octx.lineWidth = 3;
-        octx.strokeRect(x*sx, y*sy, width*sx, height*sy);
-
-        document.getElementById('age-big').textContent = age;
-        document.getElementById('age-sub').textContent = 'Estimated Age';
-        document.getElementById('age-conf').textContent = '±3 years';
-        document.getElementById('scan-status').textContent = `Face detected`;
-        document.getElementById('det-age').textContent = age;
-
-        updateVerdict(age);
-        setStage('detected');
-      } else {
-        document.getElementById('age-big').textContent = '--';
-        document.getElementById('age-sub').textContent = 'Point at a face';
-        document.getElementById('age-conf').textContent = '';
-        document.getElementById('scan-status').textContent = 'Detecting face…';
-        if (_readings.length) _readings = _readings.slice(-3);
-        setStage('idle');
-      }
-    } catch(e) {}
-    faceAnimFrame = requestAnimationFrame(loop);
-  }
-  loop();
-}
-
-function updateVerdict(age) {
-  const verdict = document.getElementById('det-verdict');
-  const note = document.getElementById('det-note');
-  const btn = document.getElementById('confirm-btn');
-
-  if (_autoAssign) {
-    const threshold = parseInt(document.getElementById('age-threshold').value) || 21;
-    const passName = document.getElementById('pass-to-assign').value;
-    if (age >= threshold) {
-      verdict.textContent = `Age verified ✓`;
-      verdict.className = 'detected-verdict pass';
-      note.textContent = passName ? `Will assign "${passName}"` : 'No pass selected';
-      btn.className = 'confirm-btn go';
-      btn.textContent = passName ? `Assign "${passName}" → Scan QR` : 'Confirm → Scan QR';
-    } else {
-      verdict.textContent = `Under ${threshold}`;
-      verdict.className = 'detected-verdict fail';
-      note.textContent = `Age ${age} — does not meet requirement`;
-      btn.className = 'confirm-btn warn';
-      btn.textContent = 'Log anyway → Scan QR';
-    }
+  const qrVf = document.getElementById('qr-vf');
+  if (stage === 'qr') {
+    qrVf.classList.add('show');
+    document.getElementById('top-label').textContent = 'QR Scan';
+    document.getElementById('top-sub').textContent = _currentGuest ? 'Scan a different guest' : 'Scan guest QR code';
   } else {
-    verdict.textContent = `Age ~${age}`;
-    verdict.className = 'detected-verdict neutral';
-    note.textContent = '±3 years · on-device estimate';
-    btn.className = 'confirm-btn neutral';
-    btn.textContent = 'Continue → Scan QR';
+    qrVf.classList.remove('show');
   }
-}
-
-// ── CONFIRM → QR ──────────────────────────────────────────────────────────────
-function onConfirm() {
-  // Lock in the current reading
-  _lockedAge = parseInt(document.getElementById('age-big').textContent) || null;
-  if (!_lockedAge) return;
-  stopLoops();
-  // Switch to back camera for QR scan
-  startCamera(false).then(() => {
-    const v = document.getElementById('video');
-    const oc = document.getElementById('overlay-canvas');
-    v.style.transform = 'none'; oc.style.transform = 'none';
-    startQRLoop();
-  });
-  setStage('qr');
-  document.getElementById('qr-vf').classList.add('show');
-  document.getElementById('top-label').textContent = 'Scan QR Code';
-  document.getElementById('top-sub').textContent = `Age locked: ${_lockedAge}`;
-  document.getElementById('scan-status').textContent = 'Point at guest QR code';
-  document.getElementById('age-big').textContent = _lockedAge;
-  document.getElementById('age-sub').textContent = 'Age Locked';
-  document.getElementById('age-conf').textContent = '';
-}
-
-function cancelQR() {
-  stopLoops();
-  _lockedAge = null;
-  // Switch back to front camera
-  startCamera(true).then(() => {
-    const v = document.getElementById('video');
-    const oc = document.getElementById('overlay-canvas');
-    v.style.transform = 'scaleX(-1)'; oc.style.transform = 'scaleX(-1)';
-    startFaceLoop();
-  });
-  document.getElementById('qr-vf').classList.remove('show');
+  if (stage === 'face') {
+    document.getElementById('top-label').textContent = 'Age Check';
+    document.getElementById('top-sub').textContent = _currentGuest
+      ? (_currentGuest.first_name + ' ' + _currentGuest.last_name) : 'Point at face';
+  }
+  if (stage === 'done') {
+    document.getElementById('top-label').textContent = 'Done';
+  }
 }
 
 // ── QR LOOP ───────────────────────────────────────────────────────────────────
 function startQRLoop() {
-  qrActive = true;
+  qrActive = true; faceActive = false;
   const video = document.getElementById('video');
   function loop() {
     if (!qrActive) return;
     if (video.readyState >= 2 && video.videoWidth > 0 && offCanvas) {
       offCtx.drawImage(video, 0, 0, offCanvas.width, offCanvas.height);
       const img = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-      const code = jsQR(img.data, img.width, img.height, {inversionAttempts:'dontInvert'});
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
       if (code) { qrActive = false; handleQR(code.data); return; }
     }
     qrAnimFrame = requestAnimationFrame(loop);
@@ -553,51 +406,34 @@ function startQRLoop() {
 }
 
 async function handleQR(raw) {
-  document.getElementById('scan-status').textContent = 'Looking up guest…';
   const parsed = parseQR(raw);
   if (!parsed) {
     flash('reject');
-    document.getElementById('scan-status').textContent = 'Not a guest QR';
-    setTimeout(() => { if (_currentStage==='qr') { qrActive=true; startQRLoop(); document.getElementById('scan-status').textContent='Point at guest QR code'; } }, 2000);
+    setTimeout(() => { qrActive = true; startQRLoop(); }, 1800);
     return;
   }
   try {
     const res = await fetch('/api/app-user?token=' + encodeURIComponent(parsed.token));
     if (!res.ok) throw new Error();
-    const g = await res.json();
-
-    // Assign pass if auto-assign and age threshold met
-    let assignedPass = null;
-    if (_autoAssign && _lockedAge !== null) {
-      const threshold = parseInt(document.getElementById('age-threshold').value) || 21;
-      const passName = document.getElementById('pass-to-assign').value;
-      if (_lockedAge >= threshold && passName) {
-        try {
-          await fetch('/api/passes', {
-            method:'PATCH', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ presetName: passName, guestId: g.id })
-          });
-          assignedPass = passName;
-        } catch(e) {}
-      }
-    }
-
+    _currentGuest = await res.json();
     flash('accept');
-    setStage('done');
-    document.getElementById('qr-vf').classList.remove('show');
-    document.getElementById('done-age').textContent = _lockedAge || '--';
-    document.getElementById('done-verdict').textContent = assignedPass
-      ? `✓ "${assignedPass}" assigned` : '✓ Guest scanned';
-    document.getElementById('done-note').textContent =
-      g.first_name + ' ' + g.last_name + (g.badge ? ' · ' + g.badge : '');
-    document.getElementById('top-label').textContent = 'Done';
-    document.getElementById('top-sub').textContent = g.first_name + ' ' + g.last_name;
-    document.getElementById('scan-status').textContent = assignedPass ? `✓ Pass assigned` : '✓ Done';
-
+    // Switch to front cam for face check
+    stopLoops();
+    await startCamera(true);
+    setStage('face');
+    // Reset face state
+    _readings = [];
+    document.getElementById('det-age').textContent = '--';
+    document.getElementById('det-verdict').textContent = 'Point at face';
+    document.getElementById('det-verdict').className = 'detected-verdict neutral';
+    document.getElementById('det-note').textContent = '±3 years · on-device';
+    document.getElementById('confirm-btn').disabled = true;
+    document.getElementById('confirm-btn').textContent = 'Detecting face…';
+    document.getElementById('confirm-btn').className = 'confirm-btn neutral';
+    startFaceLoop();
   } catch(e) {
     flash('reject');
-    document.getElementById('scan-status').textContent = 'Guest not found';
-    setTimeout(() => { if (_currentStage==='qr') { qrActive=true; startQRLoop(); document.getElementById('scan-status').textContent='Point at guest QR code'; } }, 2000);
+    setTimeout(() => { qrActive = true; startQRLoop(); }, 1800);
   }
 }
 
@@ -610,22 +446,128 @@ function parseQR(raw) {
   return null;
 }
 
-// ── STAGE MANAGER ─────────────────────────────────────────────────────────────
-function setStage(stage) {
-  _currentStage = stage;
-  document.querySelectorAll('.action-state').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById('state-' + stage);
-  if (el) el.classList.add('active');
+// ── FACE LOOP ─────────────────────────────────────────────────────────────────
+function startFaceLoop() {
+  faceActive = true; qrActive = false;
+  const video = document.getElementById('video');
+  const oc = document.getElementById('overlay-canvas');
+  const octx = oc.getContext('2d');
+
+  async function loop() {
+    if (!faceActive) return;
+    try {
+      const dets = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize:320, scoreThreshold:0.45 }))
+        .withAgeAndGender();
+
+      clearOverlay();
+
+      if (dets.length > 0) {
+        const best = dets.reduce((a,b) =>
+          a.detection.box.width * a.detection.box.height > b.detection.box.width * b.detection.box.height ? a : b
+        );
+        const raw = Math.round(best.age);
+        _readings.push(raw);
+        if (_readings.length > 10) _readings.shift();
+        const age = Math.round(_readings.reduce((a,b)=>a+b,0) / _readings.length);
+
+        // Draw subtle face box
+        const sx = oc.width / video.videoWidth;
+        const sy = oc.height / video.videoHeight;
+        const {x,y,width,height} = best.detection.box;
+        octx.strokeStyle = 'rgba(52,199,89,0.8)';
+        octx.lineWidth = 3;
+        octx.strokeRect(x*sx, y*sy, width*sx, height*sy);
+
+        updateFaceUI(age);
+      } else {
+        if (_readings.length) _readings = _readings.slice(-3);
+        // If we had a stable reading, keep showing it
+        if (_readings.length < 3) {
+          document.getElementById('det-verdict').textContent = 'Move closer…';
+          document.getElementById('det-verdict').className = 'detected-verdict neutral';
+          document.getElementById('confirm-btn').disabled = true;
+          document.getElementById('confirm-btn').textContent = 'Detecting face…';
+        }
+      }
+    } catch(e) {}
+    faceAnimFrame = requestAnimationFrame(loop);
+  }
+  loop();
 }
 
-function resetToFace(silent) {
+function updateFaceUI(age) {
+  document.getElementById('det-age').textContent = age;
+  const verdict = document.getElementById('det-verdict');
+  const note = document.getElementById('det-note');
+  const btn = document.getElementById('confirm-btn');
+
+  if (_autoAssign) {
+    const threshold = parseInt(document.getElementById('age-threshold').value) || 21;
+    const passName = document.getElementById('pass-to-assign').value;
+    if (age >= threshold) {
+      verdict.textContent = 'Age verified ✓';
+      verdict.className = 'detected-verdict pass';
+      note.textContent = passName ? `Will assign "${passName}"` : 'No pass selected in setup';
+      btn.className = 'confirm-btn go';
+      btn.textContent = passName ? `Assign "${passName}"` : 'Confirm';
+    } else {
+      verdict.textContent = `Under ${threshold}`;
+      verdict.className = 'detected-verdict fail';
+      note.textContent = `Estimated ${age} — below minimum`;
+      btn.className = 'confirm-btn warn';
+      btn.textContent = 'Log without assigning';
+    }
+  } else {
+    verdict.textContent = `Age ~${age}`;
+    verdict.className = 'detected-verdict neutral';
+    note.textContent = '±3 years · on-device';
+    btn.className = 'confirm-btn neutral';
+    btn.textContent = 'Confirm';
+  }
+  btn.disabled = false;
+}
+
+// ── CONFIRM ────────────────────────────────────────────────────────────────────
+async function onConfirm() {
+  const age = parseInt(document.getElementById('det-age').textContent) || null;
+  if (!age || !_currentGuest) return;
+
+  let assignedPass = null;
+  if (_autoAssign) {
+    const threshold = parseInt(document.getElementById('age-threshold').value) || 21;
+    const passName = document.getElementById('pass-to-assign').value;
+    if (age >= threshold && passName) {
+      try {
+        await fetch('/api/passes', {
+          method:'PATCH', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ presetName: passName, guestId: _currentGuest.id })
+        });
+        assignedPass = passName;
+      } catch(e) {}
+    }
+  }
+
   stopLoops();
-  _lockedAge = null; _readings = [];
-  document.getElementById('qr-vf').classList.remove('show');
-  document.getElementById('age-big').textContent = '--';
-  document.getElementById('age-sub').textContent = 'Point at a face';
-  document.getElementById('age-conf').textContent = '';
-  if (!silent && stream) startFaceLoop();
+  flash('accept');
+  document.getElementById('done-age').textContent = age;
+  document.getElementById('done-verdict').textContent = assignedPass
+    ? `✓ "${assignedPass}" assigned` : '✓ Checked';
+  document.getElementById('done-note').textContent =
+    _currentGuest.first_name + ' ' + _currentGuest.last_name +
+    (_currentGuest.badge ? ' · ' + _currentGuest.badge : '');
+  setStage('done');
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────────
+async function resetForNext() {
+  stopLoops();
+  _currentGuest = null; _readings = [];
+  clearOverlay();
+  // Back to back camera for QR
+  await startCamera(false);
+  setStage('qr');
+  startQRLoop();
 }
 
 function clearOverlay() {
@@ -636,7 +578,7 @@ function clearOverlay() {
 function flash(type) {
   const el = document.getElementById(type==='reject'?'reject-flash':'accept-flash');
   el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 280);
+  setTimeout(() => el.classList.remove('show'), 280);
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
