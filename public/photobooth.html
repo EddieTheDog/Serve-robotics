@@ -120,6 +120,7 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 .qr-done-btn { flex:1; padding:14px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
 .qr-send-btn { flex:2; padding:14px; background:#34c759; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; }
 .qr-send-btn:disabled { opacity:0.4; }
+.review-actions { display:flex; gap:10px; }
 
 /* QR viewfinder */
 #qr-vf { position:absolute; inset:0; display:none; align-items:center; justify-content:center; pointer-events:none; z-index:8; }
@@ -197,21 +198,30 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 
   <div id="bottom-bar">
 
-    <!-- READY: take a photo -->
-    <div class="bottom-state active" id="state-ready">
-      <button class="take-photo-btn" onclick="startCountdown()">📸  Take Photo</button>
-    </div>
-
-    <!-- QR SCAN: scan guests after photo taken -->
-    <div class="bottom-state" id="state-qrscan">
+    <!-- QR SCAN: scan guests first -->
+    <div class="bottom-state active" id="state-qrscan">
       <div class="qr-scan-header">Who's in this photo?</div>
-      <div class="qr-scan-sub">Scan each guest's QR code, then tap Send.</div>
+      <div class="qr-scan-sub">Scan each guest's QR code, then take the photo.</div>
       <div class="guests-row" id="guests-row">
         <span class="no-guests-hint">Point at a guest's QR code…</span>
       </div>
       <div class="qr-actions">
+        <button class="qr-done-btn" onclick="skipGuests()">Skip →</button>
+        <button class="qr-send-btn" id="qr-take-btn" onclick="goToReady()" disabled>Ready →</button>
+      </div>
+    </div>
+
+    <!-- READY: take a photo -->
+    <div class="bottom-state" id="state-ready">
+      <div class="guests-row" id="guests-ready-row" style="margin-bottom:12px;"></div>
+      <button class="take-photo-btn" onclick="startCountdown()">📸  Take Photo</button>
+    </div>
+
+    <!-- REVIEW: send the photo -->
+    <div class="bottom-state" id="state-review">
+      <div class="review-actions">
         <button class="qr-done-btn" onclick="retake()">↩ Retake</button>
-        <button class="qr-send-btn" id="qr-send-btn" onclick="sendPhotos()" disabled>Send →</button>
+        <button class="qr-send-btn" id="send-btn" onclick="sendPhotos()">Send to Guests →</button>
       </div>
     </div>
 
@@ -328,14 +338,11 @@ async function startBooth() {
     const constraints = _selectedDeviceId
       ? { video: { deviceId: { exact: _selectedDeviceId }, width:{ideal:1920}, height:{ideal:1080} } }
       : { video: { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} } };
-
     _stream = await navigator.mediaDevices.getUserMedia(constraints);
     const video = document.getElementById('video');
     video.srcObject = _stream;
-    // No mirroring — camera is as-is, what you see is what you get
     video.style.transform = 'none';
     await new Promise(res => video.onloadedmetadata = res);
-
     _offCanvas = document.createElement('canvas');
     _offCanvas.width = video.videoWidth;
     _offCanvas.height = video.videoHeight;
@@ -344,16 +351,16 @@ async function startBooth() {
     document.getElementById('booth-title').textContent = 'Camera error';
   }
 
-  // Show overlay on live view if selected
+  // Show overlay on live view
   const liveOverlay = document.getElementById('overlay-live');
   if (_selectedOverlayDataUrl) {
     liveOverlay.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
     liveOverlay.style.display = 'block';
-  } else {
-    liveOverlay.style.display = 'none';
   }
 
-  setStage('ready');
+  // Always start with QR scan
+  _guests = [];
+  setStage('qrscan');
 }
 
 function goBack() {
@@ -364,7 +371,6 @@ function goBack() {
   document.getElementById('photo-canvas').style.display = 'none';
   document.getElementById('video').style.display = 'block';
   _guests = []; _capturedDataUrl = null;
-  setStage('ready');
 }
 
 // ── STAGE ─────────────────────────────────────────────────────────────────────
@@ -372,22 +378,52 @@ function setStage(stage) {
   document.querySelectorAll('.bottom-state').forEach(el => el.classList.remove('active'));
   document.getElementById('state-' + stage)?.classList.add('active');
   document.getElementById('qr-vf').classList.toggle('show', stage === 'qrscan');
+
   if (stage === 'qrscan') {
+    // Show live camera, start QR scanning
     document.getElementById('video').style.display = 'block';
     document.getElementById('photo-canvas').style.display = 'none';
-    document.getElementById('overlay-live').style.display = 'none';
+    showLiveOverlay();
     renderGuestChips();
     startQRLoop();
   } else if (stage === 'ready') {
-    document.getElementById('qr-vf').classList.remove('show');
     stopQR();
-    // Restore overlay live preview
-    const liveOverlay = document.getElementById('overlay-live');
-    if (_selectedOverlayDataUrl) {
-      liveOverlay.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
-      liveOverlay.style.display = 'block';
-    }
+    document.getElementById('qr-vf').classList.remove('show');
+    showLiveOverlay();
+    // Mirror guest chips in ready state
+    const readyRow = document.getElementById('guests-ready-row');
+    readyRow.innerHTML = document.getElementById('guests-row').innerHTML;
+  } else if (stage === 'review') {
+    stopQR();
+    document.getElementById('qr-vf').classList.remove('show');
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('overlay-live').style.display = 'none';
+    document.getElementById('photo-canvas').style.display = 'block';
+    document.getElementById('photo-canvas').style.objectFit = 'contain';
+    const sendBtn = document.getElementById('send-btn');
+    sendBtn.textContent = _guests.length ? 'Send to Guests →' : 'Save (no guests)';
+    sendBtn.disabled = false;
   }
+}
+
+function showLiveOverlay() {
+  const lo = document.getElementById('overlay-live');
+  if (_selectedOverlayDataUrl) {
+    lo.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
+    lo.style.display = 'block';
+  } else {
+    lo.style.display = 'none';
+  }
+}
+
+function skipGuests() {
+  stopQR();
+  setStage('ready');
+}
+
+function goToReady() {
+  stopQR();
+  setStage('ready');
 }
 
 // ── COUNTDOWN + CAPTURE ───────────────────────────────────────────────────────
@@ -408,33 +444,24 @@ async function startCountdown() {
 }
 
 function capturePhoto() {
-  // White flash
   const flashEl = document.getElementById('flash-el');
-  flashEl.className = 'on'; // instant white
-  setTimeout(() => flashEl.className = 'off', 50); // fade out
+  flashEl.className = 'on';
+  setTimeout(() => flashEl.className = 'off', 50);
 
   const video = document.getElementById('video');
   const canvas = document.getElementById('photo-canvas');
   const ctx = canvas.getContext('2d');
-
-  // Use actual video dimensions
   canvas.width = video.videoWidth || 1280;
   canvas.height = video.videoHeight || 720;
-
-  // Draw video frame exactly as seen — no mirroring applied
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Draw overlay using contain logic (letterbox, preserve aspect ratio)
   if (_selectedOverlayDataUrl) {
     const img = new Image();
     img.onload = () => {
-      // Compute contain rect
       const cw = canvas.width, ch = canvas.height;
-      const iw = img.naturalWidth  || cw;
-      const ih = img.naturalHeight || ch;
+      const iw = img.naturalWidth || cw, ih = img.naturalHeight || ch;
       const scale = Math.min(cw / iw, ch / ih);
-      const dx = (cw - iw * scale) / 2;
-      const dy = (ch - ih * scale) / 2;
+      const dx = (cw - iw * scale) / 2, dy = (ch - ih * scale) / 2;
       ctx.drawImage(img, dx, dy, iw * scale, ih * scale);
       finishCapture(canvas);
     };
@@ -447,30 +474,17 @@ function capturePhoto() {
 
 function finishCapture(canvas) {
   _capturedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-  _guests = []; // reset guest list for this shot
-  // Show the captured frame instead of live video
-  document.getElementById('video').style.display = 'none';
-  document.getElementById('overlay-live').style.display = 'none';
-  canvas.style.display = 'block';
-  canvas.style.objectFit = 'contain';
-  setStage('qrscan');
+  setStage('review');
 }
 
 function retake() {
   _capturedDataUrl = null;
-  _guests = [];
   document.getElementById('video').style.display = 'block';
   document.getElementById('photo-canvas').style.display = 'none';
-  if (_selectedOverlayDataUrl) {
-    const lo = document.getElementById('overlay-live');
-    lo.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
-    lo.style.display = 'block';
-  }
-  stopQR();
-  setStage('ready');
+  setStage('qrscan');
 }
 
-// ── QR SCAN (after photo) ─────────────────────────────────────────────────────
+// ── QR SCAN ───────────────────────────────────────────────────────────────────
 function startQRLoop() {
   _qrScanning = true;
   const video = document.getElementById('video');
@@ -504,9 +518,8 @@ async function handleGuestQR(raw) {
     if (!res.ok) throw new Error();
     const g = await res.json();
     if (_guests.find(x => x.id === g.id)) {
-      // Already added — just flash accept and keep scanning
-      flash('accept');
-      setTimeout(() => { _qrScanning = true; startQRLoop(); }, 600);
+      flash('accept'); // already added
+      setTimeout(() => { _qrScanning = true; startQRLoop(); }, 500);
       return;
     }
     _guests.push(g);
@@ -530,10 +543,10 @@ function parseQR(raw) {
 
 function renderGuestChips() {
   const row = document.getElementById('guests-row');
-  const sendBtn = document.getElementById('qr-send-btn');
+  const readyBtn = document.getElementById('qr-take-btn');
   if (!_guests.length) {
-    row.innerHTML = '<span class="no-guests-hint">Point at a guest\'s QR code…</span>';
-    sendBtn.disabled = true;
+    row.innerHTML = "<span class=\"no-guests-hint\">Scan a guest QR code…</span>";
+    if (readyBtn) readyBtn.disabled = true;
     return;
   }
   row.innerHTML = _guests.map((g,i) => {
@@ -544,7 +557,7 @@ function renderGuestChips() {
       <button class="guest-chip-x" onclick="removeGuest(${i})">✕</button>
     </div>`;
   }).join('');
-  sendBtn.disabled = false;
+  if (readyBtn) readyBtn.disabled = false;
 }
 
 function removeGuest(i) {
@@ -554,38 +567,31 @@ function removeGuest(i) {
 
 // ── SEND ──────────────────────────────────────────────────────────────────────
 async function sendPhotos() {
-  if (!_capturedDataUrl || !_guests.length) return;
-  const btn = document.getElementById('qr-send-btn');
-  stopQR();
+  if (!_capturedDataUrl) return;
+  const btn = document.getElementById('send-btn');
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
-    await fetch('/api/photos', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        imageData: _capturedDataUrl,
-        guestIds: _guests.map(g => g.id),
-        overlayId: _selectedOverlayId || null
-      })
-    });
-    btn.textContent = '✓ Sent!';
+    if (_guests.length) {
+      await fetch('/api/photos', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          imageData: _capturedDataUrl,
+          guestIds: _guests.map(g => g.id),
+          overlayId: _selectedOverlayId || null
+        })
+      });
+    }
+    btn.textContent = '✓ Done!';
     btn.style.background = '#007aff';
-    await sleep(1000);
-    // Reset for next shot
+    await sleep(900);
     _guests = []; _capturedDataUrl = null;
-    btn.textContent = 'Send →'; btn.style.background = ''; btn.disabled = true;
+    btn.textContent = 'Send to Guests →'; btn.style.background = ''; btn.disabled = false;
     document.getElementById('video').style.display = 'block';
     document.getElementById('photo-canvas').style.display = 'none';
-    if (_selectedOverlayDataUrl) {
-      const lo = document.getElementById('overlay-live');
-      lo.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
-      lo.style.display = 'block';
-    }
-    setStage('ready');
+    setStage('qrscan');
   } catch(e) {
-    btn.textContent = 'Failed — retry';
-    btn.disabled = false;
-    _qrScanning = true; startQRLoop();
+    btn.textContent = 'Failed — retry'; btn.disabled = false;
   }
 }
 
