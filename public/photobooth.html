@@ -13,7 +13,6 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 #setup-screen {
   position:fixed; inset:0; background:#f2f2f7; z-index:200;
   display:flex; flex-direction:column;
-  padding-top:env(safe-area-inset-top,20px);
 }
 #setup-screen.hidden { display:none; }
 .setup-topbar { background:#000; color:#fff; padding:14px 20px; padding-top:calc(env(safe-area-inset-top,20px) + 14px); flex-shrink:0; }
@@ -22,139 +21,120 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 .setup-body { flex:1; overflow-y:auto; padding:20px 16px 40px; }
 .setup-label { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#888; margin:0 0 10px 4px; }
 .setup-card { background:#fff; border-radius:16px; padding:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+.setup-card p { font-size:14px; color:#666; line-height:1.5; }
+
+/* Camera picker */
+.cam-option {
+  width:100%; padding:13px 16px;
+  background:#f8f8f8; border:2px solid #e0e0e0;
+  border-radius:12px; margin-bottom:8px;
+  font-size:14px; font-weight:600; color:#333;
+  text-align:left; cursor:pointer; font-family:inherit;
+  display:flex; align-items:center; gap:10px;
+}
+.cam-option:last-child { margin-bottom:0; }
+.cam-option.sel { border-color:#000; background:#000; color:#fff; }
+.cam-option-dot { width:8px; height:8px; border-radius:50%; background:#ccc; flex-shrink:0; }
+.cam-option.sel .cam-option-dot { background:#fff; }
+.cam-option-label { flex:1; }
+.cam-no-cam { font-size:14px; color:#aaa; padding:8px 0; }
 
 /* Overlay picker */
-.overlay-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.overlay-scroll { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
 .overlay-thumb {
-  aspect-ratio:1; border-radius:10px; background:#f0f0f0;
-  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; width:80px; height:80px; border-radius:10px;
+  background:#f0f0f0; display:flex; align-items:center; justify-content:center;
   font-size:11px; color:#999; text-align:center; font-weight:600;
   cursor:pointer; border:2.5px solid transparent; overflow:hidden;
   transition:border-color 0.15s;
 }
 .overlay-thumb img { width:100%; height:100%; object-fit:contain; }
 .overlay-thumb.sel { border-color:#007aff; }
-.overlay-thumb.none-opt { font-size:24px; color:#ccc; }
-.overlay-thumb.none-opt.sel { border-color:#007aff; }
+.overlay-thumb-label { font-size:10px; margin-top:4px; text-align:center; color:#888; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80px; }
 
-/* Countdown style */
+/* Countdown chips */
 .style-chips { display:flex; gap:8px; flex-wrap:wrap; }
-.style-chip {
-  padding:8px 16px; border-radius:20px; border:2px solid #e0e0e0;
-  font-size:13px; font-weight:700; background:#f8f8f8; color:#999; cursor:pointer;
-  font-family:inherit;
-}
+.style-chip { padding:8px 16px; border-radius:20px; border:2px solid #e0e0e0; font-size:13px; font-weight:700; background:#f8f8f8; color:#999; cursor:pointer; font-family:inherit; }
 .style-chip.sel { background:#000; color:#fff; border-color:#000; }
 
 .start-btn { width:100%; padding:17px; background:#000; color:#fff; border:none; border-radius:14px; font-size:17px; font-weight:800; font-family:inherit; cursor:pointer; margin-top:4px; }
+.start-btn:disabled { opacity:0.4; }
 .start-btn:active { opacity:0.8; }
 
-/* ── BOOTH SCREEN ── */
+/* ── BOOTH ── */
 #booth-screen { position:fixed; inset:0; background:#000; display:none; flex-direction:column; }
 #booth-screen.show { display:flex; }
+#camera-area { position:relative; flex:1; overflow:hidden; background:#000; }
+#video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+#photo-canvas { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:none; }
 
-/* Camera area — takes most of screen */
-#camera-area { position:relative; flex:1; overflow:hidden; }
-#video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
-#photo-canvas { position:absolute; inset:0; width:100%; height:100%; display:none; }
-
-/* Overlay preview on camera */
-#overlay-preview-img {
-  position:absolute; inset:0; width:100%; height:100%;
-  object-fit:contain; pointer-events:none; z-index:5;
-  display:none;
+/* Overlay on camera — contain, centered, no stretch */
+#overlay-live {
+  position:absolute; inset:0; pointer-events:none; z-index:5;
+  display:none; /* shown once overlay selected */
+  background-size:contain;
+  background-position:center;
+  background-repeat:no-repeat;
 }
 
-/* Countdown */
 #countdown-display {
   position:absolute; inset:0; display:none;
-  align-items:center; justify-content:center;
-  z-index:10; pointer-events:none;
+  align-items:center; justify-content:center; z-index:10; pointer-events:none;
 }
 #countdown-display.show { display:flex; }
-.countdown-number {
-  font-size:200px; font-weight:800; line-height:1;
-  color:#fff; text-shadow:0 4px 32px rgba(0,0,0,0.5);
-  animation:countPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
-}
-@keyframes countPop { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
-.countdown-go {
-  font-size:80px; font-weight:800; color:#34c759;
-  text-shadow:0 4px 32px rgba(0,0,0,0.5);
-  animation:countPop 0.3s ease both;
-}
+.countdown-number { font-size:180px; font-weight:800; line-height:1; color:#fff; text-shadow:0 4px 40px rgba(0,0,0,0.7); animation:cpop 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+.countdown-go    { font-size:80px;  font-weight:800; color:#34c759; text-shadow:0 4px 32px rgba(0,0,0,0.6); animation:cpop 0.25s ease both; }
+@keyframes cpop { from{opacity:0;transform:scale(0.4)} to{opacity:1;transform:scale(1)} }
 
-/* Flash */
-#flash-el {
-  position:absolute; inset:0; background:#fff;
-  opacity:0; z-index:20; pointer-events:none;
-  transition:opacity 0.05s;
-}
-#flash-el.flash { opacity:1; }
+#flash-el { position:absolute; inset:0; background:#fff; opacity:0; z-index:20; pointer-events:none; }
+#flash-el.on { opacity:1; transition:none; }
+#flash-el.off { opacity:0; transition:opacity 0.4s; }
 
-/* Top bar */
 .booth-topbar {
   position:absolute; top:0; left:0; right:0; z-index:15;
-  background:linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+  background:linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
   padding:14px 20px; padding-top:calc(env(safe-area-inset-top,20px) + 14px);
   display:flex; align-items:center; justify-content:space-between;
 }
 .booth-title { font-size:15px; font-weight:800; color:#fff; }
 .booth-back-btn { background:rgba(255,255,255,0.15); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; }
 
-/* Bottom bar */
-#bottom-bar {
-  flex-shrink:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(20px);
-  padding:16px 20px; padding-bottom:calc(env(safe-area-inset-bottom,20px) + 16px);
-}
+#bottom-bar { flex-shrink:0; background:rgba(0,0,0,0.88); backdrop-filter:blur(20px); padding:16px 20px; padding-bottom:calc(env(safe-area-inset-bottom,20px) + 16px); }
 .bottom-state { display:none; }
 .bottom-state.active { display:block; }
 
-/* Ready state */
-.guests-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; min-height:36px; align-items:center; }
-.guest-chip {
-  display:flex; align-items:center; gap:6px;
-  background:rgba(255,255,255,0.12); border-radius:20px; padding:5px 10px 5px 6px;
-}
-.guest-chip-avatar { width:24px; height:24px; border-radius:50%; background:#444; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#fff; flex-shrink:0; }
+/* state-ready */
+.take-photo-btn { width:100%; padding:17px; background:#fff; color:#000; border:none; border-radius:14px; font-size:17px; font-weight:800; font-family:inherit; cursor:pointer; }
+.take-photo-btn:active { opacity:0.8; }
+
+/* state-qrscan */
+.qr-scan-header { font-size:16px; font-weight:800; color:#fff; margin-bottom:4px; }
+.qr-scan-sub { font-size:13px; color:rgba(255,255,255,0.45); margin-bottom:14px; }
+.guests-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; min-height:32px; align-items:center; }
+.guest-chip { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); border-radius:20px; padding:4px 10px 4px 5px; }
+.guest-chip-avatar { width:22px; height:22px; border-radius:50%; background:#444; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; color:#fff; flex-shrink:0; }
 .guest-chip-name { font-size:12px; font-weight:700; color:#fff; }
-.guest-chip-remove { background:none; border:none; color:rgba(255,255,255,0.4); font-size:14px; cursor:pointer; padding:0 0 0 2px; line-height:1; width:auto; margin:0; }
-.no-guests-label { font-size:14px; color:rgba(255,255,255,0.3); }
-.ready-actions { display:flex; gap:10px; }
-.scan-guest-btn { flex:1; padding:14px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
-.take-photo-btn { flex:1; padding:14px; background:#fff; color:#000; border:none; border-radius:12px; font-size:14px; font-weight:800; font-family:inherit; cursor:pointer; }
-.take-photo-btn:disabled { opacity:0.4; }
+.guest-chip-x { background:none; border:none; color:rgba(255,255,255,0.4); font-size:14px; cursor:pointer; padding:0 0 0 2px; line-height:1; width:auto; margin:0; }
+.no-guests-hint { font-size:13px; color:rgba(255,255,255,0.3); font-style:italic; }
+.qr-actions { display:flex; gap:10px; }
+.qr-done-btn { flex:1; padding:14px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+.qr-send-btn { flex:2; padding:14px; background:#34c759; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; }
+.qr-send-btn:disabled { opacity:0.4; }
 
-/* QR scan state (for adding guests) */
-.qr-instruction { font-size:15px; font-weight:700; color:#fff; text-align:center; margin-bottom:14px; }
-.qr-instruction span { color:rgba(255,255,255,0.4); font-weight:400; display:block; font-size:13px; margin-top:4px; }
-.qr-cancel-btn { width:100%; padding:14px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; }
-
-/* Review state */
-.review-preview { width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden; margin-bottom:12px; background:#111; }
-.review-preview img { width:100%; height:100%; object-fit:cover; }
-.review-name { font-size:13px; font-weight:700; color:rgba(255,255,255,0.5); text-align:center; margin-bottom:12px; }
-.review-actions { display:flex; gap:10px; }
-.retake-btn { flex:1; padding:14px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; }
-.send-btn { flex:2; padding:14px; background:#34c759; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:800; font-family:inherit; cursor:pointer; }
-.send-btn:disabled { opacity:0.5; }
-
-/* QR viewfinder overlay */
-#qr-vf {
-  position:absolute; inset:0; display:none; align-items:center; justify-content:center; pointer-events:none; z-index:8;
-}
+/* QR viewfinder */
+#qr-vf { position:absolute; inset:0; display:none; align-items:center; justify-content:center; pointer-events:none; z-index:8; }
 #qr-vf.show { display:flex; }
 .vf-frame { width:200px; height:200px; position:relative; }
 .vf-frame::before,.vf-frame::after,.vf-inner::before,.vf-inner::after { content:''; position:absolute; width:26px; height:26px; border-style:solid; border-color:#fff; }
-.vf-frame::before  { top:0; left:0;   border-width:3px 0 0 3px; border-radius:3px 0 0 0; }
-.vf-frame::after   { top:0; right:0;  border-width:3px 3px 0 0; border-radius:0 3px 0 0; }
-.vf-inner::before  { bottom:0; left:0;  border-width:0 0 3px 3px; border-radius:0 0 0 3px; }
-.vf-inner::after   { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 3px 0; }
+.vf-frame::before  { top:0;    left:0;   border-width:3px 0 0 3px; border-radius:3px 0 0 0; }
+.vf-frame::after   { top:0;    right:0;  border-width:3px 3px 0 0; border-radius:0 3px 0 0; }
+.vf-inner::before  { bottom:0; left:0;   border-width:0 0 3px 3px; border-radius:0 0 0 3px; }
+.vf-inner::after   { bottom:0; right:0;  border-width:0 3px 3px 0; border-radius:0 0 3px 0; }
 
 #accept-flash { position:absolute; inset:0; background:rgba(52,199,89,0.3); opacity:0; pointer-events:none; transition:opacity 0.1s; z-index:9; }
 #accept-flash.show { opacity:1; }
-#reject-flash { position:absolute; inset:0; background:rgba(255,59,48,0.5); opacity:0; pointer-events:none; transition:opacity 0.1s; z-index:9; }
-#reject-flash.show { opacity:1; }
+#reject-flash  { position:absolute; inset:0; background:rgba(255,59,48,0.45); opacity:0; pointer-events:none; transition:opacity 0.1s; z-index:9; }
+#reject-flash.show  { opacity:1; }
 </style>
 </head>
 <body>
@@ -167,11 +147,20 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
   </div>
   <div class="setup-body">
 
-    <div class="setup-label" style="margin-top:8px;">Overlay</div>
+    <div class="setup-label" style="margin-top:8px;">Camera</div>
     <div class="setup-card">
-      <div class="overlay-grid" id="overlay-grid">
-        <div class="overlay-thumb none-opt sel" data-id="" onclick="selectOverlay('',this)">
-          <span>No overlay</span>
+      <div id="camera-list"><div class="cam-no-cam">Detecting cameras…</div></div>
+    </div>
+
+    <div class="setup-label">Overlay</div>
+    <div class="setup-card">
+      <p style="font-size:13px;color:#888;margin-bottom:12px;">Overlaid on top of photos. Upload PNG overlays in Admin → Photos. Make your overlay the same aspect ratio as the camera output (usually 16:9 for back camera).</p>
+      <div class="overlay-scroll" id="overlay-scroll">
+        <div>
+          <div class="overlay-thumb sel" data-id="" onclick="selectOverlay('',this,null)">
+            <span style="font-size:20px;">🚫</span>
+          </div>
+          <div class="overlay-thumb-label">None</div>
         </div>
       </div>
     </div>
@@ -179,13 +168,13 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
     <div class="setup-label">Countdown</div>
     <div class="setup-card">
       <div class="style-chips">
-        <button class="style-chip sel" data-secs="3" onclick="selectCountdown(3,this)">3 sec</button>
-        <button class="style-chip" data-secs="5" onclick="selectCountdown(5,this)">5 sec</button>
-        <button class="style-chip" data-secs="10" onclick="selectCountdown(10,this)">10 sec</button>
+        <button class="style-chip sel" onclick="selectCountdown(3,this)">3 sec</button>
+        <button class="style-chip" onclick="selectCountdown(5,this)">5 sec</button>
+        <button class="style-chip" onclick="selectCountdown(10,this)">10 sec</button>
       </div>
     </div>
 
-    <button class="start-btn" onclick="startBooth()">Open Photo Booth →</button>
+    <button class="start-btn" id="start-btn" onclick="startBooth()">Open Photo Booth →</button>
   </div>
 </div>
 
@@ -194,7 +183,7 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
   <div id="camera-area">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="photo-canvas"></canvas>
-    <img id="overlay-preview-img" src="" alt="">
+    <div id="overlay-live"></div>
     <div id="countdown-display"></div>
     <div id="flash-el"></div>
     <div id="qr-vf"><div class="vf-frame"><div class="vf-inner"></div></div></div>
@@ -208,40 +197,27 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#000;
 
   <div id="bottom-bar">
 
-    <!-- READY: guests listed, take photo or scan more -->
+    <!-- READY: take a photo -->
     <div class="bottom-state active" id="state-ready">
-      <div class="guests-row" id="guests-row">
-        <span class="no-guests-label">Scan guests to include in this photo</span>
-      </div>
-      <div class="ready-actions">
-        <button class="scan-guest-btn" onclick="startGuestScan()">+ Scan Guest</button>
-        <button class="take-photo-btn" id="take-photo-btn" onclick="startCountdown()" disabled>Take Photo</button>
-      </div>
+      <button class="take-photo-btn" onclick="startCountdown()">📸  Take Photo</button>
     </div>
 
-    <!-- QR scanning for guest -->
+    <!-- QR SCAN: scan guests after photo taken -->
     <div class="bottom-state" id="state-qrscan">
-      <div class="qr-instruction">
-        Scan a guest QR code
-        <span>They'll receive this photo in their app</span>
+      <div class="qr-scan-header">Who's in this photo?</div>
+      <div class="qr-scan-sub">Scan each guest's QR code, then tap Send.</div>
+      <div class="guests-row" id="guests-row">
+        <span class="no-guests-hint">Point at a guest's QR code…</span>
       </div>
-      <button class="qr-cancel-btn" onclick="cancelGuestScan()">Done scanning</button>
-    </div>
-
-    <!-- REVIEW: show captured photo, send or retake -->
-    <div class="bottom-state" id="state-review">
-      <div class="review-preview"><img id="review-img" src="" alt=""></div>
-      <div class="review-name" id="review-names"></div>
-      <div class="review-actions">
-        <button class="retake-btn" onclick="retake()">↩ Retake</button>
-        <button class="send-btn" id="send-btn" onclick="sendPhotos()">Send to Guests ✓</button>
+      <div class="qr-actions">
+        <button class="qr-done-btn" onclick="retake()">↩ Retake</button>
+        <button class="qr-send-btn" id="qr-send-btn" onclick="sendPhotos()" disabled>Send →</button>
       </div>
     </div>
 
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
 'use strict';
 
@@ -249,44 +225,92 @@ let _overlays = [];
 let _selectedOverlayId = '';
 let _selectedOverlayDataUrl = null;
 let _countdownSecs = 3;
-let _guests = [];        // guests added to current shot
+let _guests = [];
 let _capturedDataUrl = null;
 let _stream = null;
 let _qrScanning = false;
 let _qrAnimFrame = null;
 let _offCanvas = null;
 let _offCtx = null;
-let _stage = 'ready';
+let _selectedDeviceId = null;
+let _cameraDevices = [];
 
 // ── SETUP ─────────────────────────────────────────────────────────────────────
-async function loadOverlays() {
+async function initSetup() {
+  await loadOverlays();
+  await detectCameras();
+}
+
+async function detectCameras() {
+  const list = document.getElementById('camera-list');
+  const btn = document.getElementById('start-btn');
   try {
-    _overlays = await (await fetch('/api/overlays')).json();
-  } catch(e) { _overlays = []; }
-  renderOverlayGrid();
+    // Request permission first so labels are populated
+    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    tempStream.getTracks().forEach(t => t.stop());
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    _cameraDevices = devices.filter(d => d.kind === 'videoinput');
+
+    if (!_cameraDevices.length) {
+      list.innerHTML = '<div class="cam-no-cam">No cameras found.</div>';
+      btn.disabled = true;
+      return;
+    }
+
+    // Auto-select: prefer back/rear camera for photo booth
+    const back = _cameraDevices.find(d => /back|rear|environment/i.test(d.label));
+    _selectedDeviceId = (back || _cameraDevices[0]).deviceId;
+
+    list.innerHTML = _cameraDevices.map(d => {
+      const label = d.label || 'Camera';
+      const isSel = d.deviceId === _selectedDeviceId;
+      return `<div class="cam-option${isSel?' sel':''}" onclick="selectCamera('${d.deviceId}',this)">
+        <div class="cam-option-dot"></div>
+        <div class="cam-option-label">${label}</div>
+      </div>`;
+    }).join('');
+    btn.disabled = false;
+  } catch(e) {
+    list.innerHTML = '<div class="cam-no-cam">Camera permission denied. Check your browser settings.</div>';
+    btn.disabled = true;
+  }
 }
 
-function renderOverlayGrid() {
-  const grid = document.getElementById('overlay-grid');
-  const noneHtml = `<div class="overlay-thumb none-opt${_selectedOverlayId===''?' sel':''}" data-id="" onclick="selectOverlay('',this)"><span>No overlay</span></div>`;
-  grid.innerHTML = noneHtml + _overlays.map(o =>
-    `<div class="overlay-thumb${_selectedOverlayId===o.id?' sel':''}" data-id="${o.id}" onclick="selectOverlay('${o.id}',this)">
-      <img src="/api/overlays?id=${o.id}" onerror="this.style.display='none'">
-      <div style="font-size:10px;text-align:center;padding:2px;">${o.name}</div>
-    </div>`
-  ).join('');
+function selectCamera(deviceId, el) {
+  _selectedDeviceId = deviceId;
+  document.querySelectorAll('.cam-option').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
 }
 
-function selectOverlay(id, el) {
+async function loadOverlays() {
+  try { _overlays = await (await fetch('/api/overlays')).json(); } catch(e) { _overlays = []; }
+  const scroll = document.getElementById('overlay-scroll');
+  const noneEl = scroll.querySelector('[data-id=""]').parentElement;
+  // Remove any existing overlay thumbs except none
+  [...scroll.children].forEach(c => { if (c !== noneEl) c.remove(); });
+  _overlays.forEach(o => {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<div class="overlay-thumb" data-id="${o.id}" onclick="selectOverlayById('${o.id}',this)">
+      <img src="/api/overlays?id=${o.id}" alt="${o.name}" onerror="this.style.display='none'">
+    </div>
+    <div class="overlay-thumb-label">${o.name}</div>`;
+    scroll.appendChild(wrap);
+  });
+}
+
+function selectOverlay(id, el, dataUrl) {
   _selectedOverlayId = id;
+  _selectedOverlayDataUrl = dataUrl;
   document.querySelectorAll('.overlay-thumb').forEach(t => t.classList.remove('sel'));
   el.classList.add('sel');
-  if (id) {
-    const o = _overlays.find(x => x.id === id);
-    // We'll fetch image data when needed
-  } else {
-    _selectedOverlayDataUrl = null;
-  }
+}
+
+async function selectOverlayById(id, el) {
+  try {
+    const data = await (await fetch('/api/overlays?id=' + id)).json();
+    selectOverlay(id, el, data.image_data || null);
+  } catch(e) { selectOverlay(id, el, null); }
 }
 
 function selectCountdown(secs, el) {
@@ -295,27 +319,38 @@ function selectCountdown(secs, el) {
   el.classList.add('sel');
 }
 
-// ── BOOTH START ───────────────────────────────────────────────────────────────
+// ── START ─────────────────────────────────────────────────────────────────────
 async function startBooth() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('booth-screen').classList.add('show');
-  await initCamera();
 
-  // Load overlay image data if selected
-  if (_selectedOverlayId) {
-    try {
-      const o = _overlays.find(x => x.id === _selectedOverlayId);
-      if (o) {
-        const res = await fetch('/api/overlays?id=' + _selectedOverlayId);
-        const data = await res.json();
-        _selectedOverlayDataUrl = data.image_data || null;
-        if (_selectedOverlayDataUrl) {
-          const img = document.getElementById('overlay-preview-img');
-          img.src = _selectedOverlayDataUrl;
-          img.style.display = 'block';
-        }
-      }
-    } catch(e) {}
+  try {
+    const constraints = _selectedDeviceId
+      ? { video: { deviceId: { exact: _selectedDeviceId }, width:{ideal:1920}, height:{ideal:1080} } }
+      : { video: { facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} } };
+
+    _stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('video');
+    video.srcObject = _stream;
+    // No mirroring — camera is as-is, what you see is what you get
+    video.style.transform = 'none';
+    await new Promise(res => video.onloadedmetadata = res);
+
+    _offCanvas = document.createElement('canvas');
+    _offCanvas.width = video.videoWidth;
+    _offCanvas.height = video.videoHeight;
+    _offCtx = _offCanvas.getContext('2d');
+  } catch(e) {
+    document.getElementById('booth-title').textContent = 'Camera error';
+  }
+
+  // Show overlay on live view if selected
+  const liveOverlay = document.getElementById('overlay-live');
+  if (_selectedOverlayDataUrl) {
+    liveOverlay.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
+    liveOverlay.style.display = 'block';
+  } else {
+    liveOverlay.style.display = 'none';
   }
 
   setStage('ready');
@@ -326,87 +361,130 @@ function goBack() {
   if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
   document.getElementById('booth-screen').classList.remove('show');
   document.getElementById('setup-screen').classList.remove('hidden');
+  document.getElementById('photo-canvas').style.display = 'none';
+  document.getElementById('video').style.display = 'block';
   _guests = []; _capturedDataUrl = null;
-}
-
-// ── CAMERA ────────────────────────────────────────────────────────────────────
-async function initCamera() {
-  try {
-    _stream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} }
-    });
-    const video = document.getElementById('video');
-    video.srcObject = _stream;
-    video.style.transform = 'scaleX(-1)'; // mirror for natural feel
-    await new Promise(res => video.onloadedmetadata = res);
-    _offCanvas = document.createElement('canvas');
-    _offCanvas.width = video.videoWidth;
-    _offCanvas.height = video.videoHeight;
-    _offCtx = _offCanvas.getContext('2d');
-  } catch(e) {
-    document.getElementById('booth-title').textContent = 'Camera unavailable';
-  }
+  setStage('ready');
 }
 
 // ── STAGE ─────────────────────────────────────────────────────────────────────
 function setStage(stage) {
-  _stage = stage;
   document.querySelectorAll('.bottom-state').forEach(el => el.classList.remove('active'));
   document.getElementById('state-' + stage)?.classList.add('active');
+  document.getElementById('qr-vf').classList.toggle('show', stage === 'qrscan');
+  if (stage === 'qrscan') {
+    document.getElementById('video').style.display = 'block';
+    document.getElementById('photo-canvas').style.display = 'none';
+    document.getElementById('overlay-live').style.display = 'none';
+    renderGuestChips();
+    startQRLoop();
+  } else if (stage === 'ready') {
+    document.getElementById('qr-vf').classList.remove('show');
+    stopQR();
+    // Restore overlay live preview
+    const liveOverlay = document.getElementById('overlay-live');
+    if (_selectedOverlayDataUrl) {
+      liveOverlay.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
+      liveOverlay.style.display = 'block';
+    }
+  }
+}
+
+// ── COUNTDOWN + CAPTURE ───────────────────────────────────────────────────────
+async function startCountdown() {
+  const display = document.getElementById('countdown-display');
+  display.classList.add('show');
+  for (let i = _countdownSecs; i > 0; i--) {
+    display.innerHTML = `<div class="countdown-number">${i}</div>`;
+    await sleep(900);
+    display.innerHTML = '';
+    await sleep(100);
+  }
+  display.innerHTML = '<div class="countdown-go">📸</div>';
+  await sleep(250);
+  display.innerHTML = '';
+  display.classList.remove('show');
+  capturePhoto();
+}
+
+function capturePhoto() {
+  // White flash
+  const flashEl = document.getElementById('flash-el');
+  flashEl.className = 'on'; // instant white
+  setTimeout(() => flashEl.className = 'off', 50); // fade out
 
   const video = document.getElementById('video');
   const canvas = document.getElementById('photo-canvas');
-  const qrVf = document.getElementById('qr-vf');
+  const ctx = canvas.getContext('2d');
 
-  if (stage === 'ready') {
-    video.style.display = 'block';
-    canvas.style.display = 'none';
-    qrVf.classList.remove('show');
-    renderGuestChips();
-    document.getElementById('take-photo-btn').disabled = _guests.length === 0;
-  } else if (stage === 'qrscan') {
-    qrVf.classList.add('show');
-  } else if (stage === 'review') {
-    video.style.display = 'none';
-    canvas.style.display = 'block';
-    qrVf.classList.remove('show');
+  // Use actual video dimensions
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+
+  // Draw video frame exactly as seen — no mirroring applied
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Draw overlay using contain logic (letterbox, preserve aspect ratio)
+  if (_selectedOverlayDataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      // Compute contain rect
+      const cw = canvas.width, ch = canvas.height;
+      const iw = img.naturalWidth  || cw;
+      const ih = img.naturalHeight || ch;
+      const scale = Math.min(cw / iw, ch / ih);
+      const dx = (cw - iw * scale) / 2;
+      const dy = (ch - ih * scale) / 2;
+      ctx.drawImage(img, dx, dy, iw * scale, ih * scale);
+      finishCapture(canvas);
+    };
+    img.onerror = () => finishCapture(canvas);
+    img.src = _selectedOverlayDataUrl;
+  } else {
+    finishCapture(canvas);
   }
 }
 
-// ── GUEST MANAGEMENT ──────────────────────────────────────────────────────────
-function renderGuestChips() {
-  const row = document.getElementById('guests-row');
-  if (!_guests.length) {
-    row.innerHTML = '<span class="no-guests-label">Scan guests to include in this photo</span>';
-    return;
-  }
-  row.innerHTML = _guests.map((g, i) => {
-    const initials = ((g.first_name||'')[0]||'') + ((g.last_name||'')[0]||'');
-    return `<div class="guest-chip">
-      <div class="guest-chip-avatar">${initials}</div>
-      <div class="guest-chip-name">${g.first_name}</div>
-      <button class="guest-chip-remove" onclick="removeGuest(${i})">✕</button>
-    </div>`;
-  }).join('');
-  document.getElementById('take-photo-btn').disabled = false;
-}
-
-function removeGuest(i) {
-  _guests.splice(i, 1);
-  renderGuestChips();
-  if (_guests.length === 0) document.getElementById('take-photo-btn').disabled = true;
-}
-
-// ── QR SCAN FOR GUESTS ────────────────────────────────────────────────────────
-function startGuestScan() {
+function finishCapture(canvas) {
+  _capturedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  _guests = []; // reset guest list for this shot
+  // Show the captured frame instead of live video
+  document.getElementById('video').style.display = 'none';
+  document.getElementById('overlay-live').style.display = 'none';
+  canvas.style.display = 'block';
+  canvas.style.objectFit = 'contain';
   setStage('qrscan');
-  _qrScanning = true;
-  qrLoop();
 }
 
-function cancelGuestScan() {
+function retake() {
+  _capturedDataUrl = null;
+  _guests = [];
+  document.getElementById('video').style.display = 'block';
+  document.getElementById('photo-canvas').style.display = 'none';
+  if (_selectedOverlayDataUrl) {
+    const lo = document.getElementById('overlay-live');
+    lo.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
+    lo.style.display = 'block';
+  }
   stopQR();
   setStage('ready');
+}
+
+// ── QR SCAN (after photo) ─────────────────────────────────────────────────────
+function startQRLoop() {
+  _qrScanning = true;
+  const video = document.getElementById('video');
+  function loop() {
+    if (!_qrScanning) return;
+    if (video.readyState >= 2 && video.videoWidth > 0 && _offCanvas) {
+      _offCtx.drawImage(video, 0, 0, _offCanvas.width, _offCanvas.height);
+      const img = _offCtx.getImageData(0, 0, _offCanvas.width, _offCanvas.height);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
+      if (code) { _qrScanning = false; handleGuestQR(code.data); return; }
+    }
+    _qrAnimFrame = requestAnimationFrame(loop);
+  }
+  loop();
 }
 
 function stopQR() {
@@ -414,43 +492,30 @@ function stopQR() {
   if (_qrAnimFrame) { cancelAnimationFrame(_qrAnimFrame); _qrAnimFrame = null; }
 }
 
-function qrLoop() {
-  if (!_qrScanning) return;
-  const video = document.getElementById('video');
-  if (video.readyState >= 2 && video.videoWidth > 0 && _offCanvas) {
-    _offCtx.drawImage(video, 0, 0, _offCanvas.width, _offCanvas.height);
-    const img = _offCtx.getImageData(0, 0, _offCanvas.width, _offCanvas.height);
-    const code = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
-    if (code) { _qrScanning = false; handleGuestQR(code.data); return; }
-  }
-  _qrAnimFrame = requestAnimationFrame(qrLoop);
-}
-
 async function handleGuestQR(raw) {
   const parsed = parseQR(raw);
   if (!parsed) {
     flash('reject');
-    setTimeout(() => { _qrScanning = true; qrLoop(); }, 1500);
+    setTimeout(() => { _qrScanning = true; startQRLoop(); }, 1500);
     return;
   }
   try {
     const res = await fetch('/api/app-user?token=' + encodeURIComponent(parsed.token));
     if (!res.ok) throw new Error();
     const g = await res.json();
-    // Don't add duplicates
     if (_guests.find(x => x.id === g.id)) {
-      flash('reject');
-      setTimeout(() => { _qrScanning = true; qrLoop(); }, 1200);
+      // Already added — just flash accept and keep scanning
+      flash('accept');
+      setTimeout(() => { _qrScanning = true; startQRLoop(); }, 600);
       return;
     }
     _guests.push(g);
     flash('accept');
     renderGuestChips();
-    // Brief pause then continue scanning (for multi-person)
-    setTimeout(() => { _qrScanning = true; qrLoop(); }, 800);
+    setTimeout(() => { _qrScanning = true; startQRLoop(); }, 600);
   } catch(e) {
     flash('reject');
-    setTimeout(() => { _qrScanning = true; qrLoop(); }, 1500);
+    setTimeout(() => { _qrScanning = true; startQRLoop(); }, 1500);
   }
 }
 
@@ -463,81 +528,35 @@ function parseQR(raw) {
   return null;
 }
 
-// ── COUNTDOWN + CAPTURE ───────────────────────────────────────────────────────
-async function startCountdown() {
-  stopQR();
-  document.getElementById('take-photo-btn').disabled = true;
-  document.getElementById('scan-guest-btn')?.setAttribute('disabled','true');
-
-  const display = document.getElementById('countdown-display');
-  display.classList.add('show');
-
-  for (let i = _countdownSecs; i > 0; i--) {
-    display.innerHTML = `<div class="countdown-number">${i}</div>`;
-    await sleep(900);
-    display.innerHTML = '';
-    await sleep(100);
+function renderGuestChips() {
+  const row = document.getElementById('guests-row');
+  const sendBtn = document.getElementById('qr-send-btn');
+  if (!_guests.length) {
+    row.innerHTML = '<span class="no-guests-hint">Point at a guest\'s QR code…</span>';
+    sendBtn.disabled = true;
+    return;
   }
-  display.innerHTML = '<div class="countdown-go">GO!</div>';
-  await sleep(300);
-  display.innerHTML = '';
-  display.classList.remove('show');
-
-  capturePhoto();
+  row.innerHTML = _guests.map((g,i) => {
+    const init = ((g.first_name||'')[0]||'') + ((g.last_name||'')[0]||'');
+    return `<div class="guest-chip">
+      <div class="guest-chip-avatar">${init}</div>
+      <div class="guest-chip-name">${g.first_name}</div>
+      <button class="guest-chip-x" onclick="removeGuest(${i})">✕</button>
+    </div>`;
+  }).join('');
+  sendBtn.disabled = false;
 }
 
-function capturePhoto() {
-  // Camera flash
-  const flashEl = document.getElementById('flash-el');
-  flashEl.classList.add('flash');
-  setTimeout(() => flashEl.classList.remove('flash'), 200);
-
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('photo-canvas');
-  const ctx = canvas.getContext('2d');
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  // Draw video frame (un-mirror for actual photo)
-  ctx.save();
-  ctx.scale(-1, 1);
-  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-  ctx.restore();
-
-  // Draw overlay if selected
-  if (_selectedOverlayDataUrl) {
-    const overlayImg = new Image();
-    overlayImg.onload = () => {
-      ctx.drawImage(overlayImg, 0, 0, canvas.width, canvas.height);
-      finishCapture(canvas);
-    };
-    overlayImg.src = _selectedOverlayDataUrl;
-  } else {
-    finishCapture(canvas);
-  }
-}
-
-function finishCapture(canvas) {
-  _capturedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-  // Show in review
-  document.getElementById('review-img').src = _capturedDataUrl;
-  const names = _guests.map(g => g.first_name + ' ' + g.last_name).join(', ');
-  document.getElementById('review-names').textContent = names || 'No guests scanned';
-  document.getElementById('send-btn').disabled = _guests.length === 0;
-  document.getElementById('take-photo-btn').disabled = false;
-  setStage('review');
-}
-
-function retake() {
-  _capturedDataUrl = null;
-  setStage('ready');
+function removeGuest(i) {
+  _guests.splice(i,1);
+  renderGuestChips();
 }
 
 // ── SEND ──────────────────────────────────────────────────────────────────────
 async function sendPhotos() {
   if (!_capturedDataUrl || !_guests.length) return;
-  const btn = document.getElementById('send-btn');
+  const btn = document.getElementById('qr-send-btn');
+  stopQR();
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
@@ -551,31 +570,34 @@ async function sendPhotos() {
     });
     btn.textContent = '✓ Sent!';
     btn.style.background = '#007aff';
-    await sleep(1200);
-    // Reset for next group
-    _guests = [];
-    _capturedDataUrl = null;
-    btn.textContent = 'Send to Guests ✓';
-    btn.style.background = '';
-    btn.disabled = false;
+    await sleep(1000);
+    // Reset for next shot
+    _guests = []; _capturedDataUrl = null;
+    btn.textContent = 'Send →'; btn.style.background = ''; btn.disabled = true;
+    document.getElementById('video').style.display = 'block';
+    document.getElementById('photo-canvas').style.display = 'none';
+    if (_selectedOverlayDataUrl) {
+      const lo = document.getElementById('overlay-live');
+      lo.style.backgroundImage = `url('${_selectedOverlayDataUrl}')`;
+      lo.style.display = 'block';
+    }
     setStage('ready');
   } catch(e) {
     btn.textContent = 'Failed — retry';
     btn.disabled = false;
+    _qrScanning = true; startQRLoop();
   }
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
-
 function flash(type) {
   const el = document.getElementById(type==='reject'?'reject-flash':'accept-flash');
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 280);
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-loadOverlays();
+initSetup();
 </script>
 </body>
 </html>
