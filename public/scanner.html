@@ -209,6 +209,55 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   border-radius: 14px; font-size: 17px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 4px;
 }
 .scan-again-btn:active { opacity: 0.8; }
+
+/* Search button in topbar */
+.scan-search-btn {
+  background: rgba(255,255,255,0.12); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 12px; font-size: 18px;
+  font-family: inherit; cursor: pointer; margin-right: 8px;
+}
+
+/* Search overlay */
+#search-overlay {
+  display: none; position: absolute; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);
+  flex-direction: column;
+  padding-top: calc(env(safe-area-inset-top,20px) + 0px);
+}
+#search-overlay.show { display: flex; }
+.search-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; padding-top: calc(env(safe-area-inset-top,20px) + 14px);
+  border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
+}
+.search-input-wrap {
+  flex: 1; display: flex; align-items: center;
+  background: rgba(255,255,255,0.1); border-radius: 10px; padding: 0 12px;
+}
+.search-input-wrap input {
+  flex: 1; background: none; border: none; outline: none;
+  color: #fff; font-size: 17px; font-family: inherit; padding: 11px 0;
+}
+.search-input-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+.search-cancel-btn {
+  background: none; border: none; color: rgba(255,255,255,0.6);
+  font-size: 15px; font-weight: 600; font-family: inherit;
+  cursor: pointer; padding: 8px 4px; flex-shrink: 0;
+}
+.search-results { flex: 1; overflow-y: auto; padding: 8px 16px; }
+.search-result-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); cursor: pointer;
+}
+.search-result-row:active { opacity: 0.6; }
+.search-result-avatar {
+  width: 42px; height: 42px; border-radius: 10px; background: #222;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.search-result-name { font-size: 16px; font-weight: 700; color: #fff; }
+.search-result-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.search-empty { text-align: center; color: rgba(255,255,255,0.3); font-size: 15px; padding: 40px 0; }
 .assign-pass-btn {
   width: 100%; padding: 14px; background: #007aff; color: #fff; border: none;
   border-radius: 14px; font-size: 16px; font-weight: 700; font-family: inherit;
@@ -272,7 +321,22 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
       <div class="scan-mode-label" id="scan-mode-label">Normal Mode</div>
       <div class="scan-filter-label" id="scan-filter-label">Showing all passes</div>
     </div>
+    <button class="scan-search-btn" onclick="openSearch()">🔍</button>
     <button class="scan-back-btn" onclick="goBack()">⚙ Setup</button>
+  </div>
+
+  <!-- Guest search overlay -->
+  <div id="search-overlay">
+    <div class="search-header">
+      <div class="search-input-wrap">
+        <input type="text" id="search-input" placeholder="Search by name…"
+          oninput="onSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <button class="search-cancel-btn" onclick="closeSearch()">Cancel</button>
+    </div>
+    <div class="search-results" id="search-results">
+      <div class="search-empty">Type a name to search guests</div>
+    </div>
   </div>
 
   <div class="vf-wrap">
@@ -554,6 +618,77 @@ async function handleCode(raw) {
     flash('reject'); setScanStatus('Guest not found');
     setTimeout(() => { scanning = true; scanLoop(); setScanStatus('Point at a QR code'); }, 2000);
   }
+}
+
+// ── Guest Search ──
+let _allGuests = [];
+let _searchOpen = false;
+
+async function openSearch() {
+  _searchOpen = true;
+  document.getElementById('search-overlay').classList.add('show');
+  document.getElementById('search-results').innerHTML = '<div class="search-empty">Type a name to search guests</div>';
+  document.getElementById('search-input').value = '';
+  // Load guests if not cached
+  if (!_allGuests.length) {
+    try {
+      const res = await fetch('/api/admin-guests');
+      const data = await res.json();
+      _allGuests = data.filter(g => g.app_token); // only checked-in guests
+    } catch(e) { _allGuests = []; }
+  }
+  setTimeout(() => document.getElementById('search-input').focus(), 100);
+}
+
+function closeSearch() {
+  _searchOpen = false;
+  document.getElementById('search-overlay').classList.remove('show');
+  document.getElementById('search-input').blur();
+}
+
+function onSearchInput() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const container = document.getElementById('search-results');
+  if (!q) {
+    container.innerHTML = '<div class="search-empty">Type a name to search guests</div>';
+    return;
+  }
+  const results = _allGuests.filter(g => {
+    const full = ((g.first_name||'') + ' ' + (g.last_name||'')).toLowerCase();
+    return full.includes(q) || (g.first_name||'').toLowerCase().startsWith(q) || (g.last_name||'').toLowerCase().startsWith(q);
+  }).slice(0, 20);
+
+  if (!results.length) {
+    container.innerHTML = '<div class="search-empty">No guests found</div>';
+    return;
+  }
+  container.innerHTML = results.map(g => {
+    const initials = ((g.first_name||'')[0]||'') + ((g.last_name||'')[0]||'');
+    const badge = g.badge || '';
+    const seat = g.seat ? '📍 ' + g.seat : '';
+    const sub = [badge, seat].filter(Boolean).join(' · ');
+    return `<div class="search-result-row" onclick="selectSearchGuest('${g.id}')">
+      <div class="search-result-avatar">${initials}</div>
+      <div>
+        <div class="search-result-name">${g.first_name} ${g.last_name}</div>
+        <div class="search-result-sub">${sub || 'Guest'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectSearchGuest(guestId) {
+  closeSearch();
+  const g = _allGuests.find(x => x.id === guestId);
+  if (!g) return;
+  // Fetch full guest data from app-user endpoint for passes etc.
+  try {
+    const res = await fetch('/api/app-user?token=' + encodeURIComponent(g.app_token));
+    if (!res.ok) throw new Error();
+    const full = await res.json();
+    showResult(full, null);
+    scanning = false; // pause scan while sheet is open
+  } catch(e) {}
 }
 
 // ── Check filter pass ──
