@@ -305,6 +305,14 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   cursor: pointer; width: 100%; max-width: 340px; letter-spacing: 0.5px;
 }
 .ap-close:active { opacity: 0.7; }
+.photos-section { margin-bottom: 12px; }
+.photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+.photo-thumb { aspect-ratio: 4/3; border-radius: 10px; overflow: hidden; background: #e0e0e0; cursor: pointer; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-fullscreen { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 500; align-items: center; justify-content: center; flex-direction: column; padding: 20px; }
+.photo-fullscreen.open { display: flex; }
+.photo-fullscreen img { max-width: 100%; max-height: 80vh; border-radius: 12px; }
+.photo-fs-close { margin-top: 20px; padding: 12px 32px; background: #fff; color: #000; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 </head>
@@ -382,11 +390,19 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
           </div>
           <div class="staff-link-arrow">›</div>
         </a>
-        <a href="/age.html" class="staff-link-row" style="border-bottom:none;">
+        <a href="/age.html" class="staff-link-row">
           <div class="staff-link-icon">🔞</div>
           <div class="staff-link-text">
             <strong>Age Check</strong>
             <span>Face detection age verification</span>
+          </div>
+          <div class="staff-link-arrow">›</div>
+        </a>
+        <a href="/photobooth.html" class="staff-link-row" style="border-bottom:none;">
+          <div class="staff-link-icon">📸</div>
+          <div class="staff-link-text">
+            <strong>Photo Booth</strong>
+            <span>Take & send photos to guests</span>
           </div>
           <div class="staff-link-arrow">›</div>
         </a>
@@ -399,6 +415,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <span class="passes-chevron" id="passes-chevron">▾</span>
       </button>
       <div class="pass-list" id="pass-list"></div>
+    </div>
+
+    <div id="photos-section-wrap" style="display:none;">
+      <div class="section-label">Photos</div>
+      <div class="photos-grid" id="photos-grid"></div>
     </div>
 
     <div id="schedule-wrap">
@@ -417,6 +438,12 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <div id="custom-fields-info-wrap"></div>
   </div>
+</div>
+
+<!-- Photo Fullscreen -->
+<div class="photo-fullscreen" id="photo-fullscreen" onclick="this.classList.remove('open')">
+  <img id="photo-fs-img" src="" alt="">
+  <button class="photo-fs-close" onclick="document.getElementById('photo-fullscreen').classList.remove('open')">Close</button>
 </div>
 
 <!-- QR Fullscreen Modal -->
@@ -937,6 +964,31 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     setTimeout(checkNotices, 500);
   }
 
+  async function loadPhotos() {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/photos?guestToken=' + encodeURIComponent(token));
+      const photos = await res.json();
+      const wrap = document.getElementById('photos-section-wrap');
+      const grid = document.getElementById('photos-grid');
+      if (!photos.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      grid.innerHTML = photos.map(p =>
+        `<div class="photo-thumb" onclick="openPhotoFS('${p.id}')">
+          <img src="${p.image_data}" loading="lazy">
+        </div>`
+      ).join('');
+      // Store for fullscreen
+      window._photoMap = Object.fromEntries(photos.map(p => [p.id, p.image_data]));
+    } catch(e) {}
+  }
+
+  function openPhotoFS(id) {
+    const img = document.getElementById('photo-fs-img');
+    img.src = (window._photoMap || {})[id] || '';
+    document.getElementById('photo-fullscreen').classList.add('open');
+  }
+
   // Poll loop
   async function pollLoop() {
     setInterval(async () => {
@@ -945,7 +997,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         if (lastRefreshSignal === null) { lastRefreshSignal = rf.signal; }
         else if (rf.signal !== lastRefreshSignal) {
           lastRefreshSignal = rf.signal;
-          loadSchedule(); loadCustomButtons(); loadHelpReasons();
+          loadSchedule(); loadCustomButtons(); loadHelpReasons(); loadPhotos();
           const gRes = await fetch(`/api/app-user?token=${encodeURIComponent(token)}`);
           if (gRes.ok) { const u = await gRes.json(); if (u.locked){showLocked();return;} guestData=u; renderGuest(); }
         }
