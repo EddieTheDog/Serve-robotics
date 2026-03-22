@@ -198,6 +198,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
   <div class="tab" onclick="switchTab('notices')">Notices</div>
   <div class="tab" onclick="switchTab('passes')">Passes</div>
   <div class="tab" onclick="switchTab('fields')">Custom Fields</div>
+  <div class="tab" onclick="switchTab('photos')">Photos</div>
 </div>
 
 <!-- QUEUE -->
@@ -471,6 +472,28 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 </div>
 
 <!-- CUSTOM FIELDS -->
+<div class="tab-content" id="tab-photos">
+  <div class="section-label">Photo Overlays</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Upload PNG overlay images (transparent background) to composite onto photo booth shots.</p>
+  <div class="add-form" style="margin-bottom:20px;">
+    <input type="text" id="new-overlay-name" placeholder="Overlay name e.g. Gold Frame" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;font-family:inherit;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <label style="font-size:13px;font-weight:700;color:#555;white-space:nowrap;">PNG file:</label>
+      <input type="file" id="overlay-file-input" accept="image/png,image/gif,image/webp" style="flex:1;font-size:13px;">
+    </div>
+    <div id="overlay-preview-wrap" style="display:none;margin-bottom:10px;">
+      <img id="overlay-preview" style="max-height:120px;border-radius:8px;border:1px solid #e0e0e0;">
+    </div>
+    <button class="btn full" onclick="uploadOverlay()">+ Upload Overlay</button>
+  </div>
+  <div class="section-label">Uploaded Overlays</div>
+  <div id="overlays-list"></div>
+
+  <div class="section-label" style="margin-top:24px;">All Photos</div>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Photos taken in the photo booth. Guests see these in their app.</p>
+  <div id="admin-photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;"></div>
+</div>
+
 <div class="tab-content" id="tab-fields">
   <div class="section-label">Custom Info Fields</div>
   <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab.</p>
@@ -543,12 +566,12 @@ const BASE_URL = location.origin;
 const BADGES = ['', 'Eddie +', 'VIP', 'Staff', 'Press'];
 
 // ---- Tab switching ----
-const TAB_NAMES = ['queue','guests','schedule','help','accommodations','buttons','polls','reasons','notices','passes','fields'];
+const TAB_NAMES = ['queue','guests','schedule','help','accommodations','buttons','polls','reasons','notices','passes','fields','photos'];
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, accommodations: loadAccommodations, buttons: loadButtons, polls: loadPolls, reasons: loadReasons, notices: loadNotices, passes: loadPasses, fields: loadCustomFields };
+  const loaders = { queue: loadQueue, guests: loadGuests, schedule: loadSchedule, help: loadHelp, accommodations: loadAccommodations, buttons: loadButtons, polls: loadPolls, reasons: loadReasons, notices: loadNotices, passes: loadPasses, fields: loadCustomFields, photos: loadAdminPhotos };
   if (loaders[name]) loaders[name]();
   if (name === 'help') clearHelpAlert();
 }
@@ -1974,6 +1997,89 @@ async function deleteCustomField(id) {
   if (!confirm('Remove this field? All guest values for it will be deleted.')) return;
   await fetch('/api/custom-fields', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
   loadCustomFields();
+}
+
+// ---- PHOTO OVERLAYS ----
+let _overlaysList = [];
+
+document.getElementById('overlay-file-input')?.addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wrap = document.getElementById('overlay-preview-wrap');
+    document.getElementById('overlay-preview').src = e.target.result;
+    wrap.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+async function uploadOverlay() {
+  const name = document.getElementById('new-overlay-name').value.trim();
+  const file = document.getElementById('overlay-file-input').files[0];
+  if (!name) return alert('Enter a name');
+  if (!file) return alert('Choose a file');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    await fetch('/api/overlays', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, imageData: e.target.result })});
+    document.getElementById('new-overlay-name').value = '';
+    document.getElementById('overlay-file-input').value = '';
+    document.getElementById('overlay-preview-wrap').style.display = 'none';
+    loadAdminPhotos();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadAdminPhotos() {
+  // Load overlays
+  try {
+    _overlaysList = await (await fetch('/api/overlays')).json();
+    const el = document.getElementById('overlays-list');
+    if (!_overlaysList.length) {
+      el.innerHTML = '<div class="empty">No overlays uploaded yet.</div>';
+    } else {
+      el.innerHTML = _overlaysList.map(o => `
+        <div class="config-item" style="align-items:center;">
+          <div style="width:48px;height:48px;border-radius:8px;background:#f0f0f0;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <img src="/api/overlays?id=${o.id}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'">
+          </div>
+          <div style="flex:1;padding-left:4px;">
+            <div class="ci-label">${esc(o.name)}</div>
+            <div style="font-size:12px;color:#aaa;">${timeAgo(o.created_at)}</div>
+          </div>
+          <button class="btn small red" onclick="deleteOverlay('${o.id}')">Remove</button>
+        </div>`).join('');
+    }
+  } catch(e) {}
+
+  // Load recent photos
+  try {
+    const res = await fetch('/api/photos?guestId=ALL');
+    // Since ALL isn't a guest ID, we need a different approach — fetch all photos
+    // Use admin endpoint
+    const photos = await (await fetch('/api/photos?admin=1')).json();
+    const grid = document.getElementById('admin-photos-grid');
+    if (!photos.length) {
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No photos taken yet.</div>';
+    } else {
+      grid.innerHTML = photos.map(p => `
+        <div style="aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:#e0e0e0;position:relative;">
+          <img src="${p.image_data}" style="width:100%;height:100%;object-fit:cover;">
+          <button onclick="deletePhoto('${p.id}')" style="position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>`).join('');
+    }
+  } catch(e) {}
+}
+
+async function deleteOverlay(id) {
+  await fetch('/api/overlays', {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+  loadAdminPhotos();
+}
+
+async function deletePhoto(id) {
+  await fetch('/api/photos', {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+  loadAdminPhotos();
 }
 
 // ---- Help alert polling ----
