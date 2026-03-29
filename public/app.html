@@ -444,7 +444,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 <div class="photo-fullscreen" id="photo-fullscreen">
   <img id="photo-fs-img" src="" alt="">
   <div style="display:flex;gap:10px;margin-top:20px;width:100%;max-width:400px;">
-    <button class="photo-fs-close" style="flex:1;" onclick="savePhoto()">⬇ Save Photo</button>
+    <button class="photo-fs-close" style="flex:1;" onclick="savePhoto()">⬇ Save to Photos</button>
     <button class="photo-fs-close" style="flex:1;background:#333;color:#fff;" onclick="document.getElementById('photo-fullscreen').classList.remove('open')">Close</button>
   </div>
 </div>
@@ -993,11 +993,37 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     document.getElementById('photo-fullscreen').classList.add('open');
   }
 
-  function savePhoto() {
+  async function savePhoto() {
     const img = document.getElementById('photo-fs-img');
     if (!img.src) return;
-    // Create a download link — on mobile Safari this opens the image in a new tab
-    // where the user can long-press to save to Photos
+
+    // Convert base64 dataURL to a Blob/File for sharing
+    async function dataUrlToFile(dataUrl, filename) {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      return new File([blob], filename, { type: blob.type || 'image/jpeg' });
+    }
+
+    // Try Web Share API first — shows native iOS/Android share sheet
+    // which includes "Save Image" / "Save to Photos"
+    if (navigator.share && navigator.canShare) {
+      try {
+        const file = await dataUrlToFile(img.src, 'eddies-2025-photo.jpg');
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "The Eddie's 2025",
+            text: "My photo from The Eddie's 2025"
+          });
+          return;
+        }
+      } catch(e) {
+        if (e.name === 'AbortError') return; // user cancelled — don't fall through
+      }
+    }
+
+    // Fallback: open image in new tab — user can long-press to save on iOS
+    // or it downloads on Android/desktop
     const a = document.createElement('a');
     a.href = img.src;
     a.download = 'eddies-2025-photo.jpg';
