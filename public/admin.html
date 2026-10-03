@@ -177,7 +177,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .cf-head { display: flex; align-items: flex-start; gap: 12px; }
 .cf-head .ci-emoji { font-size: 22px; line-height: 1.2; }
 .cf-meta { font-size: 11px; color: #aaa; margin-top: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-.cf-desc { font-size: 13px; color: #666; margin-top: 8px; white-space: pre-wrap; background: #fffbe6; border-left: 3px solid #ffd54f; padding: 6px 10px; border-radius: 6px; }
+.cf-desc { font-size: 13px; color: #666; margin-top: 6px; white-space: pre-wrap; }
 .cf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .cf-chip { font-size: 12px; font-weight: 700; background: #f0f0f0; color: #555; border-radius: 6px; padding: 3px 8px; }
 .cf-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
@@ -514,9 +514,10 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 <div class="tab-content" id="tab-fields">
   <div class="section-label">Custom Info Fields</div>
-  <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab. Add a private note to remember what each one is for — guests never see it.</p>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab. Give each one an icon and a description — both are shown to guests.</p>
   <div class="add-form">
     <div class="add-form-row" style="margin-bottom:8px;">
+      <input type="text" id="new-field-emoji" placeholder="🎟️" style="flex:0 0 72px;width:72px;text-align:center;font-size:22px;">
       <input type="text" id="new-field-label" placeholder="Field label e.g. Meal Choice" style="flex:1;">
       <select id="new-field-type" onchange="renderNewFieldOptions()" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
         <option value="text">Text input</option>
@@ -525,7 +526,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
         <option value="multiselect">Multi-select (pick many)</option>
       </select>
     </div>
-    <input type="text" id="new-field-desc" placeholder="Note to self (optional) e.g. Used for catering headcount">
+    <input type="text" id="new-field-desc" placeholder="Description (optional, shown to guests) e.g. Let us know any allergies">
     <div id="new-field-options"></div>
     <button class="btn full" style="margin-top:6px;" onclick="addCustomField()">+ Add Field</button>
   </div>
@@ -2070,11 +2071,11 @@ async function loadCustomFields() {
     return `
     <div class="cf-card" id="cf-${f.id}">
       <div class="cf-head">
-        <span class="ci-emoji">${info.icon}</span>
+        <span class="ci-emoji">${f.icon ? esc(f.icon) : info.icon}</span>
         <div style="flex:1;min-width:0;">
           <div class="ci-label">${esc(f.label)}</div>
           <div class="cf-meta">${info.name}</div>
-          ${f.description ? `<div class="cf-desc">📝 ${esc(f.description)}</div>` : ''}
+          ${f.description ? `<div class="cf-desc">${esc(f.description)}</div>` : ''}
           ${chips ? `<div class="cf-chips">${chips}</div>` : ''}
         </div>
         <div class="cf-btns">
@@ -2085,10 +2086,13 @@ async function loadCustomFields() {
         </div>
       </div>
       <div class="cf-edit" id="cf-edit-${f.id}">
-        <label class="cf-label">Label</label>
-        <input type="text" id="cfe-${f.id}-label" value="${esc(f.label)}">
-        <label class="cf-label">Note to self</label>
-        <textarea id="cfe-${f.id}-desc" rows="2" placeholder="What is this field for? (only you see this)">${esc(f.description || '')}</textarea>
+        <label class="cf-label">Icon &amp; label</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cfe-${f.id}-icon" value="${esc(f.icon || '')}" placeholder="🎟️" style="flex:0 0 72px;width:72px;text-align:center;font-size:22px;">
+          <input type="text" id="cfe-${f.id}-label" value="${esc(f.label)}" style="flex:1;">
+        </div>
+        <label class="cf-label">Description (shown to guests)</label>
+        <textarea id="cfe-${f.id}-desc" rows="2" placeholder="Explain this field to guests (optional)">${esc(f.description || '')}</textarea>
         <div class="cf-locked">Type: ${info.name} <span style="color:#aaa;font-weight:500;">(can't be changed — remove and re-add to switch)</span></div>
         ${fieldOptionsEditor(f.field_type, f.options, 'cfe-' + f.id)}
         ${(f.field_type === 'dropdown' || f.field_type === 'multiselect') ? '<div class="cf-hint">Removing an option doesn\'t clear it from guests who already have it saved.</div>' : ''}
@@ -2109,14 +2113,16 @@ async function addCustomField() {
   const label = document.getElementById('new-field-label').value.trim();
   const field_type = document.getElementById('new-field-type').value;
   const description = document.getElementById('new-field-desc').value.trim();
+  const icon = document.getElementById('new-field-emoji').value.trim();
   if (!label) return alert('Label required');
   const options = readFieldOptions(field_type, 'nf');
   if (options === undefined) return;
-  const body = { action: 'create', label, field_type, description };
+  const body = { action: 'create', label, field_type, description, icon };
   if (options !== null) body.options = options;
   if (!await cfRequest('POST', body)) return;
   document.getElementById('new-field-label').value = '';
   document.getElementById('new-field-desc').value = '';
+  document.getElementById('new-field-emoji').value = '';
   renderNewFieldOptions();
   loadCustomFields();
 }
@@ -2126,10 +2132,11 @@ async function saveCustomField(id) {
   if (!f) return;
   const label = document.getElementById(`cfe-${id}-label`).value.trim();
   const description = document.getElementById(`cfe-${id}-desc`).value.trim();
+  const icon = document.getElementById(`cfe-${id}-icon`).value.trim();
   if (!label) return alert('Label required');
   const options = readFieldOptions(f.field_type, 'cfe-' + id);
   if (options === undefined) return;
-  const body = { id, label, description };
+  const body = { id, label, description, icon };
   if (options !== null) body.options = options;
   if (!await cfRequest('PATCH', body)) return;
   loadCustomFields();
