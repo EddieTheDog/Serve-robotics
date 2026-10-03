@@ -1,9 +1,9 @@
 // GET              → list all field definitions (options parsed)
 // GET ?guestId=xxx  → list fields + this guest's values (parsed by type)
-// POST action=create    → create a field: { label, field_type, options?, description?, icon? }
+// POST action=create    → create a field: { label, field_type, options?, description?, icon?, depends_on? }
 // POST action=set-value → save a guest's value: { guestId, fieldId, value }
 // PATCH             → reorder: { items: [{id, sort_order}] }
-//                     OR edit:  { id, label?, description?, icon?, options? }
+//                     OR edit:  { id, label?, description?, icon?, options?, depends_on? }
 // DELETE            → delete a field definition: { id }
 //
 // field_type: 'text' | 'checkbox' | 'dropdown' | 'multiselect'
@@ -27,6 +27,7 @@
 //   ALTER TABLE custom_fields ADD COLUMN options TEXT;
 //   ALTER TABLE custom_fields ADD COLUMN description TEXT;   -- public description shown to guests
 //   ALTER TABLE custom_fields ADD COLUMN icon TEXT;          -- emoji, like passes
+//   ALTER TABLE custom_fields ADD COLUMN depends_on TEXT;    -- id of a checkbox field; this field only shows when it's checked
 
 const FIELD_TYPES = ['text', 'checkbox', 'dropdown', 'multiselect'];
 
@@ -97,6 +98,25 @@ function deserializeValue(field, stored) {
   }
 }
 
+// Validate a depends_on target. Returns { error } or { value } (a field id, or null).
+// Rules: must be an existing checkbox field that isn't itself conditional, and a field
+// that other fields depend on can't become conditional (keeps it to one level).
+async function checkDependsOn(env, fieldId, dependsOn) {
+  if (dependsOn === undefined || dependsOn === null || dependsOn === '') return { value: null };
+  if (dependsOn === fieldId) return { error: 'A field cannot depend on itself' };
+  const parent = await env.DB.prepare(
+    `SELECT id, field_type, depends_on FROM custom_fields WHERE id = ?`
+  ).bind(dependsOn).first();
+  if (!parent) return { error: 'The field it depends on no longer exists' };
+  if (parent.field_type !== 'checkbox') return { error: 'A field can only depend on a checkbox field' };
+  if (parent.depends_on) return { error: 'That checkbox is itself conditional — pick a top-level checkbox' };
+  if (fieldId) {
+    const child = await env.DB.prepare(`SELECT id FROM custom_fields WHERE depends_on = ? LIMIT 1`).bind(fieldId).first();
+    if (child) return { error: 'Other fields depend on this one, so it cannot be conditional itself' };
+  }
+  return { value: dependsOn };
+}
+
 function emptyValue(field) {
   return deserializeValue(field, undefined);
 }
@@ -106,7 +126,7 @@ export async function onRequestGet({ request, env }) {
   const guestId = url.searchParams.get('guestId');
 
   const { results: rows } = await env.DB.prepare(`
-    SELECT id, label, field_type, options, description, icon, sort_order FROM custom_fields ORDER BY sort_order ASC
+    SELECT id, label, field_type, options, description, icon, depends_on, sort_order FROM custom_fields ORDER BY sort_order ASC
   `).all();
 
   const fields = rows.map(f => ({ ...f, options: parseJSON(f.options) }));
@@ -143,12 +163,30 @@ export async function onRequestPost({ request, env }) {
 
     const id = crypto.randomUUID();
     const now = Date.now();
-    const { results: existing } = await env.DB.prepare(`SELECT MAX(sort_order) as m FROM custom_fields`).all();
-    const nextOrder = (existing[0]?.m ?? -1) + 1;
 
-    await env.DB.prepare(`
-      INSERT INTO custom_fields (id, label, field_type, options, description, icon, sort_order, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    const dep = await checkDependsOn(env, id, body.depends_on);
+    if (dep.error) return new Response(dep.error, { status: 400 });
+
+    // Position: end of the list, or (for a conditional field) right after its checkbox
+    // and that checkbox's existing conditional fields.
+    const { results: order } = await env.DB.prepare(
+      `SELECT id, depends_on FROM custom_fields ORDER BY sort_order ASC`
+    ).all();
+    let insertAt = order.length;
+    if (dep.value) {
+      let last = order.findIndex(f => f.id === dep.value);
+      for (let i = last + 1; i < order.length; i++) if (order[i].depends_on === dep.value) last = i;
+      insertAt = last + 1;
+    }
+
+    const stmts = [];
+    // Renumber everything so there are no gaps/duplicates, leaving a slot for the new field
+    order.forEach((f, i) => {
+      stmts.push(env.DB.prepare(`UPDATE custom_fields SET sort_order = ? WHERE id = ?`).bind(i < insertAt ? i : i + 1, f.id));
+    });
+    stmts.push(env.DB.prepare(`
+      INSERT INTO custom_fields (id, label, field_type, options, description, icon, depends_on, sort_order, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       id,
       String(label).trim(),
@@ -156,9 +194,11 @@ export async function onRequestPost({ request, env }) {
       norm.options === null ? null : JSON.stringify(norm.options),
       String(body.description ?? '').trim() || null,
       String(body.icon ?? '').trim().slice(0, 16) || null,
-      nextOrder,
+      dep.value,
+      insertAt,
       now
-    ).run();
+    ));
+    await env.DB.batch(stmts);
 
     return Response.json({ success: true, id });
   }
@@ -202,14 +242,30 @@ export async function onRequestPatch({ request, env }) {
     return Response.json({ success: true });
   }
 
-  if (body.id && (body.label !== undefined || body.options !== undefined || body.description !== undefined || body.icon !== undefined)) {
+  if (body.id && (body.label !== undefined || body.options !== undefined || body.description !== undefined || body.icon !== undefined || body.depends_on !== undefined)) {
     const field = await env.DB.prepare(
       `SELECT id, field_type FROM custom_fields WHERE id = ?`
     ).bind(body.id).first();
     if (!field) return new Response('Field not found', { status: 404 });
 
+    // Validate everything first so a bad value doesn't leave the field half-updated
+    if (body.label !== undefined && !String(body.label).trim()) return new Response('Label cannot be empty', { status: 400 });
+    let norm = null;
+    if (body.options !== undefined) {
+      norm = normalizeOptions(field.field_type, body.options);
+      if (norm.error) return new Response(norm.error, { status: 400 });
+    }
+    let dep = null;
+    if (body.depends_on !== undefined) {
+      dep = await checkDependsOn(env, body.id, body.depends_on);
+      if (dep.error) return new Response(dep.error, { status: 400 });
+    }
+
+    if (dep) {
+      await env.DB.prepare(`UPDATE custom_fields SET depends_on = ? WHERE id = ?`).bind(dep.value, body.id).run();
+    }
+
     if (body.label !== undefined) {
-      if (!String(body.label).trim()) return new Response('Label cannot be empty', { status: 400 });
       await env.DB.prepare(`UPDATE custom_fields SET label = ? WHERE id = ?`)
         .bind(String(body.label).trim(), body.id).run();
     }
@@ -224,9 +280,7 @@ export async function onRequestPatch({ request, env }) {
         .bind(String(body.icon ?? '').trim().slice(0, 16) || null, body.id).run();
     }
 
-    if (body.options !== undefined) {
-      const norm = normalizeOptions(field.field_type, body.options);
-      if (norm.error) return new Response(norm.error, { status: 400 });
+    if (norm) {
       await env.DB.prepare(`UPDATE custom_fields SET options = ? WHERE id = ?`)
         .bind(norm.options === null ? null : JSON.stringify(norm.options), body.id).run();
     }
@@ -240,6 +294,8 @@ export async function onRequestPatch({ request, env }) {
 export async function onRequestDelete({ request, env }) {
   const { id } = await request.json();
   if (!id) return new Response('Missing id', { status: 400 });
+  // Fields that depended on this one become always-visible
+  await env.DB.prepare(`UPDATE custom_fields SET depends_on = NULL WHERE depends_on = ?`).bind(id).run();
   await env.DB.prepare(`DELETE FROM custom_fields WHERE id = ?`).bind(id).run();
   await env.DB.prepare(`DELETE FROM guest_field_values WHERE field_id = ?`).bind(id).run();
   return Response.json({ success: true });
