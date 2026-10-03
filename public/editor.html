@@ -263,6 +263,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 }
 /* Custom field inputs */
 select.field-input { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' stroke='%23888' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") no-repeat right 14px center; padding-right: 38px; }
+.field-desc { font-size: 13px; color: #888; margin: -4px 0 12px; line-height: 1.4; white-space: pre-wrap; }
 .cf-multi-hint { font-size: 11px; color: #aaa; margin-top: 8px; }
 </style>
 </head>
@@ -601,7 +602,7 @@ function renderCustomFieldCard(f, val) {
   } else {
     input = `<input type="text" class="field-input" id="cf-${f.id}" value="${esc(val)}" placeholder="${esc(f.label)}..." autocomplete="off">`;
   }
-  return `<div class="field-card"><div class="field-label">${esc(f.label)}</div>${input}</div>`;
+  return `<div class="field-card"><div class="field-label">${f.icon ? esc(f.icon) + ' ' : ''}${esc(f.label)}</div>${f.description ? `<div class="field-desc">${esc(f.description)}</div>` : ''}${input}</div>`;
 }
 
 function renderCfMulti(fid) {
