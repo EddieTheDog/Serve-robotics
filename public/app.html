@@ -110,6 +110,23 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .info-icon { font-size: 22px; width: 32px; text-align: center; flex-shrink: 0; }
 .info-row span { font-size: 16px; font-weight: 500; }
 
+/* Custom fields ("Your Details") */
+.cfx-card { background: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; gap: 14px; align-items: flex-start; }
+.cfx-card.priority { border: 2px solid #ff6b00; background: #fff8f2; padding: 12px 14px; }
+.cfx-icon { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.cfx-card.priority .cfx-icon { background: #ff6b00; }
+.cfx-body { flex: 1; min-width: 0; }
+.cfx-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cfx-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #888; }
+.cfx-priority { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; background: #ff6b00; color: #fff; border-radius: 6px; padding: 2px 7px; }
+.cfx-desc { font-size: 13px; color: #999; margin-top: 2px; line-height: 1.35; }
+.cfx-value { margin-top: 8px; }
+.cfx-text { font-size: 17px; font-weight: 600; color: #000; word-break: break-word; white-space: pre-wrap; }
+.cfx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cfx-pill { display: inline-block; font-size: 14px; font-weight: 700; background: #000; color: #fff; border-radius: 20px; padding: 5px 13px; }
+.cfx-pill.on { background: #34c759; }
+.cfx-pill.off { background: #e0e0e0; color: #555; }
+
 /* Notice modal */
 #notice-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 400; align-items: center; justify-content: center; padding: 32px 24px; }
 #notice-overlay.open { display: flex; }
@@ -639,18 +656,82 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     // Passes toggle starts open
     document.getElementById('passes-toggle')?.classList.add('is-open');
 
-    // Custom fields
-    const cfWrap = document.getElementById('custom-fields-info-wrap');
-    const fields = (g.custom_fields || []).filter(f => f.value && f.value !== 'no');
-    if (!fields.length) { cfWrap.innerHTML = ''; }
-    else {
-      cfWrap.innerHTML = `<div class="card">` +
-        fields.map(f => {
-          const display = f.field_type === 'checkbox' ? `✓ ${esc(f.label)}` : esc(f.value);
-          const icon = f.field_type === 'checkbox' ? '☑️' : 'ℹ️';
-          return `<div class="info-row"><div class="info-icon">${icon}</div><span>${display}</span></div>`;
-        }).join('') + `</div>`;
+    // Custom fields ("Your Details")
+    renderCustomFields();
+  }
+
+  // ── Custom fields ("Your Details") ──
+  // A label containing * is a priority field: the asterisk is stripped, and the
+  // field is pinned to the top of the section with a "Priority 1" tag.
+  const CFX_DEFAULT_ICONS = { text: 'ℹ️', checkbox: '☑️', dropdown: '🔽', multiselect: '🗂️' };
+
+  function cfxParse(f) {
+    const type = f.field_type || 'text';
+    const value = f.value;
+    if (type === 'checkbox') {
+      const o = (f.options && !Array.isArray(f.options)) ? f.options : {};
+      const on = value === true || ['1', 'yes', 'true'].includes(String(value || '').toLowerCase());
+      const onLabel = o.checked || 'Yes';
+      const offLabel = o.unchecked || 'No';
+      // Hide an unchecked checkbox unless it has a custom "unchecked" wording (e.g. "Unpaid")
+      return { show: on || offLabel.trim().toLowerCase() !== 'no', kind: 'checkbox', on, text: on ? onLabel : offLabel };
     }
+    if (type === 'multiselect') {
+      let arr = value;
+      if (!Array.isArray(arr)) { try { arr = JSON.parse(value || '[]'); } catch(e) { arr = []; } }
+      arr = Array.isArray(arr) ? arr.map(String).filter(Boolean) : [];
+      return { show: arr.length > 0, kind: 'multi', list: arr };
+    }
+    const text = String(value == null ? '' : value).trim();
+    return { show: !!text, kind: type === 'dropdown' ? 'dropdown' : 'text', text };
+  }
+
+  function cfxCard(it) {
+    const v = it.parsed;
+    let valueHtml;
+    if (v.kind === 'checkbox') valueHtml = `<span class="cfx-pill ${v.on ? 'on' : 'off'}">${v.on ? '✓ ' : ''}${esc(v.text)}</span>`;
+    else if (v.kind === 'multi') valueHtml = `<div class="cfx-chips">${v.list.map(x => `<span class="cfx-pill">${esc(x)}</span>`).join('')}</div>`;
+    else if (v.kind === 'dropdown') valueHtml = `<span class="cfx-pill">${esc(v.text)}</span>`;
+    else valueHtml = `<div class="cfx-text">${esc(v.text)}</div>`;
+    return `<div class="cfx-card${it.priority ? ' priority' : ''}">
+      <div class="cfx-icon">${esc(it.icon)}</div>
+      <div class="cfx-body">
+        <div class="cfx-head">
+          <span class="cfx-name">${esc(it.label)}</span>
+          ${it.priority ? '<span class="cfx-priority">Priority 1</span>' : ''}
+        </div>
+        ${it.description ? `<div class="cfx-desc">${esc(it.description)}</div>` : ''}
+        <div class="cfx-value">${valueHtml}</div>
+      </div>
+    </div>`;
+  }
+
+  async function renderCustomFields() {
+    const wrap = document.getElementById('custom-fields-info-wrap');
+    if (!wrap || !guestData) return;
+    let fields = null;
+    try {
+      const res = await fetch(`/api/custom-fields?guestId=${encodeURIComponent(guestData.id)}`);
+      if (res.ok) fields = await res.json();
+    } catch(e) {}
+    if (!Array.isArray(fields)) fields = guestData.custom_fields || []; // fallback
+
+    const items = fields.map(f => {
+      const raw = String(f.label || '');
+      const priority = raw.includes('*');
+      const label = raw.replace(/\*/g, '').replace(/\s+/g, ' ').trim() || 'Info';
+      return {
+        label, priority,
+        icon: f.icon || CFX_DEFAULT_ICONS[f.field_type] || CFX_DEFAULT_ICONS.text,
+        description: f.description || '',
+        parsed: cfxParse(f),
+      };
+    }).filter(it => it.parsed.show);
+
+    if (!items.length) { wrap.innerHTML = ''; return; }
+    // Priority fields first, otherwise keep the admin's order
+    const ordered = [...items.filter(i => i.priority), ...items.filter(i => !i.priority)];
+    wrap.innerHTML = `<div class="section-label">Your Details</div>` + ordered.map(cfxCard).join('');
   }
 
   // Schedule
