@@ -113,6 +113,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 /* Custom fields ("Your Details") */
 .cfx-card { background: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; gap: 14px; align-items: flex-start; }
 .cfx-card.inline { align-items: center; }
+.cfx-card.child { margin-left: 18px; border-left: 3px solid #d0d0d6; }
 .cfx-icon { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .cfx-body { flex: 1; min-width: 0; }
 .cfx-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -698,7 +699,7 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     else if (v.kind === 'multi') valueHtml = `<div class="cfx-chips">${v.list.map(x => `<span class="cfx-pill">${esc(x)}</span>`).join('')}</div>`;
     else if (v.kind === 'dropdown') valueHtml = `<span class="cfx-pill">${esc(v.text)}</span>`;
     else valueHtml = `<div class="cfx-text">${esc(v.text)}</div>`;
-    return `<div class="cfx-card${isCheck ? ' inline' : ''}">
+    return `<div class="cfx-card${isCheck ? ' inline' : ''}${it.child ? ' child' : ''}">
       <div class="cfx-icon">${esc(it.icon)}</div>
       <div class="cfx-body">
         <div class="cfx-head">
@@ -721,10 +722,26 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     } catch(e) {}
     if (!Array.isArray(fields)) fields = guestData.custom_fields || []; // fallback
 
-    const items = fields.map(f => {
+    // Follow-up fields only count when their checkbox is checked
+    const byId = Object.fromEntries(fields.map(f => [f.id, f]));
+    const parentOn = f => {
+      const p = f.depends_on ? byId[f.depends_on] : null;
+      return !f.depends_on || (p ? ['1', 'yes', 'true'].includes(String(p.value === true ? 'true' : (p.value || '')).toLowerCase()) : true);
+    };
+    const visible = fields.filter(parentOn);
+    // Each follow-up sits right under its checkbox
+    const ids = new Set(visible.map(f => f.id));
+    const ordered = [];
+    visible.filter(f => !f.depends_on || !ids.has(f.depends_on)).forEach(f => {
+      ordered.push(f);
+      visible.filter(c => c.depends_on === f.id).forEach(c => ordered.push(c));
+    });
+
+    const items = ordered.map(f => {
       const label = String(f.label || '').trim() || 'Info';
       return {
         label,
+        child: !!f.depends_on,
         icon: f.icon || CFX_DEFAULT_ICONS[f.field_type] || CFX_DEFAULT_ICONS.text,
         description: f.description || '',
         parsed: cfxParse(f),
