@@ -12,6 +12,7 @@
 // Requires custom_fields.options (see the custom fields endpoint):
 //   ALTER TABLE custom_fields ADD COLUMN options TEXT;
 //   ALTER TABLE custom_fields ADD COLUMN description TEXT;
+//   ALTER TABLE custom_fields ADD COLUMN icon TEXT;
 
 function parseJSON(str, fallback = null) {
   if (str === null || str === undefined || str === '') return fallback;
@@ -70,7 +71,7 @@ export async function onRequestGet({ env }) {
   `).all();
 
   const { results: fieldRows } = await env.DB.prepare(`
-    SELECT id, label, field_type, options, description, sort_order FROM custom_fields ORDER BY sort_order ASC
+    SELECT id, label, field_type, options, description, icon, sort_order FROM custom_fields ORDER BY sort_order ASC
   `).all();
 
   const fields = fieldRows.map(f => ({ ...f, options: parseJSON(f.options) }));
