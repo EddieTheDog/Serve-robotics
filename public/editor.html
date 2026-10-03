@@ -263,6 +263,7 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 }
 /* Custom field inputs */
 select.field-input { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' stroke='%23888' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") no-repeat right 14px center; padding-right: 38px; }
+.field-card.cf-child { margin-left: 18px; border-left: 3px solid #d0d0d6; }
 .field-desc { font-size: 13px; color: #888; margin: -4px 0 12px; line-height: 1.4; white-space: pre-wrap; }
 .cf-multi-hint { font-size: 11px; color: #aaa; margin-top: 8px; }
 </style>
@@ -465,8 +466,9 @@ function openEditor(guest) {
   cfMulti = {};
   const fv = guest.fieldValues || {};
   customFields.forEach(f => { if (f.field_type === 'multiselect') cfMulti[f.id] = cfValidMulti(f, fv[f.id]); });
-  document.getElementById('custom-fields-wrap').innerHTML = customFields.map(f => renderCustomFieldCard(f, fv[f.id])).join('');
+  document.getElementById('custom-fields-wrap').innerHTML = orderCfFields(customFields).map(f => renderCustomFieldCard(f, fv[f.id])).join('');
   customFields.forEach(f => { if (f.field_type === 'multiselect') renderCfMulti(f.id); });
+  updateCfVisibility();
 
   renderEditorPassChips();
 
@@ -587,7 +589,7 @@ function renderCustomFieldCard(f, val) {
     const on = val === true;
     input = `<label class="checkbox-row">
       <input type="checkbox" id="cf-${f.id}" ${on ? 'checked' : ''} data-on="${esc(L.on)}" data-off="${esc(L.off)}"
-        onchange="document.getElementById('cf-${f.id}-lbl').textContent = this.checked ? this.dataset.on : this.dataset.off">
+        onchange="document.getElementById('cf-${f.id}-lbl').textContent = this.checked ? this.dataset.on : this.dataset.off; updateCfVisibility()">
       <span class="checkbox-row-label" id="cf-${f.id}-lbl">${esc(on ? L.on : L.off)}</span>
     </label>`;
   } else if (f.field_type === 'dropdown') {
@@ -602,7 +604,30 @@ function renderCustomFieldCard(f, val) {
   } else {
     input = `<input type="text" class="field-input" id="cf-${f.id}" value="${esc(val)}" placeholder="${esc(f.label)}..." autocomplete="off">`;
   }
-  return `<div class="field-card"><div class="field-label">${f.icon ? esc(f.icon) + ' ' : ''}${esc(f.label)}</div>${f.description ? `<div class="field-desc">${esc(f.description)}</div>` : ''}${input}</div>`;
+  return `<div class="field-card${f.depends_on ? ' cf-child' : ''}" id="cfcard-${f.id}"><div class="field-label">${f.icon ? esc(f.icon) + ' ' : ''}${esc(f.label)}</div>${f.description ? `<div class="field-desc">${esc(f.description)}</div>` : ''}${input}</div>`;
+}
+
+// Follow-up fields: shown only while their checkbox is checked
+function cfParentOn(f) {
+  const el = f.depends_on ? document.getElementById(`cf-${f.depends_on}`) : null;
+  return !!(el && el.checked);
+}
+function updateCfVisibility() {
+  customFields.forEach(f => {
+    if (!f.depends_on) return;
+    const card = document.getElementById(`cfcard-${f.id}`);
+    if (card) card.style.display = cfParentOn(f) ? '' : 'none';
+  });
+}
+// Display order: each follow-up field sits right under its checkbox
+function orderCfFields(list) {
+  const ids = new Set(list.map(f => f.id));
+  const out = [];
+  list.filter(f => !f.depends_on || !ids.has(f.depends_on)).forEach(f => {
+    out.push(f);
+    list.filter(c => c.depends_on === f.id).forEach(c => out.push(c));
+  });
+  return out;
 }
 
 function renderCfMulti(fid) {
@@ -645,6 +670,7 @@ function collectFormData() {
   const accom_enabled = autoAccom ? 1 : (accomEl ? (accomEl.checked ? 1 : 0) : 0);
   const fieldValues = {};
   customFields.forEach(f => {
+    if (f.depends_on && !cfParentOn(f)) return; // hidden follow-up: leave its saved value alone
     if (f.field_type === 'multiselect') { fieldValues[f.id] = cfMulti[f.id] || []; return; }
     const el = document.getElementById(`cf-${f.id}`);
     if (!el) return;
