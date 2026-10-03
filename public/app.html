@@ -112,14 +112,19 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 /* Custom fields ("Your Details") */
 .cfx-card { background: #fff; border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; gap: 14px; align-items: flex-start; }
-.cfx-card.priority { border: 2px solid #ff6b00; background: #fff8f2; padding: 12px 14px; }
+.cfx-card.priority { border: 2px solid rgba(255,59,48,0.35); padding: 12px 14px; }
+.cfx-card.inline { align-items: center; }
 .cfx-icon { width: 44px; height: 44px; border-radius: 10px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-.cfx-card.priority .cfx-icon { background: #ff6b00; }
 .cfx-body { flex: 1; min-width: 0; }
 .cfx-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .cfx-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #888; }
-.cfx-priority { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; background: #ff6b00; color: #fff; border-radius: 6px; padding: 2px 7px; }
-.cfx-desc { font-size: 13px; color: #999; margin-top: 2px; line-height: 1.35; }
+.cfx-card.inline .cfx-name { font-size: 16px; font-weight: 700; color: #000; text-transform: none; letter-spacing: 0; }
+.cfx-star { color: #ff3b30; font-size: 20px; font-weight: 800; line-height: 1; }
+.cfx-info-btn { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid #bbb; background: #fff; color: #888; font-size: 12px; font-weight: 700; font-style: italic; font-family: Georgia, serif; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.cfx-card.show-info .cfx-info-btn { background: #000; border-color: #000; color: #fff; }
+.cfx-side { flex-shrink: 0; margin-left: 8px; }
+.cfx-desc { display: none; font-size: 13px; color: #777; margin-top: 6px; line-height: 1.4; }
+.cfx-card.show-info .cfx-desc { display: block; }
 .cfx-value { margin-top: 8px; }
 .cfx-text { font-size: 17px; font-weight: 600; color: #000; word-break: break-word; white-space: pre-wrap; }
 .cfx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -688,21 +693,26 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
   function cfxCard(it) {
     const v = it.parsed;
+    const isCheck = v.kind === 'checkbox';
+    const star = it.priority ? '<span class="cfx-star" title="Priority">*</span>' : '';
+    const info = it.description
+      ? `<button type="button" class="cfx-info-btn" aria-label="More info" onclick="this.closest('.cfx-card').classList.toggle('show-info')">i</button>`
+      : '';
     let valueHtml;
-    if (v.kind === 'checkbox') valueHtml = `<span class="cfx-pill ${v.on ? 'on' : 'off'}">${v.on ? '✓ ' : ''}${esc(v.text)}</span>`;
+    if (isCheck) valueHtml = `<span class="cfx-pill ${v.on ? 'on' : 'off'}">${v.on ? '✓ ' : ''}${esc(v.text)}</span>`;
     else if (v.kind === 'multi') valueHtml = `<div class="cfx-chips">${v.list.map(x => `<span class="cfx-pill">${esc(x)}</span>`).join('')}</div>`;
     else if (v.kind === 'dropdown') valueHtml = `<span class="cfx-pill">${esc(v.text)}</span>`;
     else valueHtml = `<div class="cfx-text">${esc(v.text)}</div>`;
-    return `<div class="cfx-card${it.priority ? ' priority' : ''}">
+    return `<div class="cfx-card${it.priority ? ' priority' : ''}${isCheck ? ' inline' : ''}">
       <div class="cfx-icon">${esc(it.icon)}</div>
       <div class="cfx-body">
         <div class="cfx-head">
-          <span class="cfx-name">${esc(it.label)}</span>
-          ${it.priority ? '<span class="cfx-priority">Priority 1</span>' : ''}
+          <span class="cfx-name">${esc(it.label)}</span>${star}${info}
         </div>
         ${it.description ? `<div class="cfx-desc">${esc(it.description)}</div>` : ''}
-        <div class="cfx-value">${valueHtml}</div>
+        ${isCheck ? '' : `<div class="cfx-value">${valueHtml}</div>`}
       </div>
+      ${isCheck ? `<div class="cfx-side">${valueHtml}</div>` : ''}
     </div>`;
   }
 
