@@ -51,7 +51,7 @@ function serializeValue(field, value) {
 function deserializeValue(field, stored) {
   switch (field.field_type) {
     case 'checkbox':
-      return stored === '1' || stored === 'true';
+      return stored === '1' || stored === 'true' || stored === 'yes'; // 'yes' = legacy values
     case 'multiselect': {
       const arr = parseJSON(stored, []);
       return Array.isArray(arr) ? arr : [];
