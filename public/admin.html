@@ -172,6 +172,24 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .assign-chip.sel { background: #000; color: #fff; border-color: #000; }
 
 
+/* ── CUSTOM FIELDS ── */
+.cf-card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.cf-head { display: flex; align-items: flex-start; gap: 12px; }
+.cf-head .ci-emoji { font-size: 22px; line-height: 1.2; }
+.cf-meta { font-size: 11px; color: #aaa; margin-top: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.cf-desc { font-size: 13px; color: #666; margin-top: 8px; white-space: pre-wrap; background: #fffbe6; border-left: 3px solid #ffd54f; padding: 6px 10px; border-radius: 6px; }
+.cf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cf-chip { font-size: 12px; font-weight: 700; background: #f0f0f0; color: #555; border-radius: 6px; padding: 3px 8px; }
+.cf-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.cf-edit { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f0f0; }
+.cf-edit.open { display: block; }
+.cf-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; display: block; margin: 10px 0 4px; }
+.cf-edit input, .cf-edit textarea, .add-form textarea.cf-ta { width: 100%; padding: 10px 14px; font-size: 15px; border: 2px solid #e0e0e0; border-radius: 8px; outline: none; font-family: inherit; resize: vertical; margin-bottom: 4px; }
+.cf-edit input:focus, .cf-edit textarea:focus, .add-form textarea.cf-ta:focus { border-color: #000; }
+.cf-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cf-hint { font-size: 12px; color: #aaa; margin-bottom: 8px; }
+.cf-locked { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 4px; }
+
 </style>
 </head>
 <body>
@@ -496,17 +514,22 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 
 <div class="tab-content" id="tab-fields">
   <div class="section-label">Custom Info Fields</div>
-  <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab.</p>
+  <p style="font-size:14px;color:#888;margin-bottom:16px;">Define extra fields that staff fill in on the Editor page (e.g. "Meal choice", "Checked in", "T-shirt size"). They show up in the attendee's Info tab. Add a private note to remember what each one is for — guests never see it.</p>
   <div class="add-form">
     <div class="add-form-row" style="margin-bottom:8px;">
       <input type="text" id="new-field-label" placeholder="Field label e.g. Meal Choice" style="flex:1;">
-      <select id="new-field-type" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
+      <select id="new-field-type" onchange="renderNewFieldOptions()" style="padding:10px 14px;font-size:15px;border:2px solid #e0e0e0;border-radius:8px;outline:none;background:#fff;font-family:inherit;">
         <option value="text">Text input</option>
-        <option value="checkbox">Checkbox (yes/no)</option>
+        <option value="checkbox">Checkbox</option>
+        <option value="dropdown">Dropdown (pick one)</option>
+        <option value="multiselect">Multi-select (pick many)</option>
       </select>
     </div>
-    <button class="btn full" onclick="addCustomField()">+ Add Field</button>
+    <input type="text" id="new-field-desc" placeholder="Note to self (optional) e.g. Used for catering headcount">
+    <div id="new-field-options"></div>
+    <button class="btn full" style="margin-top:6px;" onclick="addCustomField()">+ Add Field</button>
   </div>
+  <div class="section-label">Your Fields</div>
   <div id="custom-fields-list"></div>
 </div>
 
@@ -1970,32 +1993,161 @@ function quickAssign(passName) {
 }
 
 // ---- CUSTOM FIELDS ----
+const FIELD_TYPES = {
+  text:        { icon: '✏️', name: 'Text input' },
+  checkbox:    { icon: '☑️', name: 'Checkbox' },
+  dropdown:    { icon: '🔽', name: 'Dropdown' },
+  multiselect: { icon: '🗂️', name: 'Multi-select' },
+};
+let _customFields = [];
+
+// Options editor UI for a field type. `prefix` namespaces the element ids.
+function fieldOptionsEditor(type, options, prefix) {
+  if (type === 'checkbox') {
+    const o = options || {};
+    return `
+      <div class="cf-pair">
+        <div><label class="cf-label">Checked label</label><input type="text" id="${prefix}-checked" value="${esc(o.checked || 'Yes')}" placeholder="Yes"></div>
+        <div><label class="cf-label">Unchecked label</label><input type="text" id="${prefix}-unchecked" value="${esc(o.unchecked || 'No')}" placeholder="No"></div>
+      </div>
+      <div class="cf-hint">What the checkbox says in each state, e.g. Paid / Unpaid.</div>`;
+  }
+  if (type === 'dropdown' || type === 'multiselect') {
+    const list = Array.isArray(options) ? options.join('\n') : '';
+    return `
+      <label class="cf-label">Options (one per line)</label>
+      <textarea class="cf-ta" id="${prefix}-options" rows="4" placeholder="Chicken&#10;Fish&#10;Vegetarian">${esc(list)}</textarea>
+      <div class="cf-hint">${type === 'multiselect' ? 'Staff can tick as many as apply.' : 'Staff picks exactly one.'}</div>`;
+  }
+  return '';
+}
+
+// Returns options for the type, null for text, or undefined if invalid (already alerted).
+function readFieldOptions(type, prefix) {
+  if (type === 'checkbox') {
+    return {
+      checked: document.getElementById(prefix + '-checked').value.trim() || 'Yes',
+      unchecked: document.getElementById(prefix + '-unchecked').value.trim() || 'No',
+    };
+  }
+  if (type === 'dropdown' || type === 'multiselect') {
+    const list = [...new Set(document.getElementById(prefix + '-options').value.split('\n').map(s => s.trim()).filter(Boolean))];
+    if (!list.length) { alert('Add at least one option (one per line)'); return undefined; }
+    return list;
+  }
+  return null;
+}
+
+function renderNewFieldOptions() {
+  const type = document.getElementById('new-field-type').value;
+  document.getElementById('new-field-options').innerHTML = fieldOptionsEditor(type, null, 'nf');
+}
+
+function fieldSummaryChips(f) {
+  if (f.field_type === 'checkbox') {
+    const o = f.options || {};
+    return `<span class="cf-chip">☑ ${esc(o.checked || 'Yes')}</span><span class="cf-chip">☐ ${esc(o.unchecked || 'No')}</span>`;
+  }
+  if (Array.isArray(f.options)) return f.options.map(o => `<span class="cf-chip">${esc(o)}</span>`).join('');
+  return '';
+}
+
+async function cfRequest(method, body) {
+  const res = await fetch('/api/custom-fields', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) { alert((await res.text()) || 'Something went wrong'); return false; }
+  return true;
+}
+
 async function loadCustomFields() {
   const res = await fetch('/api/custom-fields');
-  const fields = await res.json();
+  _customFields = await res.json();
+  if (!document.getElementById('new-field-options').innerHTML) renderNewFieldOptions();
   const el = document.getElementById('custom-fields-list');
-  if (!fields.length) { el.innerHTML = '<div class="empty">No custom fields yet. Add one above.</div>'; return; }
-  el.innerHTML = fields.map(f => `
-    <div class="config-item">
-      <span class="ci-emoji">${f.field_type === 'checkbox' ? '' : ''}</span>
-      <div style="flex:1;">
-        <div class="ci-label">${esc(f.label)}</div>
-        <div style="font-size:12px;color:#aaa;margin-top:2px;">${f.field_type === 'checkbox' ? 'Checkbox' : 'Text input'}</div>
+  if (!_customFields.length) { el.innerHTML = '<div class="empty">No custom fields yet. Add one above.</div>'; return; }
+  el.innerHTML = _customFields.map((f, i) => {
+    const info = FIELD_TYPES[f.field_type] || FIELD_TYPES.text;
+    const chips = fieldSummaryChips(f);
+    return `
+    <div class="cf-card" id="cf-${f.id}">
+      <div class="cf-head">
+        <span class="ci-emoji">${info.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="ci-label">${esc(f.label)}</div>
+          <div class="cf-meta">${info.name}</div>
+          ${f.description ? `<div class="cf-desc">📝 ${esc(f.description)}</div>` : ''}
+          ${chips ? `<div class="cf-chips">${chips}</div>` : ''}
+        </div>
+        <div class="cf-btns">
+          <button class="btn small gray" ${i === 0 ? 'disabled style="opacity:.3"' : ''} onclick="moveCustomField('${f.id}',-1)">▲</button>
+          <button class="btn small gray" ${i === _customFields.length - 1 ? 'disabled style="opacity:.3"' : ''} onclick="moveCustomField('${f.id}',1)">▼</button>
+          <button class="btn small" onclick="toggleCustomFieldEdit('${f.id}')">Edit</button>
+          <button class="btn small red" onclick="deleteCustomField('${f.id}')">Remove</button>
+        </div>
       </div>
-      <button class="btn small red" onclick="deleteCustomField('${f.id}')">Remove</button>
-    </div>`).join('');
+      <div class="cf-edit" id="cf-edit-${f.id}">
+        <label class="cf-label">Label</label>
+        <input type="text" id="cfe-${f.id}-label" value="${esc(f.label)}">
+        <label class="cf-label">Note to self</label>
+        <textarea id="cfe-${f.id}-desc" rows="2" placeholder="What is this field for? (only you see this)">${esc(f.description || '')}</textarea>
+        <div class="cf-locked">Type: ${info.name} <span style="color:#aaa;font-weight:500;">(can't be changed — remove and re-add to switch)</span></div>
+        ${fieldOptionsEditor(f.field_type, f.options, 'cfe-' + f.id)}
+        ${(f.field_type === 'dropdown' || f.field_type === 'multiselect') ? '<div class="cf-hint">Removing an option doesn\'t clear it from guests who already have it saved.</div>' : ''}
+        <div class="edit-btns" style="margin-top:8px;">
+          <button class="btn small green" onclick="saveCustomField('${f.id}')">Save</button>
+          <button class="btn small gray" onclick="toggleCustomFieldEdit('${f.id}')">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
+
+function toggleCustomFieldEdit(id) {
+  document.getElementById('cf-edit-' + id).classList.toggle('open');
+}
+
 async function addCustomField() {
   const label = document.getElementById('new-field-label').value.trim();
   const field_type = document.getElementById('new-field-type').value;
+  const description = document.getElementById('new-field-desc').value.trim();
   if (!label) return alert('Label required');
-  await fetch('/api/custom-fields', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',label,field_type})});
+  const options = readFieldOptions(field_type, 'nf');
+  if (options === undefined) return;
+  const body = { action: 'create', label, field_type, description };
+  if (options !== null) body.options = options;
+  if (!await cfRequest('POST', body)) return;
   document.getElementById('new-field-label').value = '';
+  document.getElementById('new-field-desc').value = '';
+  renderNewFieldOptions();
   loadCustomFields();
 }
+
+async function saveCustomField(id) {
+  const f = _customFields.find(x => x.id === id);
+  if (!f) return;
+  const label = document.getElementById(`cfe-${id}-label`).value.trim();
+  const description = document.getElementById(`cfe-${id}-desc`).value.trim();
+  if (!label) return alert('Label required');
+  const options = readFieldOptions(f.field_type, 'cfe-' + id);
+  if (options === undefined) return;
+  const body = { id, label, description };
+  if (options !== null) body.options = options;
+  if (!await cfRequest('PATCH', body)) return;
+  loadCustomFields();
+}
+
+async function moveCustomField(id, dir) {
+  const i = _customFields.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= _customFields.length) return;
+  [_customFields[i], _customFields[j]] = [_customFields[j], _customFields[i]];
+  const items = _customFields.map((f, idx) => ({ id: f.id, sort_order: idx }));
+  if (!await cfRequest('PATCH', { items })) return;
+  loadCustomFields();
+}
+
 async function deleteCustomField(id) {
   if (!confirm('Remove this field? All guest values for it will be deleted.')) return;
-  await fetch('/api/custom-fields', {method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  if (!await cfRequest('DELETE', { id })) return;
   loadCustomFields();
 }
 
