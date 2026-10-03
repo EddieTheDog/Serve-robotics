@@ -1,9 +1,9 @@
 // GET              → list all field definitions (options parsed)
 // GET ?guestId=xxx  → list fields + this guest's values (parsed by type)
-// POST action=create    → create a field: { label, field_type, options? }
+// POST action=create    → create a field: { label, field_type, options?, description? }
 // POST action=set-value → save a guest's value: { guestId, fieldId, value }
 // PATCH             → reorder: { items: [{id, sort_order}] }
-//                     OR edit:  { id, label?, options? }
+//                     OR edit:  { id, label?, description?, options? }
 // DELETE            → delete a field definition: { id }
 //
 // field_type: 'text' | 'checkbox' | 'dropdown' | 'multiselect'
@@ -25,6 +25,7 @@
 //
 // REQUIRED MIGRATION (run once):
 //   ALTER TABLE custom_fields ADD COLUMN options TEXT;
+//   ALTER TABLE custom_fields ADD COLUMN description TEXT;   -- private note for the admin
 
 const FIELD_TYPES = ['text', 'checkbox', 'dropdown', 'multiselect'];
 
@@ -104,7 +105,7 @@ export async function onRequestGet({ request, env }) {
   const guestId = url.searchParams.get('guestId');
 
   const { results: rows } = await env.DB.prepare(`
-    SELECT id, label, field_type, options, sort_order FROM custom_fields ORDER BY sort_order ASC
+    SELECT id, label, field_type, options, description, sort_order FROM custom_fields ORDER BY sort_order ASC
   `).all();
 
   const fields = rows.map(f => ({ ...f, options: parseJSON(f.options) }));
@@ -145,13 +146,14 @@ export async function onRequestPost({ request, env }) {
     const nextOrder = (existing[0]?.m ?? -1) + 1;
 
     await env.DB.prepare(`
-      INSERT INTO custom_fields (id, label, field_type, options, sort_order, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO custom_fields (id, label, field_type, options, description, sort_order, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
       id,
       String(label).trim(),
       field_type,
       norm.options === null ? null : JSON.stringify(norm.options),
+      String(body.description ?? '').trim() || null,
       nextOrder,
       now
     ).run();
@@ -198,7 +200,7 @@ export async function onRequestPatch({ request, env }) {
     return Response.json({ success: true });
   }
 
-  if (body.id && (body.label !== undefined || body.options !== undefined)) {
+  if (body.id && (body.label !== undefined || body.options !== undefined || body.description !== undefined)) {
     const field = await env.DB.prepare(
       `SELECT id, field_type FROM custom_fields WHERE id = ?`
     ).bind(body.id).first();
@@ -208,6 +210,11 @@ export async function onRequestPatch({ request, env }) {
       if (!String(body.label).trim()) return new Response('Label cannot be empty', { status: 400 });
       await env.DB.prepare(`UPDATE custom_fields SET label = ? WHERE id = ?`)
         .bind(String(body.label).trim(), body.id).run();
+    }
+
+    if (body.description !== undefined) {
+      await env.DB.prepare(`UPDATE custom_fields SET description = ? WHERE id = ?`)
+        .bind(String(body.description ?? '').trim() || null, body.id).run();
     }
 
     if (body.options !== undefined) {
