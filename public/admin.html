@@ -188,6 +188,9 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
 .cf-edit input:focus, .cf-edit textarea:focus, .add-form textarea.cf-ta:focus { border-color: #000; }
 .cf-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cf-hint { font-size: 12px; color: #aaa; margin-bottom: 8px; }
+.cf-sel { width: 100%; padding: 10px 14px; font-size: 15px; border: 2px solid #e0e0e0; border-radius: 8px; outline: none; background: #fff; font-family: inherit; margin-bottom: 4px; }
+.cf-card.cf-child { margin-left: 22px; border-left: 3px solid #d0d0d6; }
+.cf-cond { font-size: 12px; font-weight: 600; color: #007aff; margin-top: 4px; }
 .cf-locked { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 4px; }
 
 </style>
@@ -528,6 +531,11 @@ body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: 
     </div>
     <input type="text" id="new-field-desc" placeholder="Description (optional, shown to guests) e.g. Let us know any allergies">
     <div id="new-field-options"></div>
+    <div id="new-field-dep-wrap" style="display:none;">
+      <label class="cf-label" style="display:block;margin:10px 0 4px;">Follow-up question? Show this field…</label>
+      <select id="new-field-depends" class="cf-sel"></select>
+      <div class="cf-hint">Pick a checkbox to make this field appear only when that checkbox is checked (e.g. "What can't they eat?" after "Food allergy?").</div>
+    </div>
     <button class="btn full" style="margin-top:6px;" onclick="addCustomField()">+ Add Field</button>
   </div>
   <div class="section-label">Your Fields</div>
@@ -2059,22 +2067,47 @@ async function cfRequest(method, body) {
   return true;
 }
 
+// Checkboxes a field can depend on (top-level checkboxes only)
+function dependsChoices(excludeId) {
+  return _customFields.filter(x => x.field_type === 'checkbox' && !x.depends_on && x.id !== excludeId);
+}
+function dependsOptionsHTML(selected, excludeId) {
+  return '<option value="">Always show</option>' +
+    dependsChoices(excludeId).map(p => `<option value="${p.id}" ${p.id === selected ? 'selected' : ''}>Only when "${esc(p.label)}" is checked</option>`).join('');
+}
+function dependsEditorHTML(f) {
+  if (_customFields.some(x => x.depends_on === f.id)) return '<div class="cf-hint">Other fields only show when this checkbox is checked.</div>';
+  if (!dependsChoices(f.id).length && !f.depends_on) return '';
+  return `<label class="cf-label">Show this field</label><select id="cfe-${f.id}-depends" class="cf-sel">${dependsOptionsHTML(f.depends_on, f.id)}</select>`;
+}
+function fillNewFieldDepends() {
+  const sel = document.getElementById('new-field-depends');
+  const cur = sel.value;
+  sel.innerHTML = dependsOptionsHTML(cur, null);
+  document.getElementById('new-field-dep-wrap').style.display = dependsChoices(null).length ? '' : 'none';
+}
+
 async function loadCustomFields() {
   const res = await fetch('/api/custom-fields');
   _customFields = await res.json();
+  fillNewFieldDepends();
   if (!document.getElementById('new-field-options').innerHTML) renderNewFieldOptions();
   const el = document.getElementById('custom-fields-list');
   if (!_customFields.length) { el.innerHTML = '<div class="empty">No custom fields yet. Add one above.</div>'; return; }
   el.innerHTML = _customFields.map((f, i) => {
     const info = FIELD_TYPES[f.field_type] || FIELD_TYPES.text;
     const chips = fieldSummaryChips(f);
+    const parent = f.depends_on ? _customFields.find(x => x.id === f.depends_on) : null;
+    const kids = _customFields.filter(x => x.depends_on === f.id).length;
     return `
-    <div class="cf-card" id="cf-${f.id}">
+    <div class="cf-card${parent ? ' cf-child' : ''}" id="cf-${f.id}">
       <div class="cf-head">
         <span class="ci-emoji">${f.icon ? esc(f.icon) : info.icon}</span>
         <div style="flex:1;min-width:0;">
           <div class="ci-label">${esc(f.label)}</div>
           <div class="cf-meta">${info.name}</div>
+          ${parent ? `<div class="cf-cond">↳ Only shown when "${esc(parent.label)}" is checked</div>` : ''}
+          ${kids ? `<div class="cf-cond">Controls ${kids} follow-up field${kids > 1 ? 's' : ''}</div>` : ''}
           ${f.description ? `<div class="cf-desc">${esc(f.description)}</div>` : ''}
           ${chips ? `<div class="cf-chips">${chips}</div>` : ''}
         </div>
@@ -2096,6 +2129,7 @@ async function loadCustomFields() {
         <div class="cf-locked">Type: ${info.name} <span style="color:#aaa;font-weight:500;">(can't be changed — remove and re-add to switch)</span></div>
         ${fieldOptionsEditor(f.field_type, f.options, 'cfe-' + f.id)}
         ${(f.field_type === 'dropdown' || f.field_type === 'multiselect') ? '<div class="cf-hint">Removing an option doesn\'t clear it from guests who already have it saved.</div>' : ''}
+        ${dependsEditorHTML(f)}
         <div class="edit-btns" style="margin-top:8px;">
           <button class="btn small green" onclick="saveCustomField('${f.id}')">Save</button>
           <button class="btn small gray" onclick="toggleCustomFieldEdit('${f.id}')">Cancel</button>
@@ -2119,10 +2153,13 @@ async function addCustomField() {
   if (options === undefined) return;
   const body = { action: 'create', label, field_type, description, icon };
   if (options !== null) body.options = options;
+  const dep = document.getElementById('new-field-depends').value;
+  if (dep) body.depends_on = dep;
   if (!await cfRequest('POST', body)) return;
   document.getElementById('new-field-label').value = '';
   document.getElementById('new-field-desc').value = '';
   document.getElementById('new-field-emoji').value = '';
+  document.getElementById('new-field-depends').value = '';
   renderNewFieldOptions();
   loadCustomFields();
 }
@@ -2138,6 +2175,8 @@ async function saveCustomField(id) {
   if (options === undefined) return;
   const body = { id, label, description, icon };
   if (options !== null) body.options = options;
+  const depEl = document.getElementById(`cfe-${id}-depends`);
+  if (depEl) body.depends_on = depEl.value || null;
   if (!await cfRequest('PATCH', body)) return;
   loadCustomFields();
 }
