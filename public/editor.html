@@ -261,6 +261,9 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   width: 100%; padding: 14px; background: none; border: none;
   color: #888; font-size: 15px; font-family: inherit; cursor: pointer;
 }
+/* Custom field inputs */
+select.field-input { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' stroke='%23888' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") no-repeat right 14px center; padding-right: 38px; }
+.cf-multi-hint { font-size: 11px; color: #aaa; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -433,7 +436,7 @@ function renderGuestList(guests) {
     }
     if (g.is_actor) tags.push('<span class="tag actor">Actor</span>');
     if (!g.badge && !g.is_actor) tags.push('<span class="tag">No setup</span>');
-    return `<div class="guest-card" onclick='openEditor(${JSON.stringify(g)})'>
+    return `<div class="guest-card" onclick="openEditorById('${g.id}')">
       <div class="guest-avatar">${esc(initials)}</div>
       <div class="guest-card-info">
         <div class="guest-card-name">${esc(g.first_name)} ${esc(g.last_name)}</div>
@@ -457,15 +460,12 @@ function openEditor(guest) {
   renderBadgeOptions();
   renderAccessCard(guest);
 
-  // Custom fields
-  const wrap = document.getElementById('custom-fields-wrap');
-  wrap.innerHTML = customFields.map(f => `
-    <div class="field-card">
-      <div class="field-label">${esc(f.label)}</div>
-      ${f.field_type === 'checkbox'
-        ? `<label class="checkbox-row"><input type="checkbox" id="cf-${f.id}"><span class="checkbox-row-label">${esc(f.label)}</span></label>`
-        : `<input type="text" class="field-input" id="cf-${f.id}" placeholder="${esc(f.label)}..." autocomplete="off">`}
-    </div>`).join('');
+  // Custom fields (typed: text / checkbox / dropdown / multiselect)
+  cfMulti = {};
+  const fv = guest.fieldValues || {};
+  customFields.forEach(f => { if (f.field_type === 'multiselect') cfMulti[f.id] = cfValidMulti(f, fv[f.id]); });
+  document.getElementById('custom-fields-wrap').innerHTML = customFields.map(f => renderCustomFieldCard(f, fv[f.id])).join('');
+  customFields.forEach(f => { if (f.field_type === 'multiselect') renderCfMulti(f.id); });
 
   renderEditorPassChips();
 
@@ -569,6 +569,66 @@ function selectBadge(b) {
 
 function onActorChange() { renderHeroTags(); }
 
+// ── Custom fields ──
+let cfMulti = {};   // multiselect selections by field id
+function cfOpts(f) { return Array.isArray(f.options) ? f.options : []; }
+function cfCheckLabels(f) {
+  const o = (f.options && !Array.isArray(f.options)) ? f.options : {};
+  return { on: o.checked || 'Yes', off: o.unchecked || 'No' };
+}
+// Drop any saved values that are no longer valid options (the server rejects them)
+function cfValidMulti(f, val) { const opts = cfOpts(f); return Array.isArray(val) ? opts.filter(o => val.includes(o)) : []; }
+
+function renderCustomFieldCard(f, val) {
+  let input = '';
+  if (f.field_type === 'checkbox') {
+    const L = cfCheckLabels(f);
+    const on = val === true;
+    input = `<label class="checkbox-row">
+      <input type="checkbox" id="cf-${f.id}" ${on ? 'checked' : ''} data-on="${esc(L.on)}" data-off="${esc(L.off)}"
+        onchange="document.getElementById('cf-${f.id}-lbl').textContent = this.checked ? this.dataset.on : this.dataset.off">
+      <span class="checkbox-row-label" id="cf-${f.id}-lbl">${esc(on ? L.on : L.off)}</span>
+    </label>`;
+  } else if (f.field_type === 'dropdown') {
+    const opts = cfOpts(f);
+    const cur = opts.includes(val) ? val : '';
+    input = `<select class="field-input" id="cf-${f.id}">
+      <option value="">— None —</option>
+      ${opts.map(o => `<option value="${esc(o)}" ${o === cur ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+    </select>`;
+  } else if (f.field_type === 'multiselect') {
+    input = `<div class="badge-grid" id="cf-${f.id}-chips"></div><div class="cf-multi-hint">Tap all that apply</div>`;
+  } else {
+    input = `<input type="text" class="field-input" id="cf-${f.id}" value="${esc(val)}" placeholder="${esc(f.label)}..." autocomplete="off">`;
+  }
+  return `<div class="field-card"><div class="field-label">${esc(f.label)}</div>${input}</div>`;
+}
+
+function renderCfMulti(fid) {
+  const f = customFields.find(x => x.id === fid);
+  const el = document.getElementById(`cf-${fid}-chips`);
+  if (!f || !el) return;
+  const sel = cfMulti[fid] || [];
+  el.innerHTML = cfOpts(f).map((o, i) =>
+    `<button type="button" class="badge-chip ${sel.includes(o) ? 'sel' : ''}" onclick="toggleCfMulti('${fid}',${i})">${esc(o)}</button>`
+  ).join('');
+}
+
+function toggleCfMulti(fid, i) {
+  const f = customFields.find(x => x.id === fid);
+  if (!f) return;
+  const o = cfOpts(f)[i];
+  const sel = cfMulti[fid] || [];
+  cfMulti[fid] = sel.includes(o) ? sel.filter(x => x !== o) : [...sel, o];
+  renderCfMulti(fid);
+}
+
+function openEditorById(id) {
+  const g = allGuests.find(x => x.id === id);
+  if (g) openEditor(g);
+}
+
+
 function showList() {
   document.getElementById('editor-view').style.display = 'none';
   document.getElementById('guest-list-view').style.display = 'block';
@@ -584,9 +644,10 @@ function collectFormData() {
   const accom_enabled = autoAccom ? 1 : (accomEl ? (accomEl.checked ? 1 : 0) : 0);
   const fieldValues = {};
   customFields.forEach(f => {
+    if (f.field_type === 'multiselect') { fieldValues[f.id] = cfMulti[f.id] || []; return; }
     const el = document.getElementById(`cf-${f.id}`);
     if (!el) return;
-    fieldValues[f.id] = f.field_type === 'checkbox' ? (el.checked ? 'yes' : 'no') : el.value.trim();
+    fieldValues[f.id] = f.field_type === 'checkbox' ? el.checked : el.value.trim();
   });
   const passesChipsEl = document.getElementById('ev-passes-chips');
   const passes = passesChipsEl ? passesChipsEl.dataset.passes || '[]' : '[]';
@@ -601,11 +662,11 @@ async function doSave() {
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ guestId: currentGuest.id, seat, badge, is_actor, accom_enabled, passes, fieldValues })
   });
-  if (!res.ok) throw new Error('Save failed');
+  if (!res.ok) throw new Error((await res.text()) || 'Save failed');
   // Update local list
   const idx = allGuests.findIndex(g => g.id === currentGuest.id);
-  if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor, accom_enabled, passes };
-  if (currentGuest) currentGuest = { ...currentGuest, seat, badge, is_actor, accom_enabled, passes };
+  if (idx !== -1) allGuests[idx] = { ...allGuests[idx], seat, badge, is_actor, accom_enabled, passes, fieldValues };
+  if (currentGuest) currentGuest = { ...currentGuest, seat, badge, is_actor, accom_enabled, passes, fieldValues };
 }
 
 // ── Save Popup ──
@@ -618,13 +679,13 @@ function closeSavePopup() { document.getElementById('save-popup').classList.remo
 
 async function saveThenBack() {
   closeSavePopup();
-  try { await doSave(); } catch(e) { alert('Save failed — check connection'); return; }
+  try { await doSave(); } catch(e) { alert('Save failed — ' + (e.message || 'check connection')); return; }
   showList(); renderGuestList(allGuests);
 }
 
 async function saveThenQR() {
   closeSavePopup();
-  try { await doSave(); } catch(e) { alert('Save failed — check connection'); return; }
+  try { await doSave(); } catch(e) { alert('Save failed — ' + (e.message || 'check connection')); return; }
   showQR();
 }
 
